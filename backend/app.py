@@ -1,17 +1,22 @@
 from models import User, Order, OrderBook
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import current_user, login_required, login_user
-from flask_sse import sse
-import redis
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from database import db
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-app.config["REDIS_URL"] = "redis://localhost"
-app.register_blueprint(sse, url_prefix='/stream')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SECRET_KEY'] = 'the very secret public key'
 db.init_app(app)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    session = db.session
+    user = session.get(User, user_id)
+    return user
 
 @app.route('/users', methods=['POST'])
 def create_user():
@@ -24,7 +29,7 @@ def create_user():
     if new_user is None:
         return jsonify({'message': 'Username already exists.'}), 400
 
-    return jsonify({'message': 'New user created.'}), 201
+    return jsonify({'message': 'New user created.', 'user': new_user.to_dict()}), 201
 
 
 @app.route('/login', methods=['POST'])
@@ -41,7 +46,6 @@ def login():
 
     return jsonify({'message': 'Invalid username or password.'}), 401
 
-
 @app.route('/orders', methods=['POST'])
 @login_required
 def create_order():
@@ -52,12 +56,14 @@ def create_order():
     price = data['price']
     quantity = data['quantity']
 
-    order_book = OrderBook.query.get(order_book_id)
+    session = db.session
+    order_book = session.get(OrderBook, order_book_id)
 
     if not order_book:
         return jsonify({'message': 'Order book not found.'}), 404
 
-    user = User.query.get(user_id)
+    session = db.session
+    user = session.get(User, user_id)
 
     if not user:
         return jsonify({'message': 'User not found.'}), 404
@@ -74,7 +80,8 @@ def create_order():
 @app.route('/orders/<order_id>', methods=['DELETE'])
 @login_required
 def cancel_order(order_id):
-    order = Order.query.get(order_id)
+    session = db.session
+    order = session.get(Order, order_id)
 
     if not order:
         return jsonify({'message': 'No order found.'}), 404
@@ -107,15 +114,6 @@ def trade_order(order_id):
         'unfulfilled_quantity': unfulfilled_quantity
     }), 200
 
-
-@app.route('/orderbook/<order_book_id>', methods=['GET'])
-def view_order_book(order_book_id):
-    order_book = OrderBook.query.get(order_book_id)
-    if order_book is None:
-        return jsonify({'message': 'Order book not found.'}), 404
-
-    return jsonify(order_book.to_dict()), 200
-
 @app.route('/orderbook', methods=['POST'])
 def create_orderbook():
     data = request.get_json()
@@ -127,8 +125,19 @@ def create_orderbook():
     if new_orderbook is None:
         return jsonify({'message': 'Orderbook already exists.'}), 400
 
-    return jsonify({'message': 'New orderbook created.'}), 201
+    return jsonify({'message': 'New orderbook created.', 'orderbook': new_orderbook.to_dict()}), 201
 
+# Get an orderbook
+@app.route('/orderbook/<order_book_id>', methods=['GET'])
+def get_orderbook(order_book_id):
+    session = db.session
+    order_book = session.get(OrderBook, order_book_id)
+
+    if order_book is None:
+        return jsonify({'message': 'Order book not found.'}), 404
+
+    orders = order_book.get_orders()
+    return jsonify({'order_book': order_book.to_dict(), 'orders': orders}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,20 +1,36 @@
+import json
+from sqlite3 import IntegrityError
 from flask_login import current_user
 from database import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sse import sse
 
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
     password_hash = db.Column(db.String(128))
+    orders = db.relationship('Order', backref='user', lazy='dynamic')
+
+    def __init__(self, username, password):
+        self.username = username
+        self.set_password(password)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'orders': [order.to_dict() for order in self.orders.all()]
+        }
+
 
     @classmethod
     def create(cls, username, password):
@@ -22,28 +38,19 @@ class User(db.Model):
         if user:
             return None
 
-        new_user = cls(username=username)
-        new_user.set_password(password)
+        new_user = cls(username=username, password=password)
 
-        db.session.add(new_user)
-        db.session.commit()
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return None
+
         return new_user
 
-    def get_exposure(self, orderbook_id):
-        buy_orders = Order.query.filter_by(
-            user_id=self.id, orderbook_id=orderbook_id, side="BUY", status="OPEN").all()
-        sell_orders = Order.query.filter_by(
-            user_id=self.id, orderbook_id=orderbook_id, side="SELL", status="OPEN").all()
-
-        buy_exposure = sum(
-            [order.quantity - order.fill_quantity for order in buy_orders])
-        sell_exposure = sum(
-            [order.quantity - order.fill_quantity for order in sell_orders])
-
-        return buy_exposure, sell_exposure
-
-
 class OrderBook(db.Model):
+    __tablename__ = 'orderbook'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     instrument = db.Column(db.String(50), unique=True, nullable=False)
@@ -62,32 +69,26 @@ class OrderBook(db.Model):
         db.session.commit()
         return new_orderbook
 
-    def publish_order_book(order_book_id):
-        # Query the database for the current state of the order book
-        order_book = Order.query.filter_by(orderbook_id=order_book_id).all()
-        order_book_json = [order.to_dict() for order in order_book]
-
-        # Publish it to the stream
-        sse.publish({"message": "Order book updated",
-                    "order_book": order_book_json}, type='order_book_update')
-
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
             'instrument': self.instrument,
             'timestamp': self.timestamp.isoformat(),
-            'orders': [order.to_dict() for order in self.orders.all()]
         }
+    
+    def get_orders(self):
+        return [order.to_dict() for order in self.orders.all()]
 
 
 class Order(db.Model):
+    __tablename__ = 'order'
     id = db.Column(db.Integer, primary_key=True)
-    order_book_id = db.Column(db.Integer, db.ForeignKey('orderbook.id'))
+    orderbook_id = db.Column(db.Integer, db.ForeignKey('orderbook.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     price = db.Column(db.Float)
     quantity = db.Column(db.Float)
-    order_type = db.Column(db.String(4))  # "BUY" or "SELL"
+    side = db.Column(db.String(4))  # "BUY" or "SELL"
     fill_quantity = db.Column(db.Float, default=0)
     # "OPEN", "FILLED", "CANCELLED"
     status = db.Column(db.String(20), default="OPEN")
@@ -107,10 +108,10 @@ class Order(db.Model):
         }
 
     @classmethod
-    def create_and_fill(cls, order_book_id, user_id, side, price, quantity):
+    def create_and_fill(cls, orderbook_id, user_id, side, price, quantity):
         # Check if there are opposite side orders that can be filled
         opposite_orders = cls.query.filter_by(
-            order_book_id=order_book_id, side="SELL" if side == "BUY" else "BUY", status="OPEN")
+            orderbook_id=orderbook_id, side="SELL" if side == "BUY" else "BUY", status="OPEN")
 
         # Sorting the opposite orders by best price and then oldest
         if side == "BUY":
@@ -128,7 +129,7 @@ class Order(db.Model):
                 opposite_order.fill_quantity += fill_quantity
                 opposite_order.status = "FILLED" if opposite_order.fill_quantity == opposite_order.quantity else "OPEN"
                 # Create a new inverse order
-                filled_order = cls(order_book_id=order_book_id, user_id=user_id, side=opposite_order.side,
+                filled_order = cls(orderbook_id=orderbook_id, user_id=user_id, side=opposite_order.side,
                                    price=price, quantity=fill_quantity, fill_quantity=fill_quantity, status="FILLED")
                 db.session.add(filled_order)
                 # Decrease the quantity
@@ -138,7 +139,7 @@ class Order(db.Model):
 
         # If there is still quantity left, create a new open order
         if quantity > 0:
-            new_order = cls(order_book_id=order_book_id, user_id=user_id, side=side,
+            new_order = cls(orderbook_id=orderbook_id, user_id=user_id, side=side,
                             price=price, quantity=quantity, fill_quantity=0, status="OPEN")
             db.session.add(new_order)
 
@@ -155,7 +156,8 @@ class Order(db.Model):
 
     @classmethod
     def trade(cls, order_id, user_id, quantity):
-        existing_order = cls.query.get(order_id)
+        session = db.session
+        existing_order = session.get(cls, order_id)
         
         if not existing_order:
             raise ValueError('No order found.')
@@ -171,7 +173,7 @@ class Order(db.Model):
         existing_order.status = 'FILLED' if existing_order.fill_quantity == existing_order.quantity else 'OPEN'
 
         new_order = cls(
-            order_book_id=existing_order.order_book_id,
+            orderbook_id=existing_order.orderbook_id,
             user_id=user_id,
             side='SELL' if existing_order.side == 'BUY' else 'BUY',
             price=existing_order.price,
