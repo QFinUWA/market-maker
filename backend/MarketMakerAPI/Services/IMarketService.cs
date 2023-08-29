@@ -1,6 +1,6 @@
-﻿using MarketMakerAPI.Models;
+﻿using MarketMaker.Models;
 
-namespace MarketMakerAPI.Services
+namespace MarketMaker.Services
 {
     public interface IMarketService
     {

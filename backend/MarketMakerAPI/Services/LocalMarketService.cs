@@ -1,7 +1,7 @@
 ﻿using MarketMaker.Services;
-using MarketMakerAPI.Models;
+using MarketMaker.Models;
 
-namespace MarketMakerAPI.Services
+namespace MarketMaker.Services
 {
     public class LocalMarketService : IMarketService
     {

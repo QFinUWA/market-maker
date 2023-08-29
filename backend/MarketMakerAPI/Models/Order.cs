@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MarketMakerAPI.Models
+namespace MarketMaker.Models
 {
     public class Order
     {

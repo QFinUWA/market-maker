@@ -44,10 +44,6 @@
               "target": "Package",
               "version": "[2.4.3, )"
             },
-            "Microsoft.AspNetCore.SignalR.Client": {
-              "target": "Package",
-              "version": "[7.0.10, )"
-            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.5.0, )"

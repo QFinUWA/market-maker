@@ -1,25 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "3FATKP3kLbLM3p7Qqwn4X5SFr21u9k3FfdM2dKjz1FoT7GDVfO9QPRQpU3w6z6A/liJ7tqB1ZsapGFrCw48mjg==",
+  "dgSpecHash": "c+HiEADrDN13DPVO9qyBhbFTeNRxIM3HbmYth1NI92bjQ+QKbAZsQ3EMZ/rnacNee3RPpzATyek4C+T2FzQrOQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\isaac\\git\\market-maker\\backend\\MarketMakerAPI\\MarketMaker.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnet.signalr.core\\2.4.3\\microsoft.aspnet.signalr.core.2.4.3.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnetcore.connections.abstractions\\7.0.10\\microsoft.aspnetcore.connections.abstractions.7.0.10.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnetcore.http.connections.client\\7.0.10\\microsoft.aspnetcore.http.connections.client.7.0.10.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnetcore.http.connections.common\\7.0.10\\microsoft.aspnetcore.http.connections.common.7.0.10.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnetcore.signalr.client\\7.0.10\\microsoft.aspnetcore.signalr.client.7.0.10.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnetcore.signalr.client.core\\7.0.10\\microsoft.aspnetcore.signalr.client.core.7.0.10.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnetcore.signalr.common\\7.0.10\\microsoft.aspnetcore.signalr.common.7.0.10.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.aspnetcore.signalr.protocols.json\\7.0.10\\microsoft.aspnetcore.signalr.protocols.json.7.0.10.nupkg.sha512",
     "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.apidescription.server\\6.0.5\\microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\7.0.0\\microsoft.extensions.dependencyinjection.7.0.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\7.0.0\\microsoft.extensions.dependencyinjection.abstractions.7.0.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.features\\7.0.10\\microsoft.extensions.features.7.0.10.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.logging\\7.0.0\\microsoft.extensions.logging.7.0.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\7.0.1\\microsoft.extensions.logging.abstractions.7.0.1.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.options\\7.0.1\\microsoft.extensions.options.7.0.1.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\microsoft.extensions.primitives\\7.0.0\\microsoft.extensions.primitives.7.0.0.nupkg.sha512",
     "C:\\Users\\isaac\\.nuget\\packages\\microsoft.openapi\\1.2.3\\microsoft.openapi.1.2.3.nupkg.sha512",
     "C:\\Users\\isaac\\.nuget\\packages\\microsoft.owin\\2.1.0\\microsoft.owin.2.1.0.nupkg.sha512",
     "C:\\Users\\isaac\\.nuget\\packages\\microsoft.owin.security\\2.1.0\\microsoft.owin.security.2.1.0.nupkg.sha512",
@@ -28,12 +14,7 @@
     "C:\\Users\\isaac\\.nuget\\packages\\swashbuckle.aspnetcore\\6.5.0\\swashbuckle.aspnetcore.6.5.0.nupkg.sha512",
     "C:\\Users\\isaac\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\6.5.0\\swashbuckle.aspnetcore.swagger.6.5.0.nupkg.sha512",
     "C:\\Users\\isaac\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\6.5.0\\swashbuckle.aspnetcore.swaggergen.6.5.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\swashbuckle.aspnetcore.swaggerui\\6.5.0\\swashbuckle.aspnetcore.swaggerui.6.5.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\system.io.pipelines\\7.0.0\\system.io.pipelines.7.0.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\system.text.encodings.web\\7.0.0\\system.text.encodings.web.7.0.0.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\system.text.json\\7.0.3\\system.text.json.7.0.3.nupkg.sha512",
-    "C:\\Users\\isaac\\.nuget\\packages\\system.threading.channels\\7.0.0\\system.threading.channels.7.0.0.nupkg.sha512"
+    "C:\\Users\\isaac\\.nuget\\packages\\swashbuckle.aspnetcore.swaggerui\\6.5.0\\swashbuckle.aspnetcore.swaggerui.6.5.0.nupkg.sha512"
   ],
   "logs": [
     {

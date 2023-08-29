@@ -1,4 +1,4 @@
-﻿using MarketMakerAPI.Models;
+﻿using MarketMaker.Models;
 using System.Collections.Generic;
 
 namespace MarketMaker.Services
@@ -7,8 +7,8 @@ namespace MarketMaker.Services
     {
         public Dictionary<Guid, Order> Orders = new();
 
-        private readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _bid = new();
-        private readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _ask = new();
+        public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _bid = new();
+        public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _ask = new();
 
         private readonly int highestBid = int.MinValue;
         private readonly int lowestAsk = int.MaxValue;
@@ -26,59 +26,70 @@ namespace MarketMaker.Services
         {
             Orders.Add(order.Id, order);
 
+            // TODO: maybe set Order price to the lowestAsk if it is above it etc ...
+
             bool sideIsBid = order.Quantity > 0;
 
             var side = sideIsBid ? _bid : _ask;
             var otherSide = !sideIsBid ? _bid : _ask;
 
-            if (!side.ContainsKey(order.Price)) side.Add(order.Price, new PriorityQueue<Guid, DateTime>());
+            int price = order.Price;
 
-
-            side[order.Price].Enqueue(order.Id, order.CreatedAt);
+            if (!side.ContainsKey(price)) side.Add(price, new PriorityQueue<Guid, DateTime>());
 
             // assuming market was balanced before, only check for new updates
             // if this is the newest order
             List<Order> ordersFilled = new();
-            if (side[order.Price].Count > 1 || !otherSide.ContainsKey(order.Price)) return ordersFilled;
-         
-            // keep removing from queue until first order exists
-            //while (side[order.Price].TryDequeue(out Guid id, out DateTime time))
-            //{
-            //    if (Orders.ContainsKey(id)) break;
-            //}
-            while (side[order.Price].Count > 0 && order.Quantity != 0)
+
+            side[price].Enqueue(order.Id, order.CreatedAt);
+
+            if (side[price].Count > 1 || !otherSide.ContainsKey(price))
             {
-                Guid id = otherSide[order.Price].Peek();
+                return ordersFilled;
+            }
+            
+            // keep removing from queue until first order exists
+            while (otherSide[price].Count > 0 && order.Quantity != 0)
+            {
+                Guid otherId = otherSide[price].Peek();
 
                 // dormant deleted orders
-                if (!Orders.ContainsKey(id))
+                if (!Orders.ContainsKey(otherId))
                 {
-                    otherSide[order.Price].Dequeue();
+                    otherSide[price].Dequeue();
                     continue;
                 }
 
-                Order otherOrder = Orders[id];
+                Order otherOrder = Orders[otherId];
 
                 if (Math.Sign(order.Quantity + otherOrder.Quantity) != Math.Sign(order.Quantity))
                 {
                     otherOrder.Quantity += order.Quantity;
                     order.Quantity = 0;
-
-                    ordersFilled.Add(order);
-                    Orders.Remove(id);
                 }
                 else
                 {
                     order.Quantity += otherOrder.Quantity;
                     otherOrder.Quantity = 0;
-
-                    Orders.Remove(otherOrder.Id);
                 }
-                
-                ordersFilled.Add(otherOrder);
-            }
 
-            MakeTransactions();
+                if (otherOrder.Quantity == 0)
+                {
+                    otherSide[price].Dequeue();
+                    Orders.Remove(otherId);
+                }
+
+                 ordersFilled.Add(otherOrder);
+            }
+            
+            if (order.Quantity == 0)
+            {
+                Guid removeId = side[price].Dequeue();
+                Orders.Remove(removeId);
+
+            }
+            ordersFilled.Add(order);
+
 
             return ordersFilled;
 

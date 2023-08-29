@@ -1,4 +1,4 @@
-﻿namespace MarketMakerAPI.Contracts
+﻿namespace MarketMaker.Contracts
 {
     public record NewOrderResponse(
            string User,

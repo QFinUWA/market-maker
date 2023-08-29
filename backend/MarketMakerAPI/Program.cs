@@ -1,6 +1,6 @@
 using MarketMaker.Hubs;
 using MarketMaker.Services;
-using MarketMakerAPI.Services;
+using MarketMaker.Services;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNetCore.SignalR;
 

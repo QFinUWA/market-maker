@@ -1,4 +1,4 @@
-﻿using MarketMakerAPI.Models;
+﻿using MarketMaker.Models;
 
 namespace MarketMaker.Contracts
 {

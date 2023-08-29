@@ -1,8 +1,6 @@
 ﻿using MarketMaker.Contracts;
 using MarketMaker.Services;
-using MarketMakerAPI.Contracts;
-using MarketMakerAPI.Models;
-using MarketMakerAPI.Services;
+using MarketMaker.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 

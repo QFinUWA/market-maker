@@ -1,6 +1,5 @@
 ﻿using MarketMaker.Contracts;
-using MarketMakerAPI.Contracts;
-using MarketMakerAPI.Models;
+using MarketMaker.Models;
 
 namespace MarketMaker.Hubs
 {
