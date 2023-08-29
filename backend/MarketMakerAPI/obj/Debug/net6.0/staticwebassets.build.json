@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "SU9PVr7KtD8tdnpeEvyIUFxtDH+Llw1ABbmOTwSEhDU=",
+  "Source": "MarketMaker",
+  "BasePath": "_content/MarketMaker",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
