@@ -1,0 +1,37 @@
+<!-- Boilerplate -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- JS -->
+    <script src="lib/signalr/signalr.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>Market_Maker.io</h1>
+    </header>
+    <!-- Main -->
+    <h2>Input</h2>
+    <div id="commands">
+        <input type="text" id="marketInput" placeholder="Enter market">
+        <input type="number" id="priceInput" placeholder="Enter price">
+        <input type="number" id="quantityInput" placeholder="Enter quantity">
+        <button id="send">Send</button>
+    </div>
+    <h2>Market Orders</h2>
+    <h4>[TimeStamp]:$[price]:[quantity] <= [User]</h4>
+
+    <div id="market">
+
+    </div>
+
+    <!-- Footer -->
+
+</body>
+<script src="js/script.js"></script>
+
+</html>
