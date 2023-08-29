@@ -1,49 +1,48 @@
-﻿using MarketMakerAPI.Models;
+﻿using MarketMaker.Services;
+using MarketMakerAPI.Models;
 
 namespace MarketMakerAPI.Services
 {
     public class LocalMarketService : IMarketService
     {
-        private static readonly Dictionary<int, List<Guid>> _market = new();
-        private static readonly Dictionary<Guid, Order> _orders = new();
+        private readonly Dictionary<string, Exchange> _market = new();
 
-        public List<Order> Orders
+        public LocalMarketService()
         {
-            get => _orders.Values.ToList();
+            // TEMPORARY
+            _market.Add("IYE", new Exchange());
         }
 
-
-        public void DeleteOrder(Guid id)
+        public List<Order> GetOrders()
         {
-            Order order = _orders[id];
 
-            _market[order.Price].Remove(order.Id);
-
-            if (_market[order.Price].Count == 0)
+            List<Order> orders = new();
+            
+            foreach (Exchange exchange in _market.Values)
             {
-                _market.Remove(order.Price);
+                orders.AddRange(exchange.GetOrders());
             }
 
-            _orders.Remove(order.Id);
+            return orders;
         }
 
-        public void NewOrder(Order order)
+
+        public void DeleteOrder(string market, Guid id)
         {
-
-            _orders.Add(order.Id, order);
-            if (!_market.ContainsKey(order.Price))
-            {
-                _market[order.Price] = new List<Guid>();
-            }
-            _market[order.Price].Add(order.Id);
+            _market[market].DeleteOrder(id);
         }
 
-        public Order UpdateOrder(Order order)
+        public List<Order> NewOrder(Order order)
         {
-            Order oldOrder = _orders[order.Id];
-            _orders[order.Id] = order;
-            return oldOrder;
+            return _market[order.Market].NewOrder(order);
         }
+
+        //public Order UpdateOrder(Order order)
+        //{
+        //    Order oldOrder = _orders[order.Id];
+        //    _orders[order.Id] = order;
+        //    return oldOrder;
+        //}
 
 
     }

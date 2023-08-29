@@ -1,6 +1,6 @@
 ﻿namespace MarketMakerAPI.Contracts
 {
-    public record DeleteOrderResponse(
+    public record DeleteOrderRequest(
            string market,
            Guid Id
         );

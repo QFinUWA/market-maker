@@ -1,11 +1,11 @@
 ﻿namespace MarketMaker.Services
 {
-    public class UserService
+    public class LocalUserService : IUserService
     {
 
         public Dictionary<string, string> Users { get; }
 
-        public UserService() {
+        public LocalUserService() {
             Users = new();        
         }
 

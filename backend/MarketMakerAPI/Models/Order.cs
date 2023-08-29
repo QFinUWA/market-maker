@@ -11,7 +11,7 @@ namespace MarketMakerAPI.Models
 
         public string Market {  get; }
 
-        public int Quantity { get; }
+        public int Quantity { get; set; }
 
         public DateTime CreatedAt { get; }
 
