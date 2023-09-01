@@ -1,99 +1,121 @@
 ﻿using MarketMaker.Contracts;
 using MarketMaker.Services;
 using MarketMaker.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+//using Microsoft.AspNet.SignalR;
 
 namespace MarketMaker.Hubs
 {
     public sealed class MarketHub: Hub<IMarketClient>
     {
-        private readonly IMarketService _marketService;
-        private readonly IUserService _userService;
+        private readonly MarketGroup _marketService;
+        private readonly IUserService _userServices;
 
-        public MarketHub(IMarketService marketService, IUserService userService) 
-        { 
-            _marketService = marketService;
-            _userService = userService;
-        }
 
-        public async Task Test(string message)
+        public MarketHub(MarketGroup marketService, IUserService userService) 
         {
-            await Clients.Caller.RecieveMessage(message);
+            _marketService = marketService;
+            _userServices = userService;
         }
-
 
         public override async Task OnConnectedAsync()
         {
-            _userService.AddUser(Context.ConnectionId);
+            var username = Context.GetHttpContext()?.Request.Query["username"];
 
-            await Clients.Others.UserJoined(Context.ConnectionId);
-            await Clients.Caller.MarketState(new MarketStateResponse(_userService.Users.Keys.ToList(), _marketService.GetOrders()));
+            await base.OnConnectedAsync();
+        }
+        public async Task MakeNewMarket(string marketName)
+        {
+            if (_marketService.Markets.ContainsKey(marketName)) return;
+            _userServices.Users[Context.ConnectionId] = marketName;
+            _userServices.Admins[marketName] = Context.ConnectionId;
+            _marketService.Markets[marketName] = new LocalMarketService();
+
+            await Clients.Caller.RecieveMessage($"Successfully added {marketName} as a market.");
+            await Groups.AddToGroupAsync(Context.ConnectionId, marketName);
         }
 
-        public async Task PlaceOrder(string market, int price, int quantity)
+        public async Task MakeNewExchange(string exchangeName)
         {
+            string group = _userServices.Users[Context.ConnectionId];
+
+            if (_userServices.Admins[group] != Context.ConnectionId) return;
+
+            IMarketService marketService = _marketService.Markets[group];
+
+            marketService.AddExchange(exchangeName);
+            await Clients.Group(group).RecieveMessage($"Successfully added {exchangeName} as an exchange.");
+            await Clients.Group(group).ExchangeAdded(exchangeName);
+        }
+
+        public async Task JoinMarket(string groupName)
+        {
+            var marketService = _marketService.Markets[groupName];
+            _userServices.AddUser(groupName, Context.ConnectionId);
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+      
+            await Clients.Group(groupName).UserJoined(Context.ConnectionId);
+            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), marketService.Exchanges));
+        }
+
+
+
+        public async Task PlaceOrder(string exchange, int price, int quantity)
+        {
+            IMarketService marketService = _marketService.Markets[_userServices.Users[Context.ConnectionId]];
+            string groupName = _userServices.Users[Context.ConnectionId];
 
             Order order = Order.MakeOrder(
                 Context.ConnectionId,
-                market,
+                exchange,
                 price,
                 quantity);
 
-            List<Order> filledOrders = _marketService.NewOrder(order);
+            Order originalOrder = (Order)order.Clone();
 
-            await Clients.All.NewOrder(new NewOrderResponse(
-                    order.User,
-                    order.Market,
-                    order.Price,
-                    order.Quantity,
-                    order.CreatedAt,
-                    order.Id
+            // TODO: NewOrder should raise an exception if the order was rejected, 
+            //       in which case the clients shouldn't be alerted about a new order
+
+            List<Order> filledOrders = marketService.NewOrder(order);
+
+            await Clients.Group(groupName).NewOrder(new NewOrderResponse(
+                    originalOrder.User,
+                    originalOrder.Exchange,
+                    originalOrder.Price,
+                    originalOrder.Quantity,
+                    originalOrder.CreatedAt,
+                    originalOrder.Id
                 ));
 
 
-            foreach (var filledOrder in filledOrders)
+            foreach (Order filledOrder in filledOrders)
             {
-                await Clients.All.OrderFilled(new OrderFilledResponse(filledOrder.Market, filledOrder.Id, filledOrder.Quantity));
+                await Clients.Group(groupName).OrderFilled(new OrderFilledResponse(
+                    filledOrder.Exchange, 
+                    filledOrder.Id, 
+                    filledOrder.User, 
+                    filledOrder.Price, 
+                    filledOrder.Quantity));
             }
+
+            
 
         }
 
         public async Task DeleteOrder(DeleteOrderRequest deleteOrderRequest)
         {
-            var market = deleteOrderRequest.market;
+            string group = _userServices.Users[Context.ConnectionId];
+            IMarketService marketService = _marketService.Markets[group];
+
+            var exchange = deleteOrderRequest.exchange;
             var id = deleteOrderRequest.Id;
 
-            _marketService.DeleteOrder(market, id);
+            marketService.DeleteOrder(exchange, id);
 
-            await Clients.All.DeletedOrder(new DeleteOrderResponse(market, id));
+            await Clients.Group(group).DeletedOrder(new DeleteOrderResponse(exchange, id));
         }
-
-        //public async Task AmmendOrder(Guid id, NewOrderRequest orderRequest)
-        //{
-        //    Order order = Order.MakeOrder(
-        //        Context.ConnectionId,
-        //        orderRequest.Market,
-        //        orderRequest.Price,
-        //        orderRequest.Quantity,
-        //        id
-        //        );
-
-        //    Order oldOrder = _marketService.UpdateOrder(order);
-
-        //    await Clients.All.DeletedOrder(oldOrder.Id);
-
-        //    await Clients.All.AmmendedOrder(new NewOrderResponse(
-        //       order.User,
-        //       order.Market,
-        //       order.Price,
-        //       order.Quantity,
-        //       order.CreatedAt,
-        //       order.Id
-        //       ));
-        //}
-
-
-
     }
 }

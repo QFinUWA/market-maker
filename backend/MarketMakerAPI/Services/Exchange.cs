@@ -17,12 +17,13 @@ namespace MarketMaker.Services
         {
             return Orders[id];
         }
+
         public List<Order> GetOrders()
         {
             return Orders.Values.ToList();
         }
 
-        public List<Order> NewOrder(Order order)
+        public List<Order> NewOrder(Order order) 
         {
             Orders.Add(order.Id, order);
 
@@ -88,6 +89,7 @@ namespace MarketMaker.Services
                 Orders.Remove(removeId);
 
             }
+            //TODO: order.price = bestPrce;
             ordersFilled.Add(order);
 
 

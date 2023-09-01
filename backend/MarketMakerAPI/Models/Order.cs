@@ -2,14 +2,14 @@
 
 namespace MarketMaker.Models
 {
-    public class Order
+    public class Order : ICloneable
     {
         public Guid Id { get; }
         public string User { get; }
 
         public int Price { get; }
 
-        public string Market {  get; }
+        public string Exchange {  get; }
 
         public int Quantity { get; set; }
 
@@ -21,14 +21,15 @@ namespace MarketMaker.Models
             string market,
             int price,
             int quantity,
-            DateTime CreatedAt
+            DateTime createdAt
             )
         {
             Id = id;
             User = user;
-            Market = market;
+            Exchange = market;
             Price = price;
             Quantity = quantity;
+            CreatedAt = createdAt;
         }
 
         public static Order MakeOrder(
@@ -47,6 +48,11 @@ namespace MarketMaker.Models
                 quantity,
                 DateTime.Now
                 );
+        }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
         }
     }
 }

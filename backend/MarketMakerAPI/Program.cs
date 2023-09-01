@@ -1,15 +1,14 @@
 using MarketMaker.Hubs;
 using MarketMaker.Services;
-using MarketMaker.Services;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNetCore.SignalR;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddSingleton<IMarketService, LocalMarketService>();
+// LocalMarketGroup<LocalMarketService>
+builder.Services.AddSingleton<MarketGroup>();
 builder.Services.AddSingleton<IUserService, LocalUserService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -19,9 +18,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors();
 builder.Services.AddSignalR(options =>
 {
-
-      options.EnableDetailedErrors = true;
-    
+      options.EnableDetailedErrors = true;   
 });
 builder.Services.AddSwaggerGen();
  

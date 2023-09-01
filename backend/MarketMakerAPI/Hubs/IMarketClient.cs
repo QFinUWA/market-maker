@@ -12,5 +12,7 @@ namespace MarketMaker.Hubs
         Task OrderFilled(OrderFilledResponse orderFilledResponse);
         Task UserJoined(string id);
         Task MarketState(MarketStateResponse marketState);
+        Task ExchangeAdded(string name);
+        Task MarketAdded(string marketName);
     }
 }

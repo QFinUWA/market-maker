@@ -2,7 +2,9 @@
 {
     public interface IUserService
     {
-        void AddUser(string id);
+        void AddUser(string group, string id);
+
         Dictionary<string, string> Users { get; }
+        Dictionary<string, string> Admins { get; } // group -> adminId
     }
 }

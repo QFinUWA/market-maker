@@ -5,14 +5,17 @@
 
         public Dictionary<string, string> Users { get; }
 
+        public Dictionary<string, string> Admins { get; }
+
         public LocalUserService() {
-            Users = new();        
+            Users = new();
+            Admins = new();
         }
 
 
-        public void AddUser(string id)
+        public void AddUser(string group, string id)
         {
-            Users[id] = "";
+            Users[id] = group;
         }
     }
 }

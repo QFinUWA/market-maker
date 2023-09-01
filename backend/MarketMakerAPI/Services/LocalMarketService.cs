@@ -5,12 +5,21 @@ namespace MarketMaker.Services
 {
     public class LocalMarketService : IMarketService
     {
-        private readonly Dictionary<string, Exchange> _market = new();
+        private readonly Dictionary<string, Exchange> _market;
+
+        public List<string> Exchanges
+        {
+            get
+            {
+                return _market.Keys.ToList();
+            } 
+        }
 
         public LocalMarketService()
         {
             // TEMPORARY
-            _market.Add("IYE", new Exchange());
+            //_market.Add("IYE", new Exchange());
+            _market = new Dictionary<string, Exchange>();
         }
 
         public List<Order> GetOrders()
@@ -34,7 +43,12 @@ namespace MarketMaker.Services
 
         public List<Order> NewOrder(Order order)
         {
-            return _market[order.Market].NewOrder(order);
+            return _market[order.Exchange].NewOrder(order);
+        }
+
+        public void AddExchange(string market)
+        {
+            _market.Add(market, new Exchange());
         }
 
         //public Order UpdateOrder(Order order)

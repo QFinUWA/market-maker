@@ -1,8 +1,10 @@
 ﻿namespace MarketMaker.Contracts
 {
     public record OrderFilledResponse(
-           string market,
+           string exchange,
            Guid id,
+           string user,
+           int atPrice,
            int newQuantity
         );
 
