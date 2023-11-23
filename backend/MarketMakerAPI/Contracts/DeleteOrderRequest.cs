@@ -4,5 +4,4 @@
            string exchange,
            Guid Id
         );
-
 }

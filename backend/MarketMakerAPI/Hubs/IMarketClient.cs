@@ -8,7 +8,7 @@ namespace MarketMaker.Hubs
         Task RecieveMessage(string message);
         Task NewOrder(NewOrderResponse orderResponse);
         Task DeletedOrder(DeleteOrderResponse message);
-        Task AmmendedOrder(NewOrderResponse orderResponse);
+        Task AmmendedOrder(NewOrderResponse orderRespose);
         Task OrderFilled(OrderFilledResponse orderFilledResponse);
         Task UserJoined(string id);
         Task MarketState(MarketStateResponse marketState);

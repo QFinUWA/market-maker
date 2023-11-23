@@ -25,7 +25,7 @@ namespace MarketMaker.UnitTests
             //Arange
 
             //Act
-
+                                    
             //Assert
             Assert.Empty(exchange.GetOrders());
             Assert.Empty(exchange._bid);
