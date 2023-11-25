@@ -3,7 +3,7 @@
     public class LocalUserService : IUserService
     {
 
-        public Dictionary<string, string> Users { get; }
+        public Dictionary<string, Dictionary<string, string> > Users { get; }
 
         public Dictionary<string, string> Admins { get; }
 
@@ -15,7 +15,17 @@
 
         public void AddUser(string group, string id)
         {
-            Users[id] = group;
+            Users[id] = new Dictionary<string, string>
+            {
+                { "market", group },
+                { "username", "" },
+                { "secret", "todo" },
+            };
+        }
+
+        public void AddUsernameToUser(string id, string username)
+        {
+            Users[id]["username"] = username;
         }
     }
 }

@@ -1,6 +1,7 @@
 // get the element with id "market" and insert a list of items
 const connection = new signalR.HubConnectionBuilder()
   .withUrl("https://localhost:7221/market", {
+  // .withUrl("https://market-maker-prod.azurewebsites.net/market", {
     skipNegotiation: true,
     transport: signalR.HttpTransportType.WebSockets,
   })
@@ -43,7 +44,7 @@ function formatOrder(order) {
     ", quantity " +
     order["quantity"] +
     " <= " +
-    order["user"].slice(0, 3)
+    order["user"]
   );
 }
 
@@ -122,6 +123,9 @@ const loadingHtml = `
 `;
 
 const userHtml = `
+    
+    <input type="text" id="nameInput" placeholder="Enter name">
+    <button id="joinWithName">Join</button>
     <input type="text" id="exchangeInput" placeholder="Enter exchange">
     <input type="number" id="priceInput" placeholder="Enter price">
     <input type="number" id="quantityInput" placeholder="Enter quantity">
@@ -139,6 +143,11 @@ function loadUserPage() {
   document.getElementById("exchangeInput").value = "A";
   document.getElementById("priceInput").value = 10;
   document.getElementById("quantityInput").value = 4;
+
+  document.getElementById("joinWithName").onclick = () => {
+    let name = document.getElementById("nameInput").value;
+    connection.invoke("JoinMarket", name);
+  };
 
   // set onclick
   document.getElementById("send").onclick = () => {
@@ -179,6 +188,6 @@ document.getElementById("makeMarket").onclick = () => {
 
 document.getElementById("joinMarket").onclick = () => {
   let market = document.getElementById("joinMakeMarketText").value;
-  connection.invoke("JoinMarket", market);
+  connection.invoke("JoinMarketLobby", market);
   loadUserPage();
 };
