@@ -22,23 +22,20 @@ namespace MarketMaker.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            var username = Context.GetHttpContext()?.Request.Query["username"];
-
             await base.OnConnectedAsync();
         }
         public async Task MakeNewMarket(string marketName)
         {
             if (_marketService.Markets.ContainsKey(marketName)) return;
             
-            // attach user to market
-            _userServices.Users[Context.ConnectionId] = marketName;
+            // create new market service
+            var marketService = new LocalMarketService();
+            _marketService.Markets[marketName] = marketService;
+
+            await JoinMarketLobby(marketName);
             
             // make user an admin
             _userServices.Admins[marketName] = Context.ConnectionId;
-            
-            // create new market service
-            var marketService = new LocalMarketService();
-            _marketService.Markets[marketName] = marketService; 
             
             await Clients.Caller.RecieveMessage($"Successfully added {marketName} as a market.");
             await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), marketName, marketService.Exchanges));
@@ -47,7 +44,8 @@ namespace MarketMaker.Hubs
 
         public async Task MakeNewExchange(string exchangeName)
         {
-            string group = _userServices.Users[Context.ConnectionId];
+            var userProfile = _userServices.Users[Context.ConnectionId];
+            var group = userProfile["market"];
 
             // only allow admin access
             if (_userServices.Admins[group] != Context.ConnectionId) return;
@@ -62,21 +60,44 @@ namespace MarketMaker.Hubs
             await Clients.Group(group).ExchangeAdded(exchangeName);
         }
 
-        public async Task JoinMarket(string groupName)
+        public async Task JoinMarketLobby(string groupName)
         {
             IMarketService marketService = _marketService.Markets[groupName];
-            _userServices.AddUser(groupName, Context.ConnectionId);
 
+            _userServices.AddUser(groupName, Context.ConnectionId);
+            
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-      
-            await Clients.Group(groupName).UserJoined(Context.ConnectionId);
-            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), groupName, marketService.Exchanges));
+            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(),
+                marketService.GetOrders(), groupName, marketService.Exchanges));
+        }
+        
+        public async Task JoinMarket(string username)
+        {
+
+            // retrieve cookie/local storage/claim etc
+            var userNames = _userServices.Users
+                .Values
+                .Select(user => user["username"].ToLower())
+                .ToList();
+            
+            if (userNames.Contains(username.ToLower()))
+            {
+                // TODO: Add proper error handling 
+                // TODO: Add reconnection authorisation
+                return;
+            }
+            
+            var userProfile = _userServices.Users[Context.ConnectionId];
+            userProfile["username"] = username;
+            await Clients.Group(userProfile["market"]).UserJoined(username);
         }
 
 
         public async Task DeleteOrder(DeleteOrderRequest deleteOrderRequest)
         {
-            var group = _userServices.Users[Context.ConnectionId];
+            var userProfile = _userServices.Users[Context.ConnectionId];
+            var group = userProfile["market"];
+            
             IMarketService marketService = _marketService.Markets[group];
 
             var exchange = deleteOrderRequest.exchange;
@@ -89,11 +110,13 @@ namespace MarketMaker.Hubs
 
         public async Task PlaceOrder(string exchange, int price, int quantity)
         {
-            IMarketService marketService = _marketService.Markets[_userServices.Users[Context.ConnectionId]];
-            var groupName = _userServices.Users[Context.ConnectionId];
+            var userProfile = _userServices.Users[Context.ConnectionId];
+            var groupName = userProfile["market"];
+            
+            IMarketService marketService = _marketService.Markets[groupName];
 
             var order = Order.MakeOrder(
-                Context.ConnectionId,
+                userProfile["username"],
                 exchange,
                 price,
                 quantity);

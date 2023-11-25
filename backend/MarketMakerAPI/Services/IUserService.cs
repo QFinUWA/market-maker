@@ -4,7 +4,7 @@
     {
         void AddUser(string group, string id);
 
-        Dictionary<string, string> Users { get; }
+        Dictionary<string, Dictionary<string, string>> Users { get; }
         Dictionary<string, string> Admins { get; } // group -> adminId
     }
 }
