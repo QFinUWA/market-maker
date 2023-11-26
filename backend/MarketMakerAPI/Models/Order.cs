@@ -13,7 +13,7 @@ namespace MarketMaker.Models
 
         public int Quantity { get; set; }
 
-        public DateTime CreatedAt { get; }
+        public DateTime TimeStamp { get; }
 
         private Order(
             Guid id,
@@ -21,7 +21,7 @@ namespace MarketMaker.Models
             string market,
             int price,
             int quantity,
-            DateTime createdAt
+            DateTime timeStamp
             )
         {
             Id = id;
@@ -29,7 +29,7 @@ namespace MarketMaker.Models
             Exchange = market;
             Price = price;
             Quantity = quantity;
-            CreatedAt = createdAt;
+            TimeStamp = timeStamp;
         }
 
         public static Order MakeOrder(

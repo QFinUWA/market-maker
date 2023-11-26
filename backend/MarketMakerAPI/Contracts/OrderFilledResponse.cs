@@ -1,8 +1,8 @@
 ﻿namespace MarketMaker.Contracts
 {
     public record OrderFilledResponse(
-           Guid id,
-           int newQuantity
+           Guid Id,
+           int NewQuantity
         );
 
 }

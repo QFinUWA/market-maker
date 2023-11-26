@@ -1,7 +1,7 @@
 ﻿namespace MarketMaker.Contracts
 {
     public record DeleteOrderRequest(
-           string exchange,
+           string Exchange,
            Guid Id
         );
 }

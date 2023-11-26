@@ -1,7 +1,7 @@
 ﻿namespace MarketMaker.Contracts
 {
     public record NewOrderRequest(
-           string exchange,
+           string Exchange,
            int Price,
            int Quantity
     );

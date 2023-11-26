@@ -39,7 +39,7 @@ function formatOrder(order) {
   return (
     order["exchange"] + 
     ") " + 
-    order["createdAt"] +
+    order["timeStamp"] +
     ": " +
     " $" +
     order["price"] +
@@ -91,21 +91,28 @@ connection.on("UserJoined", (user) => {
   console.log(user + " joined the market");
 });
 
+function updateOrRemove(id, quantity) {
+  // get order with ID order.ID
+  // update quantity
+  var a = orders.findIndex((value) => value.id == id);
 
-connection.on("OrderFilled", (order) => {
-  if (order["newQuantity"] == 0) {
-    orders = orders.filter(function (value, index, arr) {
-      return value.id.toString() != order["id"];
-    });
-  } else {
-    // get order with ID order.ID
-    // update quantity
-    var a = orders.findIndex((value) => value.id == order["id"]);
-
-    if (a != -1) {
-      orders[a]["quantity"] = order["newQuantity"];
-    }
+  if (a != -1) {
+    orders[a]["quantity"] -= Math.sign(orders[a]["quantity"])*quantity;
   }
+
+  if (orders[a]["quantity"] == 0) {
+    orders = orders.filter(function (value, index, arr) {
+      return value.id != id;
+    });
+  }
+}
+
+
+connection.on("TransactionEvent", (transactionEvent) => {
+  console.log(transactionEvent);
+  
+  updateOrRemove(transactionEvent["aggressiveOrderId"], transactionEvent["quantityTraded"]);
+  updateOrRemove(transactionEvent["passiveOrderId"], transactionEvent["quantityTraded"]);
   refreshMarket();
 });
 
