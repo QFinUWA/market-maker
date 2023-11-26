@@ -28,7 +28,7 @@ function refreshMarket() {
     ordersList += "<li>" + formatOrder(orders[i]) + "</li>";
   }
   ordersList += "</ul>";
-  document.getElementById("marketName").innerHTML = "Market: " + marketName;
+  document.getElementById("marketName").innerHTML = "Market Code: " + marketName;
   document.getElementById("exchangeNames").innerHTML =
     "Exchanges: " + exchanges.join(", ");
   document.getElementById("market").innerHTML = ordersList;
@@ -120,9 +120,9 @@ start();
 // ------------------------------
 
 const loadingHtml = `
+    <button id="makeMarket">Make Market</button>
     <input type="text" id="joinMakeMarketText" placeholder="Enter market">
     <button id="joinMarket">Join Market</button>
-    <button id="makeMarket">Make Market</button>
 `;
 
 const userHtml = `
@@ -185,8 +185,7 @@ function loadAdminPage() {
 document.getElementById("commands").innerHTML = loadingHtml;
 
 document.getElementById("makeMarket").onclick = () => {
-  let market = document.getElementById("joinMakeMarketText").value;
-  connection.invoke("MakeNewMarket", market);
+  connection.invoke("MakeNewMarket");
   loadAdminPage();
 };
 

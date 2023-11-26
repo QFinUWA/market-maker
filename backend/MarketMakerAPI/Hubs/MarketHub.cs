@@ -12,34 +12,40 @@ namespace MarketMaker.Hubs
     {
         private readonly MarketGroup _marketService;
         private readonly IUserService _userServices;
-
-
+        private readonly int _marketcodelength = 5;
+        private readonly Random _random;
         public MarketHub(MarketGroup marketService, IUserService userService) 
         {
             _marketService = marketService;
             _userServices = userService;
+            _random = new Random();
         }
 
         public override async Task OnConnectedAsync()
         {
             await base.OnConnectedAsync();
         }
-        public async Task MakeNewMarket(string marketName)
+        public async Task MakeNewMarket()
         {
-            if (_marketService.Markets.ContainsKey(marketName)) return;
+            var  chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var stringChars = new char[_marketcodelength];
+
+            for (int i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
+
+            var marketCode = new String(stringChars);
             
             // create new market service
             var marketService = new LocalMarketService();
-            _marketService.Markets[marketName] = marketService;
+            _marketService.Markets[marketCode] = marketService;
 
-            await JoinMarketLobby(marketName);
+            await JoinMarketLobby(marketCode);
             
             // make user an admin
-            _userServices.Admins[marketName] = Context.ConnectionId;
+            _userServices.Admins[marketCode] = Context.ConnectionId;
             
-            await Clients.Caller.ReceiveMessage($"added {marketName} as a market.");
-            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), marketName, marketService.Exchanges));
-            await Groups.AddToGroupAsync(Context.ConnectionId, marketName);
+            await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
+            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), marketCode, marketService.Exchanges));
+            await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
         public async Task MakeNewExchange(string exchangeName)
@@ -51,10 +57,10 @@ namespace MarketMaker.Hubs
             if (_userServices.Admins[group] != Context.ConnectionId) return;
 
             IMarketService marketService = _marketService.Markets[group];
-            
+
             // add new exchange
             marketService.AddExchange(exchangeName);
-            
+
             // notify clients
             await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
             await Clients.Group(group).ExchangeAdded(exchangeName);
@@ -62,6 +68,8 @@ namespace MarketMaker.Hubs
 
         public async Task JoinMarketLobby(string groupName)
         {
+            groupName = groupName.ToUpper();
+            
             IMarketService marketService = _marketService.Markets[groupName];
 
             _userServices.AddUser(groupName, Context.ConnectionId);
