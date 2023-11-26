@@ -60,6 +60,24 @@ namespace MarketMaker.Hubs
             await Clients.Group(group).ExchangeAdded(exchangeName);
         }
 
+        public async Task CloseMarket(Dictionary<string, int> prices)
+        {
+            var userProfile = _userServices.Users[Context.ConnectionId];
+            var group = userProfile["market"];
+
+            // only allow admin access
+            if (_userServices.Admins[group] != Context.ConnectionId) return;
+
+            IMarketService marketService = _marketService.Markets[group];
+
+            var profits = marketService.CloseMarket(prices);
+
+            // await Clients.Group(group).UpdateGameState("paused");
+            //TODO: possibly don't make the new exchanges until the game has started by the admin - add a "market open"
+            // flag in the market which prevents activity but have the state be clientside
+            // await Clients.Group(group).
+        }
+
         public async Task JoinMarketLobby(string groupName)
         {
             IMarketService marketService = _marketService.Markets[groupName];
@@ -136,14 +154,12 @@ namespace MarketMaker.Hubs
                 originalOrder.Exchange,
                 originalOrder.Price,
                 originalOrder.Quantity,
-                originalOrder.CreatedAt,
+                originalOrder.TimeStamp,
                 originalOrder.Id
             ));
 
-            var orderFilledTask = filledOrders.Select<Order, Task>(filledOrder =>
-                Clients.Group(groupName).OrderFilled(new OrderFilledResponse(
-                    filledOrder.Id,
-                    filledOrder.Quantity))
+            var orderFilledTask = filledOrders.Select<TransactionEvent, Task>(filledOrder =>
+                Clients.Group(groupName).TransactionEvent(filledOrder)
             );
 
             await Task.WhenAll(orderFilledTask);
