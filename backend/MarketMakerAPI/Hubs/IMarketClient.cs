@@ -5,14 +5,12 @@ namespace MarketMaker.Hubs
 {
     public interface IMarketClient
     {
-        Task RecieveMessage(string message);
+        Task ReceiveMessage(string message);
         Task NewOrder(NewOrderResponse orderResponse);
-        Task DeletedOrder(DeleteOrderResponse message);
-        Task AmmendedOrder(NewOrderResponse orderRespose);
+        Task DeletedOrder(Guid id);
         Task OrderFilled(OrderFilledResponse orderFilledResponse);
         Task UserJoined(string id);
         Task MarketState(MarketStateResponse marketState);
         Task ExchangeAdded(string name);
-        Task MarketAdded(string marketName);
     }
 }
