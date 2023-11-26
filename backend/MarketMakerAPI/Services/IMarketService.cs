@@ -6,11 +6,13 @@ namespace MarketMaker.Services
 
     {
         List<Order> GetOrders();
-        List<Order> NewOrder(Order order);
+        List<TransactionEvent> NewOrder(Order order);
         // Order UpdateOrder(Order order);
         void DeleteOrder(Guid id);
 
         void AddExchange(string market);
+
+        Dictionary<string, float> CloseMarket(Dictionary<string, int> prices);
 
         List<string> Exchanges {  get; }
 

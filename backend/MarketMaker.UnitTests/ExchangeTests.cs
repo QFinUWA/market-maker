@@ -28,8 +28,8 @@ namespace MarketMaker.UnitTests
                                     
             //Assert
             Assert.Empty(exchange.GetOrders());
-            Assert.Empty(exchange._bid);
-            Assert.Empty(exchange._ask);
+            Assert.Empty(exchange.bid);
+            Assert.Empty(exchange.ask);
         }
 
         [Fact, ]
@@ -44,7 +44,7 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            Assert.Equal(1, exchange._bid[100].Count);
+            Assert.Equal(1, exchange.bid[100].Count);
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            Assert.Equal(1, exchange._ask[99].Count);
+            Assert.Equal(1, exchange.ask[99].Count);
         }
 
         [Fact]
@@ -75,8 +75,8 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            Assert.Equal(0, exchange._ask[50].Count);
-            Assert.Equal(0, exchange._bid[50].Count);
+            Assert.Equal(0, exchange.ask[50].Count);
+            Assert.Equal(0, exchange.bid[50].Count);
         }
 
         [Fact]
@@ -92,8 +92,8 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            Assert.Equal(0, exchange._ask[51].Count);
-            Assert.Equal(0, exchange._bid[51].Count);
+            Assert.Equal(0, exchange.ask[51].Count);
+            Assert.Equal(0, exchange.bid[51].Count);
         }
 
         [Fact]
@@ -117,8 +117,8 @@ namespace MarketMaker.UnitTests
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
 
-            Assert.Equal(0, exchange._ask[price].Count);
-            Assert.Equal(1, exchange._bid[price].Count);
+            Assert.Equal(0, exchange.ask[price].Count);
+            Assert.Equal(1, exchange.bid[price].Count);
 
             Assert.Equal(2, exchange.GetOrder(bidOrderId).Quantity);
 
@@ -143,8 +143,8 @@ namespace MarketMaker.UnitTests
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(0, exchange._ask[price].Count); 
-            Assert.Equal(1, exchange._bid[price].Count); 
+            Assert.Equal(0, exchange.ask[price].Count); 
+            Assert.Equal(1, exchange.bid[price].Count); 
 
             Assert.Equal(2, exchange.GetOrder(bidOrderId).Quantity); 
 
@@ -173,8 +173,8 @@ namespace MarketMaker.UnitTests
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(0, exchange._ask[price].Count);
-            Assert.Equal(1, exchange._bid[price].Count);
+            Assert.Equal(0, exchange.ask[price].Count);
+            Assert.Equal(1, exchange.bid[price].Count);
 
             Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
 
@@ -202,8 +202,8 @@ namespace MarketMaker.UnitTests
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(3, exchange._ask[price].Count);
-            Assert.Equal(0, exchange._bid[price].Count); 
+            Assert.Equal(3, exchange.ask[price].Count);
+            Assert.Equal(0, exchange.bid[price].Count); 
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
 

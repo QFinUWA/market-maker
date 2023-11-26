@@ -2,7 +2,7 @@
 {
     public record OrderExecutedResponse(
            Guid Id,
-           int volumeFilled
+           int VolumeFilled
         );
 
 }

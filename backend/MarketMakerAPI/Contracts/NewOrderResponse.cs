@@ -2,10 +2,10 @@
 {
     public record NewOrderResponse(
            string User,
-           string exchange,
+           string Exchange,
            int Price,
            int Quantity,
-           DateTime CreatedAt,
+           DateTime TimeStamp,
            Guid Id
         );
 
