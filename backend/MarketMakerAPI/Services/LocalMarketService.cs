@@ -36,9 +36,12 @@ namespace MarketMaker.Services
         }
 
 
-        public void DeleteOrder(string market, Guid id)
+        public void DeleteOrder(Guid id)
         {
-            _market[market].DeleteOrder(id);
+            foreach (var market in _market.Values)
+            {
+                if (market.DeleteOrder(id)) return;
+            }
         }
 
         public List<Order> NewOrder(Order order)

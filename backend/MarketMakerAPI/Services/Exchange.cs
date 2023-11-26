@@ -5,10 +5,10 @@ namespace MarketMaker.Services
 {
     public class Exchange
     {
-        public Dictionary<Guid, Order> Orders = new();
+        private readonly Dictionary<Guid, Order> Orders = new();
 
-        public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _bid = new();
-        public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _ask = new();
+        private readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _bid = new();
+        private readonly Dictionary<int, PriorityQueue<Guid, DateTime>> _ask = new();
 
         private readonly int highestBid = int.MinValue;
         private readonly int lowestAsk = int.MaxValue;
@@ -80,14 +80,13 @@ namespace MarketMaker.Services
                     Orders.Remove(otherId);
                 }
 
-                 ordersFilled.Add(otherOrder);
+                ordersFilled.Add(otherOrder);
             }
             
             if (order.Quantity == 0)
             {
                 Guid removeId = side[price].Dequeue();
                 Orders.Remove(removeId);
-
             }
             //TODO: order.price = bestPrce;
             ordersFilled.Add(order);
@@ -97,16 +96,13 @@ namespace MarketMaker.Services
 
         }
 
-        public void DeleteOrder(Guid id)
+        public bool DeleteOrder(Guid id)
         {
+            if (!Orders.ContainsKey(id)) return false;
+            
             Orders.Remove(id);
-        }
 
-        private void MakeTransactions()
-        {
-            // TODO: hit the most competitive bid/ask
-
-
+            return true;
         }
     }
 }

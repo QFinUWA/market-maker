@@ -37,7 +37,7 @@ namespace MarketMaker.Hubs
             // make user an admin
             _userServices.Admins[marketName] = Context.ConnectionId;
             
-            await Clients.Caller.RecieveMessage($"Successfully added {marketName} as a market.");
+            await Clients.Caller.ReceiveMessage($"added {marketName} as a market.");
             await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), marketName, marketService.Exchanges));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketName);
         }
@@ -56,7 +56,7 @@ namespace MarketMaker.Hubs
             marketService.AddExchange(exchangeName);
             
             // notify clients
-            await Clients.Group(group).RecieveMessage($"Successfully added {exchangeName} as an exchange.");
+            await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
             await Clients.Group(group).ExchangeAdded(exchangeName);
         }
 
@@ -66,6 +66,7 @@ namespace MarketMaker.Hubs
 
             _userServices.AddUser(groupName, Context.ConnectionId);
             
+            await Clients.Caller.ReceiveMessage($"joined lobby");
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
             await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(),
                 marketService.GetOrders(), groupName, marketService.Exchanges));
@@ -89,29 +90,31 @@ namespace MarketMaker.Hubs
             
             var userProfile = _userServices.Users[Context.ConnectionId];
             userProfile["username"] = username;
+            await Clients.Caller.ReceiveMessage($"joined market"); 
             await Clients.Group(userProfile["market"]).UserJoined(username);
         }
 
 
-        public async Task DeleteOrder(DeleteOrderRequest deleteOrderRequest)
+        public async Task DeleteOrder(Guid orderId)
         {
             var userProfile = _userServices.Users[Context.ConnectionId];
             var group = userProfile["market"];
             
+            if (userProfile["username"] == "") return; // TODO: make this more robust
+            
             IMarketService marketService = _marketService.Markets[group];
 
-            var exchange = deleteOrderRequest.exchange;
-            var id = deleteOrderRequest.Id;
+            marketService.DeleteOrder(orderId);
 
-            marketService.DeleteOrder(exchange, id);
-
-            await Clients.Group(group).DeletedOrder(new DeleteOrderResponse(exchange, id));
+            await Clients.Group(group).DeletedOrder(orderId);
         }
 
         public async Task PlaceOrder(string exchange, int price, int quantity)
         {
             var userProfile = _userServices.Users[Context.ConnectionId];
             var groupName = userProfile["market"];
+
+            if (userProfile["username"] == "") return; // TODO: make this more robust
             
             IMarketService marketService = _marketService.Markets[groupName];
 
@@ -136,19 +139,14 @@ namespace MarketMaker.Hubs
                 originalOrder.CreatedAt,
                 originalOrder.Id
             ));
-            
-            foreach (var filledOrder in filledOrders)
-            {
-                await Clients.Group(groupName).OrderFilled(new OrderFilledResponse(
-                    filledOrder.Exchange, 
-                    filledOrder.Id, 
-                    filledOrder.User, 
-                    filledOrder.Price, 
-                    filledOrder.Quantity));
-            }
 
-            
+            var orderFilledTask = filledOrders.Select<Order, Task>(filledOrder =>
+                Clients.Group(groupName).OrderFilled(new OrderFilledResponse(
+                    filledOrder.Id,
+                    filledOrder.Quantity))
+            );
 
+            await Task.WhenAll(orderFilledTask);
         }
     }
 }

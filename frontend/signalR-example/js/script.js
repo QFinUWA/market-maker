@@ -37,6 +37,8 @@ function refreshMarket() {
 function formatOrder(order) {
   console.log(order);
   return (
+    order["exchange"] + 
+    ") " + 
     order["createdAt"] +
     ": " +
     " $" +
@@ -52,8 +54,12 @@ connection.onclose(async () => {
   await start();
 });
 
+connection.on("ReceiveMessage", (message) => {
+  console.log("server: " + message);
+});
+
 connection.on("MarketState", (market) => {
-  console.log(market);
+  // console.log(market);
   orders.push(
     ...market["orders"].sort((a, b) => (a["price"] > b["price"] ? 1 : -1))
   );
@@ -73,9 +79,9 @@ connection.on("NewOrder", (order) => {
   refreshMarket();
 });
 
-connection.on("DeletedOrder", (order) => {
+connection.on("DeletedOrder", (orderID) => {
   orders = orders.filter(function (value, index, arr) {
-    return value.id != order.id;
+    return value.id != orderID;
   });
 
   refreshMarket();
@@ -85,9 +91,6 @@ connection.on("UserJoined", (user) => {
   console.log(user + " joined the market");
 });
 
-connection.on("RecieveMessage", (message) => {
-  console.log(message);
-});
 
 connection.on("OrderFilled", (order) => {
   if (order["newQuantity"] == 0) {
@@ -123,13 +126,13 @@ const loadingHtml = `
 `;
 
 const userHtml = `
-    
     <input type="text" id="nameInput" placeholder="Enter name">
     <button id="joinWithName">Join</button>
     <input type="text" id="exchangeInput" placeholder="Enter exchange">
     <input type="number" id="priceInput" placeholder="Enter price">
     <input type="number" id="quantityInput" placeholder="Enter quantity">
     <button id="send">Send</button>
+    <button id="deleteLastOrder">Delete Last Order</button>
 `;
 
 const adminHtml = `
@@ -147,6 +150,7 @@ function loadUserPage() {
   document.getElementById("joinWithName").onclick = () => {
     let name = document.getElementById("nameInput").value;
     connection.invoke("JoinMarket", name);
+    document.getElementById("joinWithName").disabled = true;
   };
 
   // set onclick
@@ -154,16 +158,16 @@ function loadUserPage() {
     let market = document.getElementById("exchangeInput").value;
     let price = document.getElementById("priceInput").value;
     let quantity = document.getElementById("quantityInput").value;
-
-    // market = "IYE";
-    const order = {
-      Market: market,
-      Price: price,
-      Quantity: quantity,
-    };
+    
     connection
       .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity))
       .catch((err) => console.error(err.toString()));
+  };
+
+  document.getElementById("deleteLastOrder").onclick = () => {
+    if (orders.length == 0) return;
+    
+    connection.invoke("DeleteOrder", orders[orders.length - 1]["id"]);
   };
 }
 
