@@ -37,9 +37,19 @@ namespace MarketMaker.Services
             }
         }
 
-        public List<TransactionEvent> NewOrder(Order order)
+        public (Order, List<TransactionEvent>) NewOrder(string username, string exchange, int price, int quantity)
         {
-            return _market[order.Exchange].NewOrder(order);
+            var order = Order.MakeOrder(
+                username,
+                exchange,
+                price,
+                quantity);
+
+            var originalOrder = (Order)order.Clone();
+
+            List<TransactionEvent> transactions = _market[order.Exchange].NewOrder(order);
+
+            return (originalOrder, transactions);
         }
 
         public void AddExchange(string market)

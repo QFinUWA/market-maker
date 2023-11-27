@@ -6,7 +6,7 @@ namespace MarketMaker.Services
 
     {
         List<Order> GetOrders();
-        List<TransactionEvent> NewOrder(Order order);
+        (Order, List<TransactionEvent>) NewOrder(string username, string exchange, int price, int quantity);
         // Order UpdateOrder(Order order);
         void DeleteOrder(Guid id);
 

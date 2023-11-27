@@ -144,30 +144,28 @@ namespace MarketMaker.Hubs
             
             IMarketService marketService = _marketService.Markets[groupName];
 
-            var order = Order.MakeOrder(
+            // TODO: NewOrder should raise an exception if the order was rejected, 
+            //       in which case the clients shouldn't be alerted about a new order
+            
+            var (newOrder, transactions) = marketService.NewOrder(
                 userProfile["username"],
                 exchange,
                 price,
                 quantity);
-            var originalOrder = (Order)order.Clone();
-
-            // TODO: NewOrder should raise an exception if the order was rejected, 
-            //       in which case the clients shouldn't be alerted about a new order
-
-            var filledOrders = marketService.NewOrder(order);
 
 
             await Clients.Group(groupName).NewOrder(new NewOrderResponse(
-                originalOrder.User,
-                originalOrder.Exchange,
-                originalOrder.Price,
-                originalOrder.Quantity,
-                originalOrder.TimeStamp,
-                originalOrder.Id
+                newOrder.User,
+                newOrder.Exchange,
+                newOrder.Price,
+                newOrder.Quantity,
+                newOrder.TimeStamp,
+                newOrder.Id
             ));
+            
 
-            var orderFilledTask = filledOrders.Select<TransactionEvent, Task>(filledOrder =>
-                Clients.Group(groupName).TransactionEvent(filledOrder)
+            var orderFilledTask = transactions.Select<TransactionEvent, Task>(transaction =>
+                Clients.Group(groupName).TransactionEvent(transaction)
             );
 
             await Task.WhenAll(orderFilledTask);
