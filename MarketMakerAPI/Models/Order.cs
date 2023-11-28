@@ -25,7 +25,7 @@ namespace MarketMaker.Models
             )
         {
             Id = id;
-            User = user;
+            User = user.ToLower();
             Exchange = market;
             Price = price;
             Quantity = quantity;

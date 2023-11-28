@@ -1,5 +1,7 @@
 ﻿using MarketMaker.Models;
+using System.Linq;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace MarketMaker.Services
 {
@@ -111,9 +113,11 @@ namespace MarketMaker.Services
             return transactions;
         }
 
-        public bool DeleteOrder(Guid id)
+        public bool DeleteOrder(Guid id, string user)
         {
             if (!Orders.ContainsKey(id)) return false;
+            
+            if (Orders[id].User != user) return false;
             
             Orders.Remove(id);
 
@@ -130,6 +134,19 @@ namespace MarketMaker.Services
             Orders.Clear();
             bid.Clear();
             ask.Clear();
+        }
+
+        public void RemoveEmptyOrders()
+        {
+            bid.Clear();
+            ask.Clear();
+            
+            foreach (var order in Orders.Values)
+            {
+                var side = order.Quantity > 0 ? bid : ask;
+                side.TryAdd(order.Price, new PriorityQueue<Guid, DateTime>());
+                side[order.Price].Enqueue(order.Id, order.TimeStamp);
+            }
         }
     }
     

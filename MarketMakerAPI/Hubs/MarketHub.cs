@@ -125,12 +125,13 @@ namespace MarketMaker.Hubs
         {
             var userProfile = _userServices.Users[Context.ConnectionId];
             var group = userProfile["market"];
+            var username = userProfile["username"];
             
-            if (userProfile["username"] == "") return; // TODO: make this more robust
+            if (username == "") return; // TODO: make this more robust
             
             IMarketService marketService = _marketService.Markets[group];
 
-            marketService.DeleteOrder(orderId);
+            marketService.DeleteOrder(orderId, username);
 
             await Clients.Group(group).DeletedOrder(orderId);
         }

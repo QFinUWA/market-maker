@@ -165,15 +165,16 @@ namespace MarketMaker.UnitTests
             //Act
             exchange.NewOrder(askOrder1);
             exchange.NewOrder(askOrder2);
-            exchange.DeleteOrder(askOrder2.Id);
+            exchange.DeleteOrder(askOrder2.Id, "userC".ToLower());
             exchange.NewOrder(askOrder3);
             exchange.NewOrder(bidOrder);
 
+            exchange.RemoveEmptyOrders();
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(0, exchange.ask[price].Count);
+            Assert.False(exchange.ask.ContainsKey(price));
             Assert.Equal(1, exchange.bid[price].Count);
 
             Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
@@ -193,17 +194,43 @@ namespace MarketMaker.UnitTests
 
             //Act
             exchange.NewOrder(bidOrder);
-            exchange.DeleteOrder(bidOrderId);
+            exchange.DeleteOrder(bidOrderId, "userA".ToLower());
             exchange.NewOrder(askOrder1);
             exchange.NewOrder(askOrder2);
             exchange.NewOrder(askOrder3);
 
+            exchange.RemoveEmptyOrders();
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
             Assert.Equal(3, exchange.ask[price].Count);
-            Assert.Equal(0, exchange.bid[price].Count); 
+            Assert.False(exchange.bid.ContainsKey(price));
+
+            //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
+
+
+        }
+        
+        [Fact]
+        public void UnorthorisedDeletion()
+        {
+            int price = 71;
+            //Arange
+            Order bidOrder1 = Order.MakeOrder("userA", "ABC", price, 10);
+            Order bidOrder2 = Order.MakeOrder("userA", "ABC", price+1, 10);
+
+            //Act
+            exchange.NewOrder(bidOrder1);
+            exchange.NewOrder(bidOrder2);
+            bool result1 = exchange.DeleteOrder(bidOrder1.Id, "userA".ToLower());
+            bool result2 = exchange.DeleteOrder(bidOrder2.Id, "not_userA".ToLower());
+            exchange.RemoveEmptyOrders();
+
+            //Assert
+            //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
+            Assert.False(exchange.bid.ContainsKey(price));
+            Assert.Equal(1, exchange.bid[price+1].Count); 
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
 

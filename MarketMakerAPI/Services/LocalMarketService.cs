@@ -28,12 +28,12 @@ namespace MarketMaker.Services
             return orders;
         }
 
-
-        public void DeleteOrder(Guid id)
+        // return error
+        public void DeleteOrder(Guid id, string user)
         {
             foreach (var market in _market.Values)
             {
-                if (market.DeleteOrder(id)) return;
+                if (market.DeleteOrder(id, user)) return;
             }
         }
 
