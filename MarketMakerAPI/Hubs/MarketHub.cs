@@ -25,6 +25,7 @@ namespace MarketMaker.Hubs
         {
             await base.OnConnectedAsync();
         }
+        
         public async Task MakeNewMarket()
         {
             var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -48,11 +49,11 @@ namespace MarketMaker.Hubs
 
         public async Task MakeNewExchange(string exchangeName)
         {
-            var userProfile = _userServices.GetUser(Context.ConnectionId);
-            var group = userProfile["market"];
+            var user = _userServices.GetUser(Context.ConnectionId);
+            var group = user.Market;
 
             // only allow admin access
-            if (userProfile["admin"].Equals("true")) return;
+            if (!user.IsAdmin) return;
 
             IMarketService marketService = _marketService.Markets[group];
 
@@ -76,17 +77,17 @@ namespace MarketMaker.Hubs
         {
             IMarketService marketService = _marketService.Markets[marketName];
             return new MarketStateResponse(
-                _userServices.GetUsers().Select(order => order["username"]).ToList(),
+                _userServices.GetUsers().Select(user => user.Name).ToList(),
                 marketService.GetOrders());
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
         {
-            var userProfile = _userServices.GetUser(Context.ConnectionId);
-            var group = userProfile["market"];
+            var user = _userServices.GetUser(Context.ConnectionId);
+            var group = user.Market;
 
             // only allow admin access
-            if (userProfile["admin"].Equals("true")) return;
+            if (user.IsAdmin) return;
 
             IMarketService marketService = _marketService.Markets[group];
 
@@ -115,11 +116,11 @@ namespace MarketMaker.Hubs
         
         public async Task JoinMarket(string username)
         {
-            var userProfile = _userServices.GetUser(Context.ConnectionId);
+            var user = _userServices.GetUser(Context.ConnectionId);
             
-            userProfile["username"] = username;
+            user.Name = username;
 
-            var marketService = _marketService.Markets[userProfile["market"]];
+            var marketService = _marketService.Markets[user.Market];
 
             // retrieve cookie/local storage/claim etc
             
@@ -129,15 +130,15 @@ namespace MarketMaker.Hubs
             }
 
             await Clients.Caller.ReceiveMessage($"joined market"); 
-            await Clients.Group(userProfile["market"]).UserJoined(username);
+            await Clients.Group(user.Market).UserJoined(username);
         }
 
 
         public async Task DeleteOrder(Guid orderId)
         {
-            var userProfile = _userServices.GetUser(Context.ConnectionId);
-            var group = userProfile["market"];
-            var username = userProfile["username"];
+            var user = _userServices.GetUser(Context.ConnectionId);
+            var group = user.Market;
+            var username = user.Name;
             
             if (username == "") return; // TODO: make this more robust
             
@@ -150,10 +151,10 @@ namespace MarketMaker.Hubs
 
         public async Task PlaceOrder(string exchange, int price, int quantity)
         {
-            var userProfile = _userServices.GetUser(Context.ConnectionId);
-            var groupName = userProfile["market"];
+            var user = _userServices.GetUser(Context.ConnectionId);
+            var groupName = user.Market;
 
-            if (userProfile["username"] == "") return; // TODO: make this more robust
+            if (user.Name == "") return; // TODO: make this more robust
             
             IMarketService marketService = _marketService.Markets[groupName];
 
@@ -161,7 +162,7 @@ namespace MarketMaker.Hubs
             //       in which case the clients shouldn't be alerted about a new order
             
             var (newOrder, transactions) = marketService.NewOrder(
-                userProfile["username"],
+                user.Name,
                 exchange,
                 price,
                 quantity);

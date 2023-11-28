@@ -1,45 +1,40 @@
-﻿namespace MarketMaker.Services
+﻿using MarketMaker.Models;
+
+namespace MarketMaker.Services
 {
     public class LocalUserService : IUserService
     {
 
-        private Dictionary<string, Dictionary<string, string>> users = new();
+        private readonly Dictionary<string, User> _users = new();
 
         public void AddUser(string group, string id)
         {
-            // TODO: make a modifiable struct
-            users[id] = new Dictionary<string, string>
+            _users[id] = new User
             {
-                    { "market", group },
-                    { "username", "" },
-                    { "secret", "todo" },
-                    {"admin", "false"}
+                Market = group
             };
-        }
-
-        public Dictionary<string, string>? GetUser(string id)
-        {
-            if (!users.ContainsKey(id)) return null;
             
-            return users[id];
         }
 
-        public IEnumerable<Dictionary<string, string>> GetUsers()
+        public User? GetUser(string id)
         {
-            return users.Values;
+            if (!_users.ContainsKey(id)) return null;
+            
+            return _users[id];
+        }
+
+        public IEnumerable<User> GetUsers()
+        {
+            return _users.Values;
         }
 
         public void AddAdmin(string id, string marketCode)
         {
-            
-            users[id] = new Dictionary<string, string>
+            _users[id] = new User
             {
-                    { "market", marketCode },
-                    { "username", "admin" },
-                    { "secret", "todo" },
-                    {"admin", "true "}
+                Market = marketCode,
+                IsAdmin = true,
             };
-
         }
 
     }
