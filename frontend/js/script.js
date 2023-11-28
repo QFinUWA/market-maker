@@ -65,9 +65,13 @@ connection.on("MarketState", (market) => {
   );
   var users = market["users"];
   // create a list of orders by price in html
-  exchanges = market["exchanges"];
-  marketName = market["marketName"];
   // change innerHTML
+  refreshMarket();
+});
+
+connection.on("MarketConfig", (message)=> {
+  marketName = message["marketName"]
+  exchanges = message["exchanges"]
   refreshMarket();
 });
 
@@ -116,10 +120,6 @@ connection.on("TransactionEvent", (transactionEvent) => {
   refreshMarket();
 });
 
-connection.on("ExchangeAdded", (exchangeName) => {
-  exchanges.push(exchangeName);
-  refreshMarket();
-});
 
 // Start the connection.
 start();

@@ -44,7 +44,7 @@ namespace MarketMaker.Hubs
             _userServices.Admins[marketCode] = Context.ConnectionId;
             
             await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
-            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), marketCode, marketService.Exchanges));
+            await Clients.Caller.MarketConfig(new MarketConfigResponse(marketCode, marketService.Exchanges));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -63,7 +63,8 @@ namespace MarketMaker.Hubs
 
             // notify clients
             await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
-            await Clients.Group(group).ExchangeAdded(exchangeName);
+            // TODO: make marketconfigresponse take in the market service
+            await Clients.Caller.MarketConfig(new MarketConfigResponse(group, marketService.Exchanges));
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
@@ -94,8 +95,10 @@ namespace MarketMaker.Hubs
             
             await Clients.Caller.ReceiveMessage($"joined lobby");
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+            
+            await Clients.Caller.MarketConfig(new MarketConfigResponse(groupName, marketService.Exchanges));
             await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(),
-                marketService.GetOrders(), groupName, marketService.Exchanges));
+                marketService.GetOrders()));
         }
         
         public async Task JoinMarket(string username)
