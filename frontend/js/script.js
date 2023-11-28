@@ -17,19 +17,27 @@ async function start() {
     setTimeout(start, 5000);
   }
 }
-var orders = [];
+var orders = {};
 var exchanges = [];
 var marketName = "";
 var transactions = [];
-// TODO: remove this cursed way of doing this
-var bidOrAsk = {};
 // define function
 
 function refreshMarket() {
+  var listorders = [];
   var ordersList = "<nav><ul>";
-  for (var i = 0; i < orders.length; i++) {
-    ordersList += "<li>" + formatOrder(orders[i]) + "</li>";
+  Object.keys(orders).forEach(function (key) {
+    listorders.push(orders[key]);
+  });
+
+  listorders.sort(function (a, b) {
+    return a["price"] - b["price"];
+  });
+  
+  for (var i = 0; i < listorders.length; i++) {
+    ordersList += "<li>" + formatOrder(listorders[i]) + "</li>";
   }
+
   ordersList += "</nav></ul>";
   document.getElementById("marketName").innerHTML = "Market Code: " + marketName;
   document.getElementById("exchangeNames").innerHTML =
@@ -45,7 +53,6 @@ function refreshMarket() {
 }
 
 function formatOrder(order) {
-  console.log(order);
   return (
     order["exchange"] + 
     ") " + 
@@ -70,10 +77,12 @@ connection.on("ReceiveMessage", (message) => {
 
 connection.on("MarketState", (market) => {
   // console.log(market);
-  orders.push(
-    ...market["orders"].sort((a, b) => (a["price"] > b["price"] ? 1 : -1))
-  );
-  var users = market["users"];
+
+  // add all orders to orders dictionary
+  for (var i = 0; i < orders.length; i++) {
+    orders[orders[i]["id"]] = orders[i];
+  }
+
   // create a list of orders by price in html
   // change innerHTML
   refreshMarket();
@@ -86,18 +95,15 @@ connection.on("MarketConfig", (message)=> {
 });
 
 connection.on("NewOrder", (order) => {
-  // console.log(order)
-  orders.push(order);
-  bidOrAsk[order["id"]] = order["quantity"] > 0 ? "bid" : "ask";
-  orders = orders.sort((a, b) => (a["price"] > b["price"] ? 1 : -1));
+  console.log(order)
+  // console.log("new Order")
+  orders[order["id"]] = order;
 
   refreshMarket();
 });
 
 connection.on("DeletedOrder", (orderID) => {
-  orders = orders.filter(function (value, index, arr) {
-    return value.id != orderID;
-  });
+  delete orders[orderID]; 
   refreshMarket();
 });
 
@@ -105,26 +111,18 @@ connection.on("UserJoined", (user) => {
   console.log(user + " joined the market");
 });
 
-function updateOrRemove(id, quantity) {
-  // get order with ID order.ID
-  // update quantity
-  var a = orders.findIndex((value) => value.id == id);
-
-  if (a != -1) {
-    orders[a]["quantity"] -= Math.sign(orders[a]["quantity"])*quantity;
-  }
-
-  if (orders[a]["quantity"] == 0) {
-    orders = orders.filter(function (value, index, arr) {
-      return value.id != id;
-    });
-  }
+function updateOrRemove(id, quantity)
+{
+  orders[id]["quantity"] -= Math.sign(orders[id]["quantity"]) * quantity;
+  if (orders[id]["quantity"] == 0) {
+    delete orders[id];
+  }  
 }
 
 
 connection.on("TransactionEvent", (transactionEvent) => {
   
-  var action = bidOrAsk[transactionEvent["aggressiveOrderId"]] == "bid" ? "<=" : "=>"; 
+  var action = orders[transactionEvent["aggressiveOrderId"]["quantity"]] > 0 ? "<=" : "=>"; 
 
   var str = `${transactionEvent["aggressiveOrderId"]} ${action} ${transactionEvent["passiveOrderId"]}`
 
@@ -172,7 +170,6 @@ function loadUserPage() {
   document.getElementById("joinWithName").onclick = () => {
     let name = document.getElementById("nameInput").value;
     connection.invoke("JoinMarket", name);
-    document.getElementById("joinWithName").disabled = true;
   };
 
   // set onclick
@@ -180,16 +177,13 @@ function loadUserPage() {
     let market = document.getElementById("exchangeInput").value;
     let price = document.getElementById("priceInput").value;
     let quantity = document.getElementById("quantityInput").value;
-    
+    console.log("placed order",  market, parseInt(price), parseInt(quantity)); 
     connection
       .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity))
       .catch((err) => console.error(err.toString()));
   };
 
   document.getElementById("deleteLastOrder").onclick = () => {
-    if (orders.length == 0) return;
-    
-    connection.invoke("DeleteOrder", orders[orders.length - 1]["id"]);
   };
 }
 
