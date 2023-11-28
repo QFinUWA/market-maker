@@ -10,7 +10,8 @@ namespace MarketMaker.Hubs
         Task DeletedOrder(Guid id);
         Task TransactionEvent(TransactionEvent transactionEvent);
         Task UserJoined(string id);
-        Task MarketState(MarketStateResponse marketState);
-        Task ExchangeAdded(string name);
+        Task MargetConfig(MarketConfigResponse marketConfig);
+        Task MarketState(MarketStateResponse orderState);
+        Task MarketConfig(MarketConfigResponse orderState);
     }
 }

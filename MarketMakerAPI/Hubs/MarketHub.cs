@@ -44,7 +44,7 @@ namespace MarketMaker.Hubs
             _userServices.Admins[marketCode] = Context.ConnectionId;
             
             await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
-            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(), marketService.GetOrders(), marketCode, marketService.Exchanges));
+            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(marketCode));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -62,8 +62,24 @@ namespace MarketMaker.Hubs
             marketService.AddExchange(exchangeName);
 
             // notify clients
-            await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
-            await Clients.Group(group).ExchangeAdded(exchangeName);
+            // await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
+            // TODO: make marketconfigresponse take in the market service
+            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(group));
+        }
+
+        private MarketConfigResponse MakeMarketConfigResponse(string marketName)
+        {
+            IMarketService marketService = _marketService.Markets[marketName];
+
+            return new MarketConfigResponse(marketName, marketService.Exchanges);
+        }
+
+        private MarketStateResponse MakeMarketStateResponse(string marketName)
+        {
+            IMarketService marketService = _marketService.Markets[marketName];
+            return new MarketStateResponse(
+                _userServices.Users.Keys.ToList(),
+                marketService.GetOrders());
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
@@ -94,8 +110,9 @@ namespace MarketMaker.Hubs
             
             await Clients.Caller.ReceiveMessage($"joined lobby");
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Caller.MarketState(new MarketStateResponse(_userServices.Users.Keys.ToList(),
-                marketService.GetOrders(), groupName, marketService.Exchanges));
+            
+            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(groupName));
+            await Clients.Caller.MarketState(MakeMarketStateResponse(groupName));
         }
         
         public async Task JoinMarket(string username)
