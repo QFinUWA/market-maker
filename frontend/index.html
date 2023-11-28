@@ -16,17 +16,24 @@
     </header>
     <!-- Main -->
     <h2>Input</h2>
-    <div id="commands">
+    <div id="commands"></div>
+        <div >
+            <h3 id="marketName">Market Code: </h3>
+            <h3 id="exchangeNames">Exchanges: </h3>
+        </div>
+        <div style="width:1000px"></div>
+        <div style="width: 500px; float: left;">
+            <h2>Market Orders</h2>
+            <h4>Exchange) [TimeStamp]:$[price]:[quantity] <= [User]</h4>
+            <div id="market"></div>
+            </div>
+        <div style="width: 500px; float: right;">
+            <h2>Transactions</h2>
+            <h4>[agressive order] <=(direction)=> [passive order]</h4>
+            <div id="transactions"> </div>
+        </div>
+        <div style="clear: both;"></div>
     </div>
-    <h2>Market Orders</h2>
-    <h3 id="marketName">Market Code: </h3>
-    <h3 id="exchangeNames">Exchanges: </h3>
-    <h4>Exchange) [TimeStamp]:$[price]:[quantity] <= [User]</h4>
-
-    <div id="market">
-
-    </div>
-
     <!-- Footer -->
 
 </body>

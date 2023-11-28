@@ -20,18 +20,28 @@ async function start() {
 var orders = [];
 var exchanges = [];
 var marketName = "";
+var transactions = [];
+// TODO: remove this cursed way of doing this
+var bidOrAsk = {};
 // define function
 
 function refreshMarket() {
-  var ordersList = "<ul>";
+  var ordersList = "<nav><ul>";
   for (var i = 0; i < orders.length; i++) {
     ordersList += "<li>" + formatOrder(orders[i]) + "</li>";
   }
-  ordersList += "</ul>";
+  ordersList += "</nav></ul>";
   document.getElementById("marketName").innerHTML = "Market Code: " + marketName;
   document.getElementById("exchangeNames").innerHTML =
     "Exchanges: " + exchanges.join(", ");
   document.getElementById("market").innerHTML = ordersList;
+
+  var transactionsList = "<nav><ul>";
+  for (var i = 0; i < transactions.length; i++) {
+    transactionsList += "<li>" + transactions[i] + "</li>";
+  }
+  transactionsList += "</nav></ul>";
+  document.getElementById("transactions").innerHTML = transactionsList;
 }
 
 function formatOrder(order) {
@@ -78,6 +88,7 @@ connection.on("MarketConfig", (message)=> {
 connection.on("NewOrder", (order) => {
   // console.log(order)
   orders.push(order);
+  bidOrAsk[order["id"]] = order["quantity"] > 0 ? "bid" : "ask";
   orders = orders.sort((a, b) => (a["price"] > b["price"] ? 1 : -1));
 
   refreshMarket();
@@ -87,7 +98,6 @@ connection.on("DeletedOrder", (orderID) => {
   orders = orders.filter(function (value, index, arr) {
     return value.id != orderID;
   });
-
   refreshMarket();
 });
 
@@ -113,7 +123,12 @@ function updateOrRemove(id, quantity) {
 
 
 connection.on("TransactionEvent", (transactionEvent) => {
-  console.log(transactionEvent);
+  
+  var action = bidOrAsk[transactionEvent["aggressiveOrderId"]] == "bid" ? "<=" : "=>"; 
+
+  var str = `${transactionEvent["aggressiveOrderId"]} ${action} ${transactionEvent["passiveOrderId"]}`
+
+  transactions.push(str);
   
   updateOrRemove(transactionEvent["aggressiveOrderId"], transactionEvent["quantityTraded"]);
   updateOrRemove(transactionEvent["passiveOrderId"], transactionEvent["quantityTraded"]);
