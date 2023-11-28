@@ -5,14 +5,23 @@ namespace MarketMaker.Services
 {
     public class LocalMarketService : IMarketService
     {
-        private readonly Dictionary<string, Exchange> _market = new();
+        private readonly Dictionary<string, Exchange> _exchange = new();
+        private readonly List<string> _participants = new();
 
-        public List<string> Exchanges
+        public IEnumerable<string> Exchanges
         {
             get
             {
-                return _market.Keys.ToList();
+                return _exchange.Keys;
             } 
+        }
+
+        public IEnumerable<string> Participants
+        {
+            get
+            {
+                return _participants;
+            }
         }
 
         public List<Order> GetOrders()
@@ -20,7 +29,7 @@ namespace MarketMaker.Services
 
             List<Order> orders = new();
             
-            foreach (var exchange in _market.Values)
+            foreach (var exchange in _exchange.Values)
             {
                 orders.AddRange(exchange.GetOrders());
             }
@@ -31,7 +40,7 @@ namespace MarketMaker.Services
         // return error
         public void DeleteOrder(Guid id, string user)
         {
-            foreach (var market in _market.Values)
+            foreach (var market in _exchange.Values)
             {
                 if (market.DeleteOrder(id, user)) return;
             }
@@ -47,20 +56,20 @@ namespace MarketMaker.Services
 
             var originalOrder = (Order)order.Clone();
 
-            List<TransactionEvent> transactions = _market[order.Exchange].NewOrder(order);
+            List<TransactionEvent> transactions = _exchange[order.Exchange].NewOrder(order);
 
             return (originalOrder, transactions);
         }
 
         public void AddExchange(string market)
         {
-            _market.Add(market, new Exchange());
+            _exchange.Add(market, new Exchange());
         }
 
         public Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
         {
             Dictionary<string, float> profits = new();
-            foreach (var exchangeKeyValue in _market)
+            foreach (var exchangeKeyValue in _exchange)
             {
                 var exchangeName = exchangeKeyValue.Key;
                 var exchange = exchangeKeyValue.Value;

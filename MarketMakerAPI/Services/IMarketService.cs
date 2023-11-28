@@ -14,7 +14,8 @@ namespace MarketMaker.Services
 
         Dictionary<string, float> CloseMarket(Dictionary<string, int> prices);
 
-        List<string> Exchanges {  get; }
+        IEnumerable<string> Exchanges {  get; }
+        IEnumerable<string> Participants { get; }
 
 
     }

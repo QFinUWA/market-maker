@@ -121,11 +121,14 @@ function updateOrRemove(id, quantity)
 
 
 connection.on("TransactionEvent", (transactionEvent) => {
+
+  var userA = orders[transactionEvent["aggressiveOrderId"]]["user"];
+  var userP = orders[transactionEvent["passiveOrderId"]]["user"];
+  var price = orders[transactionEvent["aggressiveOrderId"]]["price"];
   
-  var action = orders[transactionEvent["aggressiveOrderId"]["quantity"]] > 0 ? "<=" : "=>"; 
+  var action = orders[transactionEvent["aggressiveOrderId"]["quantity"]] > 0 ? "bought" : "sold"; 
 
-  var str = `${transactionEvent["aggressiveOrderId"]} ${action} ${transactionEvent["passiveOrderId"]}`
-
+  var str = `${userA} ${action} ${transactionEvent["quantityTraded"]} from ${userP} at $${price}`
   transactions.push(str);
   
   updateOrRemove(transactionEvent["aggressiveOrderId"], transactionEvent["quantityTraded"]);

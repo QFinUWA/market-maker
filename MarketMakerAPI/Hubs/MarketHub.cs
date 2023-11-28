@@ -27,7 +27,7 @@ namespace MarketMaker.Hubs
         }
         public async Task MakeNewMarket()
         {
-            var  chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             var stringChars = new char[_marketcodelength];
 
             for (int i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
@@ -38,10 +38,8 @@ namespace MarketMaker.Hubs
             var marketService = new LocalMarketService();
             _marketService.Markets[marketCode] = marketService;
 
-            await JoinMarketLobby(marketCode);
-            
             // make user an admin
-            _userServices.Admins[marketCode] = Context.ConnectionId;
+            _userServices.AddAdmin(Context.ConnectionId, marketCode);
             
             await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
             await Clients.Caller.MarketConfig(MakeMarketConfigResponse(marketCode));
@@ -50,11 +48,11 @@ namespace MarketMaker.Hubs
 
         public async Task MakeNewExchange(string exchangeName)
         {
-            var userProfile = _userServices.Users[Context.ConnectionId];
+            var userProfile = _userServices.GetUser(Context.ConnectionId);
             var group = userProfile["market"];
 
             // only allow admin access
-            if (_userServices.Admins[group] != Context.ConnectionId) return;
+            if (userProfile["admin"].Equals("true")) return;
 
             IMarketService marketService = _marketService.Markets[group];
 
@@ -71,24 +69,24 @@ namespace MarketMaker.Hubs
         {
             IMarketService marketService = _marketService.Markets[marketName];
 
-            return new MarketConfigResponse(marketName, marketService.Exchanges);
+            return new MarketConfigResponse(marketName, marketService.Exchanges.ToList());
         }
 
         private MarketStateResponse MakeMarketStateResponse(string marketName)
         {
             IMarketService marketService = _marketService.Markets[marketName];
             return new MarketStateResponse(
-                _userServices.Users.Keys.ToList(),
+                _userServices.GetUsers().Select(order => order["username"]).ToList(),
                 marketService.GetOrders());
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
         {
-            var userProfile = _userServices.Users[Context.ConnectionId];
+            var userProfile = _userServices.GetUser(Context.ConnectionId);
             var group = userProfile["market"];
 
             // only allow admin access
-            if (_userServices.Admins[group] != Context.ConnectionId) return;
+            if (userProfile["admin"].Equals("true")) return;
 
             IMarketService marketService = _marketService.Markets[group];
 
@@ -117,22 +115,19 @@ namespace MarketMaker.Hubs
         
         public async Task JoinMarket(string username)
         {
+            var userProfile = _userServices.GetUser(Context.ConnectionId);
+            
+            userProfile["username"] = username;
+
+            var marketService = _marketService.Markets[userProfile["market"]];
 
             // retrieve cookie/local storage/claim etc
-            var userNames = _userServices.Users
-                .Values
-                .Select(user => user["username"].ToLower())
-                .ToList();
             
-            if (userNames.Contains(username.ToLower()))
+            if (marketService.Participants.Contains(username))
             {
-                // TODO: Add proper error handling 
-                // TODO: Add reconnection authorisation
                 return;
             }
-            
-            var userProfile = _userServices.Users[Context.ConnectionId];
-            userProfile["username"] = username;
+
             await Clients.Caller.ReceiveMessage($"joined market"); 
             await Clients.Group(userProfile["market"]).UserJoined(username);
         }
@@ -140,7 +135,7 @@ namespace MarketMaker.Hubs
 
         public async Task DeleteOrder(Guid orderId)
         {
-            var userProfile = _userServices.Users[Context.ConnectionId];
+            var userProfile = _userServices.GetUser(Context.ConnectionId);
             var group = userProfile["market"];
             var username = userProfile["username"];
             
@@ -155,7 +150,7 @@ namespace MarketMaker.Hubs
 
         public async Task PlaceOrder(string exchange, int price, int quantity)
         {
-            var userProfile = _userServices.Users[Context.ConnectionId];
+            var userProfile = _userServices.GetUser(Context.ConnectionId);
             var groupName = userProfile["market"];
 
             if (userProfile["username"] == "") return; // TODO: make this more robust

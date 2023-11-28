@@ -4,7 +4,12 @@
     {
         void AddUser(string group, string id);
 
-        Dictionary<string, Dictionary<string, string>> Users { get; }
-        Dictionary<string, string> Admins { get; } // group -> adminId
+        Dictionary<string, string>? GetUser(string id);
+
+        IEnumerable<Dictionary<string, string>> GetUsers();
+
+        void AddAdmin(string id, string marketCode);
+
+
     }
 }
