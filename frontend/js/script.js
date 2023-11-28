@@ -126,9 +126,9 @@ connection.on("TransactionEvent", (transactionEvent) => {
   var userP = orders[transactionEvent["passiveOrderId"]]["user"];
   var price = orders[transactionEvent["aggressiveOrderId"]]["price"];
   
-  var action = orders[transactionEvent["aggressiveOrderId"]["quantity"]] > 0 ? "bought" : "sold"; 
+  var action = orders[transactionEvent["aggressiveOrderId"]["quantity"]] > 0 ? ["bought", "from"] : ["sold", "to"]; 
 
-  var str = `${userA} ${action} ${transactionEvent["quantityTraded"]} from ${userP} at $${price}`
+  var str = `${userA} ${action[0]} ${transactionEvent["quantityTraded"]} ${action[1]} ${userP} @ $${price}`
   transactions.push(str);
   
   updateOrRemove(transactionEvent["aggressiveOrderId"], transactionEvent["quantityTraded"]);

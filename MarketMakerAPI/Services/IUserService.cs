@@ -1,12 +1,14 @@
-﻿namespace MarketMaker.Services
+﻿using MarketMaker.Models;
+
+namespace MarketMaker.Services
 {
     public interface IUserService
     {
         void AddUser(string group, string id);
 
-        Dictionary<string, string>? GetUser(string id);
+        User? GetUser(string id);
 
-        IEnumerable<Dictionary<string, string>> GetUsers();
+        IEnumerable<User> GetUsers();
 
         void AddAdmin(string id, string marketCode);
 
