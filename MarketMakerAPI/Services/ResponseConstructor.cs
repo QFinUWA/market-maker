@@ -6,7 +6,7 @@ namespace MarketMaker.Services;
 public static class ResponseConstructor
 {
     
-    public static MarketConfigResponse MarketConfig(IMarketService marketService)
+    public static MarketConfigResponse MarketConfig(MarketService marketService)
     {
         return new MarketConfigResponse(
             marketService.Config.MarketName,
@@ -14,7 +14,7 @@ public static class ResponseConstructor
         );
     }
     
-    public static MarketStateResponse MarketState(IMarketService marketService)
+    public static MarketStateResponse MarketState(MarketService marketService)
     {
         return new MarketStateResponse(
             marketService.Participants,

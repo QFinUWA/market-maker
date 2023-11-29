@@ -203,7 +203,7 @@ const adminHtml = `
     <input type="text" id="newExchangeInput" placeholder="IYE">
     <button id="newExchangeSend">Add Exchange</button> 
     <select id="stateList" name="state", onchange = "updateState(this)">
-      <option value="inLobby">Lobby</option>
+      <option value="Lobby">Lobby</option>
       <option value="open">Open</option>
       <option value="paused">Paused</option>
       <option value="closed">Closed</option>
@@ -274,6 +274,7 @@ document.getElementById("joinMarket").onclick = () => {
   let market = document.getElementById("joinMakeMarketText").value;
   connection.invoke("JoinMarketLobby", market);
   marketCode = market;
+  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
   refreshMarket(); //
   loadUserPage();
 };
