@@ -21,6 +21,7 @@ var orders = {};
 var exchanges = [];
 var marketName = "";
 var transactions = [];
+let state = "";
 // define function
 
 function refreshMarket() {
@@ -50,6 +51,9 @@ function refreshMarket() {
   }
   transactionsList += "</nav></ul>";
   document.getElementById("transactions").innerHTML = transactionsList;
+
+  document.getElementById("state").innerHTML = "State: " + state;
+  console.log(document.getElementById("state").innerHTML);
 }
 
 function formatOrder(order) {
@@ -88,7 +92,7 @@ connection.on("ReceiveMessage", (message) => {
 });
 
 connection.on("MarketState", (market) => {
-
+  console.log("marketState", market);
   // add all orders to orders dictionary
   market["orders"].forEach((order) => {
     orders[order["id"]] = order;
@@ -98,10 +102,19 @@ connection.on("MarketState", (market) => {
     transactions.push(formatTransaction(transactionEvent));
   });
 
+  state = market["state"];
+
+  refreshMarket();
+});
+
+connection.on("StateUpdated", (newState) => {
+  state = newState;
+  console.log(newState)
   refreshMarket();
 });
 
 connection.on("MarketConfig", (message)=> {
+  console.log("market config", message);  
   marketName = message["marketName"]
   exchanges = message["exchanges"]
   refreshMarket();
@@ -168,7 +181,20 @@ const userHtml = `
 const adminHtml = `
     <input type="text" id="newExchangeInput" placeholder="IYE">
     <button id="newExchangeSend">Add Exchange</button> 
+    <select id="stateList" name="state", onchange = "updateState(this)">
+      <option value="inLobby">Lobby</option>
+      <option value="open">Open</option>
+      <option value="paused">Paused</option>
+      <option value="closed">Closed</option>
+    </select>
 `;
+
+function updateState(element) {
+  
+  let newState = element.value;
+  connection.invoke("UpdateMarketState", newState);
+
+}
 
 function loadUserPage() {
   document.getElementById("commands").innerHTML = userHtml;

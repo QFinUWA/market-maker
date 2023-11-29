@@ -7,7 +7,13 @@ namespace MarketMaker.Services
     {
         private readonly Dictionary<string, Exchange> _exchange = new();
         private readonly List<string> _participants = new();
+        private readonly MarketConfig _config = new();
+        private readonly MarketState _state = MarketState.InLobby; 
+        
+        public MarketConfig Config { get;  }
 
+        public MarketState State { get; set; }
+        
         public List<string> Exchanges
         {
             get
@@ -16,19 +22,13 @@ namespace MarketMaker.Services
             } 
         }
 
-        public List<string> Participants
-        {
-            get
-            {
-                return _participants;
-            }
-        }
+        public List<string> Participants { get;  } 
 
-        public List<TransactionEvent> Transactions
+        public List<Transaction> Transactions
         {
             get
             {
-                List<TransactionEvent> transactions = new();
+                List<Transaction> transactions = new();
             
                 foreach (var exchange in _exchange.Values)
                 {
@@ -69,7 +69,7 @@ namespace MarketMaker.Services
             }
         }
 
-        public (Order, List<TransactionEvent>) NewOrder(string username, string exchange, int price, int quantity)
+        public (Order, List<Transaction>) NewOrder(string username, string exchange, int price, int quantity)
         {
             var order = Order.MakeOrder(
                 username,
@@ -79,7 +79,7 @@ namespace MarketMaker.Services
 
             var originalOrder = (Order)order.Clone();
 
-            List<TransactionEvent> transactions = _exchange[order.Exchange].NewOrder(order);
+            var transactions = _exchange[order.Exchange].NewOrder(order);
 
             return (originalOrder, transactions);
         }
@@ -92,11 +92,8 @@ namespace MarketMaker.Services
         public Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
         {
             Dictionary<string, float> profits = new();
-            foreach (var exchangeKeyValue in _exchange)
+            foreach (var (exchangeName, exchange) in _exchange)
             {
-                var exchangeName = exchangeKeyValue.Key;
-                var exchange = exchangeKeyValue.Value;
-
                 var price = prices[exchangeName];
                 
                 exchange.Close(price);

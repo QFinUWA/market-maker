@@ -10,13 +10,14 @@ namespace MarketMaker.Hubs
 {
     public sealed class MarketHub: Hub<IMarketClient>
     {
-        private readonly MarketGroup _marketService;
+        private readonly MarketGroup _marketServices;
         private readonly IUserService _userServices;
         private const int MarketCodeLength = 5;
         private readonly Random _random;
-        public MarketHub(MarketGroup marketService, IUserService userService) 
+
+        public MarketHub(MarketGroup marketServices, IUserService userService) 
         {
-            _marketService = marketService;
+            _marketServices = marketServices;
             _userServices = userService;
             _random = new Random();
         }
@@ -37,13 +38,14 @@ namespace MarketMaker.Hubs
             
             // create new market service
             var marketService = new LocalMarketService();
-            _marketService.Markets[marketCode] = marketService;
+            _marketServices.Markets[marketCode] = marketService;
 
             // make user an admin
             _userServices.AddAdmin(Context.ConnectionId, marketCode);
             
             await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
             await Clients.Caller.MarketConfig(MakeMarketConfigResponse(marketCode));
+            await Clients.Caller.MarketState(MakeMarketStateResponse(marketCode));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -55,7 +57,7 @@ namespace MarketMaker.Hubs
             // only allow admin access
             if (!user.IsAdmin) return;
 
-            IMarketService marketService = _marketService.Markets[group];
+            IMarketService marketService = _marketServices.Markets[group];
 
             // add new exchange
             marketService.AddExchange(exchangeName);
@@ -68,18 +70,20 @@ namespace MarketMaker.Hubs
 
         private MarketConfigResponse MakeMarketConfigResponse(string marketName)
         {
-            IMarketService marketService = _marketService.Markets[marketName];
+            IMarketService marketService = _marketServices.Markets[marketName];
 
             return new MarketConfigResponse(marketName, marketService.Exchanges.ToList());
         }
 
+
         private MarketStateResponse MakeMarketStateResponse(string marketName)
         {
-            IMarketService marketService = _marketService.Markets[marketName];
+            IMarketService marketService = _marketServices.Markets[marketName];
             return new MarketStateResponse(
                 marketService.Participants,
                 marketService.Orders,
-                marketService.Transactions
+                marketService.Transactions,
+                MarketState.InLobby.ToString()
             );
         }
 
@@ -89,9 +93,9 @@ namespace MarketMaker.Hubs
             var group = user.Market;
 
             // only allow admin access
-            if (user.IsAdmin) return;
+            if (!user.IsAdmin) return;
 
-            IMarketService marketService = _marketService.Markets[group];
+            IMarketService marketService = _marketServices.Markets[group];
 
             var profits = marketService.CloseMarket(prices);
 
@@ -105,7 +109,7 @@ namespace MarketMaker.Hubs
         {
             groupName = groupName.ToUpper();
             
-            IMarketService marketService = _marketService.Markets[groupName];
+            IMarketService marketService = _marketServices.Markets[groupName];
 
             _userServices.AddUser(groupName, Context.ConnectionId);
             
@@ -116,6 +120,53 @@ namespace MarketMaker.Hubs
             await Clients.Caller.MarketState(MakeMarketStateResponse(groupName));
         }
         
+        public async Task UpdateMarketState(string newStateString)
+        {
+            
+            var user = _userServices.GetUser(Context.ConnectionId);
+            var marketCode = user.Market;
+            
+            // only allow admin access
+            if (!user.IsAdmin) return;
+
+            bool stateExists = MarketState.TryParse(newStateString, true, out MarketState newState);
+
+            if (!stateExists) return;
+                
+            var marketService = _marketServices.Markets[marketCode];
+            var currState = marketService.State;
+            
+            /*
+             * inLobby -> (open)
+             * open -> (paused, closed)
+             * paused -> (open, closed)
+             * closed -> (open)
+             */
+            switch (currState)
+            {
+                case MarketState.InLobby:
+                    if (newState == MarketState.Open) break;
+                    return;
+                case MarketState.Open:
+                    if (newState == MarketState.Paused) break;
+                    if (newState == MarketState.Closed) break;
+                    return;
+                case MarketState.Paused:
+                    if (newState == MarketState.Open) break;
+                    if (newState == MarketState.Closed) break;
+                    return;
+                case MarketState.Closed:
+                    if (newState == MarketState.Open) break;
+                    return;
+                default:
+                    return;
+            }
+
+            marketService.State = newState;
+            
+            await Clients.Group(marketCode).StateUpdated(newState.ToString());
+        }
+
         public async Task JoinMarket(string username)
         {
             var user = _userServices.GetUser(Context.ConnectionId);
@@ -124,7 +175,7 @@ namespace MarketMaker.Hubs
             
             user.Name = username;
 
-            var marketService = _marketService.Markets[user.Market];
+            var marketService = _marketServices.Markets[user.Market];
 
             // retrieve cookie/local storage/claim etc
             
@@ -143,7 +194,7 @@ namespace MarketMaker.Hubs
             
             if (username == "") return; // TODO: make this more robust
             
-            IMarketService marketService = _marketService.Markets[group];
+            IMarketService marketService = _marketServices.Markets[group];
 
             marketService.DeleteOrder(orderId, username);
 
@@ -157,7 +208,7 @@ namespace MarketMaker.Hubs
 
             if (user.Name == "") return; // TODO: make this more robust
             
-            IMarketService marketService = _marketService.Markets[groupName];
+            IMarketService marketService = _marketServices.Markets[groupName];
 
             // TODO: NewOrder should raise an exception if the order was rejected, 
             //       in which case the clients shouldn't be alerted about a new order
@@ -179,8 +230,8 @@ namespace MarketMaker.Hubs
             ));
             
 
-            var orderFilledTask = transactions.Select<TransactionEvent, Task>(transaction =>
-                Clients.Group(groupName).TransactionEvent(new TransactionEventResponse(
+            var orderFilledTask = transactions.Select<Transaction, Task>(transaction =>
+                Clients.Group(groupName).TransactionEvent(new TransactionResponse(
                         transaction. BuyerUser,
                         transaction.BuyerOrderId,
                         transaction. SellerUser,
