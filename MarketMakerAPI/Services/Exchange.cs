@@ -17,13 +17,7 @@ namespace MarketMaker.Services
             return _orders[id];
         }
 
-        public IEnumerable<Order> Orders
-        {
-            get
-            {
-                return _orders.Values;
-            }
-        }
+        public IEnumerable<Order> Orders => _orders.Values;
 
 
         public List<Transaction> NewOrder(Order order) 

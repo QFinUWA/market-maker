@@ -18,9 +18,7 @@ namespace MarketMaker.Services
 
         public User? GetUser(string id)
         {
-            if (!_users.ContainsKey(id)) return null;
-            
-            return _users[id];
+            return !_users.ContainsKey(id) ? null : _users[id];
         }
 
         public IEnumerable<User> GetUsers()

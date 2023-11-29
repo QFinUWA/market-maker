@@ -2,9 +2,8 @@
 
 public enum MarketState
 {
-    InLobby,
+    Lobby,
     Open,
     Paused,
     Closed
-    // Enum.TryParse("Active", out StatusEnum myStatus);
 }

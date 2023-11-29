@@ -3,34 +3,11 @@ using MarketMaker.Models;
 
 namespace MarketMaker.Services
 {
-    public class LocalMarketService : IMarketService
+    public class LocalMarketService : MarketService
     {
         private readonly Dictionary<string, Exchange> _exchange = new();
-        private readonly List<string> _participants = new();
-        private readonly MarketConfig _config = new();
-        private MarketState _state = MarketState.InLobby;
-        // public int MyProperty { get; set; } = 42;
-        public MarketConfig Config
-        {
-            get
-            {
-                return _config;
-            }
-        }
 
-        public MarketState State
-        {
-            get
-            {
-                return _state;
-            }
-            set
-            {
-                _state = value;
-            }
-        }
-        
-        public List<string> Exchanges
+        public override List<string> Exchanges
         {
             get
             {
@@ -38,9 +15,9 @@ namespace MarketMaker.Services
             } 
         }
 
-        public List<string> Participants { get;  } 
+        public override List<string> Participants { get; } = new(); 
 
-        public List<Transaction> Transactions
+        public override List<Transaction> Transactions
         {
             get
             {
@@ -55,7 +32,7 @@ namespace MarketMaker.Services
             } 
         }
         
-        public List<Order> Orders
+        public override List<Order> Orders
         {
             get
             {
@@ -69,17 +46,17 @@ namespace MarketMaker.Services
                 return orders;
             }
         }
-        public void AddParticipant(string username)
+        public override void AddParticipant(string username)
         {
-            if (_participants.Contains(username)) return;
+            if (Participants.Contains(username)) return;
             
-            _participants.Add(username);
+            Participants.Add(username);
         }
 
         // return error
-        public void DeleteOrder(Guid id, string user)
+        public override void DeleteOrder(Guid id, string user)
         {
-            if (_state != MarketState.Open) throw new InvalidOperationException();
+            if (State != MarketState.Open) throw new InvalidOperationException();
             
             foreach (var market in _exchange.Values)
             {
@@ -87,11 +64,11 @@ namespace MarketMaker.Services
             }
         }
 
-        public (Order, List<Transaction>) NewOrder(string username, string exchange, int price, int quantity)
+        public override (Order, List<Transaction>) NewOrder(string username, string exchange, int price, int quantity)
         {
-            if (_state != MarketState.Open) throw new InvalidOperationException();
+            if (State != MarketState.Open) throw new InvalidOperationException();
             
-            var order = Order.MakeOrder(
+            var order = new Order(
                 username,
                 exchange,
                 price,
@@ -104,17 +81,17 @@ namespace MarketMaker.Services
             return (originalOrder, transactions);
         }
 
-        public void AddExchange(string market)
+        public override void AddExchange(string market)
         {
-            if (_state != MarketState.InLobby) throw new InvalidOperationException();
+            if (State != MarketState.Lobby) throw new InvalidOperationException();
             
             _exchange.Add(market, new Exchange());
         }
 
-        public Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
+        public override Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
         {
-            if (_state == MarketState.InLobby) throw new InvalidOperationException();
-            if (_state == MarketState.Closed) throw new InvalidOperationException();
+            if (State == MarketState.Lobby) throw new InvalidOperationException();
+            if (State == MarketState.Closed) throw new InvalidOperationException();
 
             Dictionary<string, float> profits = new();
             foreach (var (exchangeName, exchange) in _exchange)

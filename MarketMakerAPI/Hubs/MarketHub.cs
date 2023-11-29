@@ -40,7 +40,7 @@ namespace MarketMaker.Hubs
             // make user an admin
             _userServices.AddAdmin(Context.ConnectionId, marketCode);
             await Clients.Caller.MarketCreated(marketCode);
-            await Clients.Caller.StateUpdated(MarketState.InLobby.ToString());
+            await Clients.Caller.StateUpdated(MarketState.Lobby.ToString());
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -52,7 +52,7 @@ namespace MarketMaker.Hubs
             // only allow admin access
             if (!user.IsAdmin) return;
 
-            IMarketService marketService = _marketServices.Markets[group];
+            MarketService marketService = _marketServices.Markets[group];
 
             // add new exchange
             try
@@ -79,7 +79,7 @@ namespace MarketMaker.Hubs
             // only allow admin access
             if (!user.IsAdmin) return;
 
-            IMarketService marketService = _marketServices.Markets[group];
+            MarketService marketService = _marketServices.Markets[group];
             Dictionary<string, float> profits;
             try
             {
@@ -100,7 +100,7 @@ namespace MarketMaker.Hubs
         {
             groupName = groupName.ToUpper();
             
-            IMarketService marketService = _marketServices.Markets[groupName];
+            MarketService marketService = _marketServices.Markets[groupName];
 
             _userServices.AddUser(groupName, Context.ConnectionId);
             
@@ -134,7 +134,7 @@ namespace MarketMaker.Hubs
              */
             switch (currState)
             {
-                case MarketState.InLobby:
+                case MarketState.Lobby:
                     if (newState == MarketState.Open) break;
                     return;
                 case MarketState.Open:
@@ -184,7 +184,7 @@ namespace MarketMaker.Hubs
             
             if (username == "") return; // TODO: make this more robust
             
-            IMarketService marketService = _marketServices.Markets[group];
+            MarketService marketService = _marketServices.Markets[group];
 
             marketService.DeleteOrder(orderId, username);
 
@@ -198,7 +198,7 @@ namespace MarketMaker.Hubs
 
             if (user.Name == "") return; // TODO: make this more robust
             
-            IMarketService marketService = _marketServices.Markets[groupName];
+            MarketService marketService = _marketServices.Markets[groupName];
 
             // TODO: NewOrder should raise an exception if the order was rejected, 
             //       in which case the clients shouldn't be alerted about a new order
