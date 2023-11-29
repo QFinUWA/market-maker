@@ -9,8 +9,8 @@ namespace MarketMaker.Services
         public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Bid = new();
         public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Ask = new();
 
-        public Dictionary<string, float> UserProfits = new();
-        public readonly List<TransactionEvent> Transactions = new();
+        public readonly Dictionary<string, float> UserProfits = new();
+        public readonly List<Transaction> Transactions = new();
 
         public Order GetOrder(Guid id)
         {
@@ -26,7 +26,7 @@ namespace MarketMaker.Services
         }
 
 
-        public List<TransactionEvent> NewOrder(Order order) 
+        public List<Transaction> NewOrder(Order order) 
         {
             _orders.Add(order.Id, order);
 
@@ -45,7 +45,7 @@ namespace MarketMaker.Services
 
             // assuming market was balanced before, only check for new updates
             // if this is the newest order
-            List<TransactionEvent> transactions = new();
+            List<Transaction> transactions = new();
 
             side[price].Enqueue(order.Id, order.TimeStamp);
 
@@ -98,7 +98,7 @@ namespace MarketMaker.Services
 
                 var (buyer, seller) = sideIsBid ? (order, otherOrder) : (otherOrder, order);
                 
-                transactions.Add(new TransactionEvent(
+                transactions.Add(new Transaction(
                         buyer.User,
                         buyer.Id,
                         seller.User,

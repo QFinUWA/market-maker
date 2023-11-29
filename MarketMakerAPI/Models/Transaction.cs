@@ -1,6 +1,6 @@
-﻿namespace MarketMaker.Contracts;
+namespace MarketMaker.Models;
 
-public record TransactionEventResponse(
+public record Transaction(
         string BuyerUser,
         Guid BuyerOrderId,
         string SellerUser,
@@ -9,4 +9,5 @@ public record TransactionEventResponse(
         int Quantity,
         string Aggressor,
         DateTime TimeStamp
+
     );

@@ -2,21 +2,19 @@
 using MarketMaker.Services;
 using MarketMaker.Models;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Mvc;
-using System.Linq;
-//using Microsoft.AspNet.SignalR;
 
 namespace MarketMaker.Hubs
 {
     public sealed class MarketHub: Hub<IMarketClient>
     {
-        private readonly MarketGroup _marketService;
+        private readonly MarketGroup _marketServices;
         private readonly IUserService _userServices;
         private const int MarketCodeLength = 5;
         private readonly Random _random;
-        public MarketHub(MarketGroup marketService, IUserService userService) 
+
+        public MarketHub(MarketGroup marketServices, IUserService userService) 
         {
-            _marketService = marketService;
+            _marketServices = marketServices;
             _userServices = userService;
             _random = new Random();
         }
@@ -37,13 +35,12 @@ namespace MarketMaker.Hubs
             
             // create new market service
             var marketService = new LocalMarketService();
-            _marketService.Markets[marketCode] = marketService;
+            _marketServices.Markets[marketCode] = marketService;
 
             // make user an admin
             _userServices.AddAdmin(Context.ConnectionId, marketCode);
-            
-            await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
-            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(marketCode));
+            await Clients.Caller.MarketCreated(marketCode);
+            await Clients.Caller.StateUpdated(MarketState.InLobby.ToString());
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -55,32 +52,23 @@ namespace MarketMaker.Hubs
             // only allow admin access
             if (!user.IsAdmin) return;
 
-            IMarketService marketService = _marketService.Markets[group];
+            IMarketService marketService = _marketServices.Markets[group];
 
             // add new exchange
-            marketService.AddExchange(exchangeName);
+            try
+            {
+                marketService.AddExchange(exchangeName);
+            }
+            catch (InvalidOperationException e)
+            {
+                
+            }
 
             // notify clients
             // await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
             // TODO: make marketconfigresponse take in the market service
-            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(group));
-        }
+            await Clients.Group(group).MarketConfig(ResponseConstructor.MarketConfig(marketService));
 
-        private MarketConfigResponse MakeMarketConfigResponse(string marketName)
-        {
-            IMarketService marketService = _marketService.Markets[marketName];
-
-            return new MarketConfigResponse(marketName, marketService.Exchanges.ToList());
-        }
-
-        private MarketStateResponse MakeMarketStateResponse(string marketName)
-        {
-            IMarketService marketService = _marketService.Markets[marketName];
-            return new MarketStateResponse(
-                _userServices.GetUsers().Select(user => user.Name).ToList(),
-                marketService.GetOrders(),
-                marketService.GetTransactions()
-            );
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
@@ -89,11 +77,18 @@ namespace MarketMaker.Hubs
             var group = user.Market;
 
             // only allow admin access
-            if (user.IsAdmin) return;
+            if (!user.IsAdmin) return;
 
-            IMarketService marketService = _marketService.Markets[group];
-
-            var profits = marketService.CloseMarket(prices);
+            IMarketService marketService = _marketServices.Markets[group];
+            Dictionary<string, float> profits;
+            try
+            {
+                profits = marketService.CloseMarket(prices);
+            }
+            catch (InvalidOperationException e)
+            {
+                
+            }
 
             // await Clients.Group(group).UpdateGameState("paused");
             //TODO: possibly don't make the new exchanges until the game has started by the admin - add a "market open"
@@ -105,32 +100,77 @@ namespace MarketMaker.Hubs
         {
             groupName = groupName.ToUpper();
             
-            IMarketService marketService = _marketService.Markets[groupName];
+            IMarketService marketService = _marketServices.Markets[groupName];
 
             _userServices.AddUser(groupName, Context.ConnectionId);
             
-            await Clients.Caller.ReceiveMessage($"joined lobby");
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
             
-            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(groupName));
-            await Clients.Caller.MarketState(MakeMarketStateResponse(groupName));
+            await Clients.Caller.MarketConfig(ResponseConstructor.MarketConfig(marketService));
+            await Clients.Caller.MarketState(ResponseConstructor.MarketState(marketService));
+
         }
         
+        public async Task UpdateMarketState(string newStateString)
+        {
+            var user = _userServices.GetUser(Context.ConnectionId);
+            var marketCode = user.Market;
+            
+            // only allow admin access
+            if (!user.IsAdmin) return;
+
+            bool stateExists = MarketState.TryParse(newStateString, true, out MarketState newState);
+
+            if (!stateExists) return;
+                
+            var marketService = _marketServices.Markets[marketCode];
+            var currState = marketService.State;
+            
+            /*
+             * inLobby -> (open)
+             * open -> (paused, closed)
+             * paused -> (open, closed)
+             * closed -> (open)
+             */
+            switch (currState)
+            {
+                case MarketState.InLobby:
+                    if (newState == MarketState.Open) break;
+                    return;
+                case MarketState.Open:
+                    if (newState == MarketState.Paused) break;
+                    if (newState == MarketState.Closed) break;
+                    return;
+                case MarketState.Paused:
+                    if (newState == MarketState.Open) break;
+                    if (newState == MarketState.Closed) break;
+                    return;
+                case MarketState.Closed:
+                    if (newState == MarketState.Open) break;
+                    return;
+                default:
+                    return;
+            }
+
+            marketService.State = newState;
+            
+            await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
+        }
+
         public async Task JoinMarket(string username)
         {
             var user = _userServices.GetUser(Context.ConnectionId);
             
+            // TODO: if not username or market return error
+            
             user.Name = username;
 
-            var marketService = _marketService.Markets[user.Market];
+            var marketService = _marketServices.Markets[user.Market];
 
             // retrieve cookie/local storage/claim etc
             
-            if (marketService.Participants.Contains(username))
-            {
-                return;
-            }
-
+            marketService.AddParticipant(username);
+            
             await Clients.Caller.ReceiveMessage($"joined market"); 
             await Clients.Group(user.Market).UserJoined(username);
         }
@@ -144,7 +184,7 @@ namespace MarketMaker.Hubs
             
             if (username == "") return; // TODO: make this more robust
             
-            IMarketService marketService = _marketService.Markets[group];
+            IMarketService marketService = _marketServices.Markets[group];
 
             marketService.DeleteOrder(orderId, username);
 
@@ -158,39 +198,32 @@ namespace MarketMaker.Hubs
 
             if (user.Name == "") return; // TODO: make this more robust
             
-            IMarketService marketService = _marketService.Markets[groupName];
+            IMarketService marketService = _marketServices.Markets[groupName];
 
             // TODO: NewOrder should raise an exception if the order was rejected, 
             //       in which case the clients shouldn't be alerted about a new order
+
+            Order newOrder;
+            List<Transaction> transactions;
+            try
+            {
+                (newOrder, transactions) = marketService.NewOrder(
+                    user.Name,
+                    exchange,
+                    price,
+                    quantity);
+            }
+            catch (InvalidOperationException e)
+            {
+                throw e;
+            }
+
+
+            await Clients.Group(groupName).NewOrder(ResponseConstructor.NewOrder(newOrder));
             
-            var (newOrder, transactions) = marketService.NewOrder(
-                user.Name,
-                exchange,
-                price,
-                quantity);
 
-
-            await Clients.Group(groupName).NewOrder(new NewOrderResponse(
-                newOrder.User,
-                newOrder.Exchange,
-                newOrder.Price,
-                newOrder.Quantity,
-                newOrder.TimeStamp,
-                newOrder.Id
-            ));
-            
-
-            var orderFilledTask = transactions.Select<TransactionEvent, Task>(transaction =>
-                Clients.Group(groupName).TransactionEvent(new TransactionEventResponse(
-                        transaction. BuyerUser,
-                        transaction.BuyerOrderId,
-                        transaction. SellerUser,
-                        transaction.SellerOrderId,
-                        transaction. Price,
-                        transaction. Quantity,
-                        transaction. Aggressor,
-                        transaction. TimeStamp
-                    ))
+            var orderFilledTask = transactions.Select<Transaction, Task>(transaction =>
+                Clients.Group(groupName).TransactionEvent(ResponseConstructor.Transaction(transaction))
             );
 
             await Task.WhenAll(orderFilledTask);

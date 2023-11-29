@@ -7,60 +7,90 @@ namespace MarketMaker.Services
     {
         private readonly Dictionary<string, Exchange> _exchange = new();
         private readonly List<string> _participants = new();
-
-        public IEnumerable<string> Exchanges
+        private readonly MarketConfig _config = new();
+        private MarketState _state = MarketState.InLobby;
+        // public int MyProperty { get; set; } = 42;
+        public MarketConfig Config
         {
             get
             {
-                return _exchange.Keys;
+                return _config;
+            }
+        }
+
+        public MarketState State
+        {
+            get
+            {
+                return _state;
+            }
+            set
+            {
+                _state = value;
+            }
+        }
+        
+        public List<string> Exchanges
+        {
+            get
+            {
+                return _exchange.Keys.ToList();
             } 
         }
 
-        public IEnumerable<string> Participants
+        public List<string> Participants { get;  } 
+
+        public List<Transaction> Transactions
         {
             get
             {
-                return _participants;
+                List<Transaction> transactions = new();
+            
+                foreach (var exchange in _exchange.Values)
+                {
+                    transactions.AddRange(exchange.Transactions);
+                }
+                
+                return transactions;
+            } 
+        }
+        
+        public List<Order> Orders
+        {
+            get
+            {
+                List<Order> orders = new();
+                
+                foreach (var exchange in _exchange.Values)
+                {
+                    orders.AddRange(exchange.Orders);
+                }
+
+                return orders;
             }
         }
-
-        public List<Order> GetOrders()
+        public void AddParticipant(string username)
         {
-
-            List<Order> orders = new();
+            if (_participants.Contains(username)) return;
             
-            foreach (var exchange in _exchange.Values)
-            {
-                orders.AddRange(exchange.Orders);
-            }
-
-            return orders;
-        }
-
-        public List<TransactionEvent> GetTransactions()
-        {
-            
-            List<TransactionEvent> transactions = new();
-            
-            foreach (var exchange in _exchange.Values)
-            {
-                transactions.AddRange(exchange.Transactions);
-            }
-
-            return transactions;
+            _participants.Add(username);
         }
 
         // return error
         public void DeleteOrder(Guid id, string user)
         {
+            if (_state != MarketState.Open) throw new InvalidOperationException();
+            
             foreach (var market in _exchange.Values)
             {
                 if (market.DeleteOrder(id, user)) return;
             }
         }
 
-        public (Order, List<TransactionEvent>) NewOrder(string username, string exchange, int price, int quantity)
+        public (Order, List<Transaction>) NewOrder(string username, string exchange, int price, int quantity)
         {
+            if (_state != MarketState.Open) throw new InvalidOperationException();
+            
             var order = Order.MakeOrder(
                 username,
                 exchange,
@@ -69,24 +99,26 @@ namespace MarketMaker.Services
 
             var originalOrder = (Order)order.Clone();
 
-            List<TransactionEvent> transactions = _exchange[order.Exchange].NewOrder(order);
+            var transactions = _exchange[order.Exchange].NewOrder(order);
 
             return (originalOrder, transactions);
         }
 
         public void AddExchange(string market)
         {
+            if (_state != MarketState.InLobby) throw new InvalidOperationException();
+            
             _exchange.Add(market, new Exchange());
         }
 
         public Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
         {
-            Dictionary<string, float> profits = new();
-            foreach (var exchangeKeyValue in _exchange)
-            {
-                var exchangeName = exchangeKeyValue.Key;
-                var exchange = exchangeKeyValue.Value;
+            if (_state == MarketState.InLobby) throw new InvalidOperationException();
+            if (_state == MarketState.Closed) throw new InvalidOperationException();
 
+            Dictionary<string, float> profits = new();
+            foreach (var (exchangeName, exchange) in _exchange)
+            {
                 var price = prices[exchangeName];
                 
                 exchange.Close(price);
