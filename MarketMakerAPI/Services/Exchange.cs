@@ -9,7 +9,7 @@ namespace MarketMaker.Services
         public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Bid = new();
         public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Ask = new();
 
-        public Dictionary<string, float> UserProfits = new();
+        public readonly Dictionary<string, float> UserProfits = new();
         public readonly List<TransactionEvent> Transactions = new();
 
         public Order GetOrder(Guid id)

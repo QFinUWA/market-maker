@@ -8,15 +8,15 @@ namespace MarketMaker.Services
         private readonly Dictionary<string, Exchange> _exchange = new();
         private readonly List<string> _participants = new();
 
-        public IEnumerable<string> Exchanges
+        public List<string> Exchanges
         {
             get
             {
-                return _exchange.Keys;
+                return _exchange.Keys.ToList();
             } 
         }
 
-        public IEnumerable<string> Participants
+        public List<string> Participants
         {
             get
             {
@@ -24,30 +24,40 @@ namespace MarketMaker.Services
             }
         }
 
-        public List<Order> GetOrders()
+        public List<TransactionEvent> Transactions
         {
-
-            List<Order> orders = new();
-            
-            foreach (var exchange in _exchange.Values)
+            get
             {
-                orders.AddRange(exchange.Orders);
-            }
-
-            return orders;
+                List<TransactionEvent> transactions = new();
+            
+                foreach (var exchange in _exchange.Values)
+                {
+                    transactions.AddRange(exchange.Transactions);
+                }
+                
+                return transactions;
+            } 
         }
-
-        public List<TransactionEvent> GetTransactions()
+        
+        public List<Order> Orders
         {
-            
-            List<TransactionEvent> transactions = new();
-            
-            foreach (var exchange in _exchange.Values)
+            get
             {
-                transactions.AddRange(exchange.Transactions);
-            }
+                List<Order> orders = new();
+                
+                foreach (var exchange in _exchange.Values)
+                {
+                    orders.AddRange(exchange.Orders);
+                }
 
-            return transactions;
+                return orders;
+            }
+        }
+        public void AddParticipant(string username)
+        {
+            if (_participants.Contains(username)) return;
+            
+            _participants.Add(username);
         }
 
         // return error

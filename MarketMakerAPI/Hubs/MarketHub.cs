@@ -77,9 +77,9 @@ namespace MarketMaker.Hubs
         {
             IMarketService marketService = _marketService.Markets[marketName];
             return new MarketStateResponse(
-                _userServices.GetUsers().Select(user => user.Name).ToList(),
-                marketService.GetOrders(),
-                marketService.GetTransactions()
+                marketService.Participants,
+                marketService.Orders,
+                marketService.Transactions
             );
         }
 
@@ -120,17 +120,16 @@ namespace MarketMaker.Hubs
         {
             var user = _userServices.GetUser(Context.ConnectionId);
             
+            // TODO: if not username or market return error
+            
             user.Name = username;
 
             var marketService = _marketService.Markets[user.Market];
 
             // retrieve cookie/local storage/claim etc
             
-            if (marketService.Participants.Contains(username))
-            {
-                return;
-            }
-
+            marketService.AddParticipant(username);
+            
             await Clients.Caller.ReceiveMessage($"joined market"); 
             await Clients.Group(user.Market).UserJoined(username);
         }
