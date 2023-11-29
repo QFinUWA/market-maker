@@ -12,7 +12,7 @@ namespace MarketMaker.Hubs
     {
         private readonly MarketGroup _marketService;
         private readonly IUserService _userServices;
-        private readonly int _marketcodelength = 5;
+        private const int MarketCodeLength = 5;
         private readonly Random _random;
         public MarketHub(MarketGroup marketService, IUserService userService) 
         {
@@ -28,10 +28,10 @@ namespace MarketMaker.Hubs
         
         public async Task MakeNewMarket()
         {
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            var stringChars = new char[_marketcodelength];
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var stringChars = new char[MarketCodeLength];
 
-            for (int i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
+            for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
 
             var marketCode = new String(stringChars);
             

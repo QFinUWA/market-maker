@@ -11,11 +11,11 @@ namespace MarketMaker.UnitTests
 {
     public class ExchangeTests : IDisposable
     {
-        Exchange exchange;
+        private readonly Exchange _exchange;
         private readonly ITestOutputHelper _testOutputHelper;
 
         public ExchangeTests(ITestOutputHelper testOutputHelper) {
-            exchange = new Exchange();
+            _exchange = new Exchange();
             _testOutputHelper = testOutputHelper;
         }
 
@@ -27,9 +27,9 @@ namespace MarketMaker.UnitTests
             //Act
                                     
             //Assert
-            Assert.Empty(exchange.GetOrders());
-            Assert.Empty(exchange.bid);
-            Assert.Empty(exchange.ask);
+            Assert.Empty(_exchange.Orders);
+            Assert.Empty(_exchange.Bid);
+            Assert.Empty(_exchange.Ask);
         }
 
         [Fact, ]
@@ -40,11 +40,11 @@ namespace MarketMaker.UnitTests
 
             //Act
 
-            exchange.NewOrder(bidOrder);
+            _exchange.NewOrder(bidOrder);
 
 
             //Assert
-            Assert.Equal(1, exchange.bid[100].Count);
+            Assert.Equal(1, _exchange.Bid[100].Count);
         }
 
         [Fact]
@@ -55,11 +55,11 @@ namespace MarketMaker.UnitTests
 
             //Act
 
-            exchange.NewOrder(askOrder);
+            _exchange.NewOrder(askOrder);
 
 
             //Assert
-            Assert.Equal(1, exchange.ask[99].Count);
+            Assert.Equal(1, _exchange.Ask[99].Count);
         }
 
         [Fact]
@@ -70,13 +70,13 @@ namespace MarketMaker.UnitTests
             Order bidOrder = Order.MakeOrder("userB", "ABC", 50, 1);
 
             //Act
-            exchange.NewOrder(bidOrder);
-            exchange.NewOrder(askOrder);
+            _exchange.NewOrder(bidOrder);
+            _exchange.NewOrder(askOrder);
 
 
             //Assert
-            Assert.Equal(0, exchange.ask[50].Count);
-            Assert.Equal(0, exchange.bid[50].Count);
+            Assert.Equal(0, _exchange.Ask[50].Count);
+            Assert.Equal(0, _exchange.Bid[50].Count);
         }
 
         [Fact]
@@ -87,13 +87,13 @@ namespace MarketMaker.UnitTests
             Order askOrder = Order.MakeOrder("userA", "ABC", 51, -1);
 
             //Act
-            exchange.NewOrder(askOrder);
-            exchange.NewOrder(bidOrder);
+            _exchange.NewOrder(askOrder);
+            _exchange.NewOrder(bidOrder);
 
 
             //Assert
-            Assert.Equal(0, exchange.ask[51].Count);
-            Assert.Equal(0, exchange.bid[51].Count);
+            Assert.Equal(0, _exchange.Ask[51].Count);
+            Assert.Equal(0, _exchange.Bid[51].Count);
         }
 
         [Fact]
@@ -108,19 +108,19 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            exchange.NewOrder(askOrder1);
-            exchange.NewOrder(askOrder2);
-            exchange.NewOrder(askOrder3);
-            exchange.NewOrder(bidOrder);
+            _exchange.NewOrder(askOrder1);
+            _exchange.NewOrder(askOrder2);
+            _exchange.NewOrder(askOrder3);
+            _exchange.NewOrder(bidOrder);
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
 
-            Assert.Equal(0, exchange.ask[price].Count);
-            Assert.Equal(1, exchange.bid[price].Count);
+            Assert.Equal(0, _exchange.Ask[price].Count);
+            Assert.Equal(1, _exchange.Bid[price].Count);
 
-            Assert.Equal(2, exchange.GetOrder(bidOrderId).Quantity);
+            Assert.Equal(2, _exchange.GetOrder(bidOrderId).Quantity);
 
         }
         [Fact]
@@ -135,18 +135,18 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            exchange.NewOrder(bidOrder);
-            exchange.NewOrder(askOrder1);
-            exchange.NewOrder(askOrder2);
-            exchange.NewOrder(askOrder3);
+            _exchange.NewOrder(bidOrder);
+            _exchange.NewOrder(askOrder1);
+            _exchange.NewOrder(askOrder2);
+            _exchange.NewOrder(askOrder3);
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(0, exchange.ask[price].Count); 
-            Assert.Equal(1, exchange.bid[price].Count); 
+            Assert.Equal(0, _exchange.Ask[price].Count); 
+            Assert.Equal(1, _exchange.Bid[price].Count); 
 
-            Assert.Equal(2, exchange.GetOrder(bidOrderId).Quantity); 
+            Assert.Equal(2, _exchange.GetOrder(bidOrderId).Quantity); 
 
 
         }
@@ -163,21 +163,21 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            exchange.NewOrder(askOrder1);
-            exchange.NewOrder(askOrder2);
-            exchange.DeleteOrder(askOrder2.Id, "userC".ToLower());
-            exchange.NewOrder(askOrder3);
-            exchange.NewOrder(bidOrder);
+            _exchange.NewOrder(askOrder1);
+            _exchange.NewOrder(askOrder2);
+            _exchange.DeleteOrder(askOrder2.Id, "userC".ToLower());
+            _exchange.NewOrder(askOrder3);
+            _exchange.NewOrder(bidOrder);
 
-            exchange.RemoveEmptyOrders();
+            _exchange.RemoveEmptyOrders();
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.False(exchange.ask.ContainsKey(price));
-            Assert.Equal(1, exchange.bid[price].Count);
+            Assert.False(_exchange.Ask.ContainsKey(price));
+            Assert.Equal(1, _exchange.Bid[price].Count);
 
-            Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
+            Assert.Equal(6, _exchange.GetOrder(bidOrderId).Quantity);
 
 
         }
@@ -193,19 +193,19 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            exchange.NewOrder(bidOrder);
-            exchange.DeleteOrder(bidOrderId, "userA".ToLower());
-            exchange.NewOrder(askOrder1);
-            exchange.NewOrder(askOrder2);
-            exchange.NewOrder(askOrder3);
+            _exchange.NewOrder(bidOrder);
+            _exchange.DeleteOrder(bidOrderId, "userA".ToLower());
+            _exchange.NewOrder(askOrder1);
+            _exchange.NewOrder(askOrder2);
+            _exchange.NewOrder(askOrder3);
 
-            exchange.RemoveEmptyOrders();
+            _exchange.RemoveEmptyOrders();
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(3, exchange.ask[price].Count);
-            Assert.False(exchange.bid.ContainsKey(price));
+            Assert.Equal(3, _exchange.Ask[price].Count);
+            Assert.False(_exchange.Bid.ContainsKey(price));
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
 
@@ -221,16 +221,16 @@ namespace MarketMaker.UnitTests
             Order bidOrder2 = Order.MakeOrder("userA", "ABC", price+1, 10);
 
             //Act
-            exchange.NewOrder(bidOrder1);
-            exchange.NewOrder(bidOrder2);
-            bool result1 = exchange.DeleteOrder(bidOrder1.Id, "userA".ToLower());
-            bool result2 = exchange.DeleteOrder(bidOrder2.Id, "not_userA".ToLower());
-            exchange.RemoveEmptyOrders();
+            _exchange.NewOrder(bidOrder1);
+            _exchange.NewOrder(bidOrder2);
+            bool result1 = _exchange.DeleteOrder(bidOrder1.Id, "userA".ToLower());
+            bool result2 = _exchange.DeleteOrder(bidOrder2.Id, "not_userA".ToLower());
+            _exchange.RemoveEmptyOrders();
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.False(exchange.bid.ContainsKey(price));
-            Assert.Equal(1, exchange.bid[price+1].Count); 
+            Assert.False(_exchange.Bid.ContainsKey(price));
+            Assert.Equal(1, _exchange.Bid[price+1].Count); 
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
 

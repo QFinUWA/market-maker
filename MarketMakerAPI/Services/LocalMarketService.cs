@@ -91,7 +91,7 @@ namespace MarketMaker.Services
                 
                 exchange.Close(price);
 
-                foreach (var userProfit in exchange.userProfits)
+                foreach (var userProfit in exchange.UserProfits)
                 {
                     profits[userProfit.Key] = profits.GetValueOrDefault(userProfit.Key, 0) + userProfit.Value;
                 }
