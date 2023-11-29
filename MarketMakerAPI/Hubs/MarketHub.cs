@@ -78,7 +78,9 @@ namespace MarketMaker.Hubs
             IMarketService marketService = _marketService.Markets[marketName];
             return new MarketStateResponse(
                 _userServices.GetUsers().Select(user => user.Name).ToList(),
-                marketService.GetOrders());
+                marketService.GetOrders(),
+                marketService.GetTransactions()
+            );
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
@@ -179,7 +181,16 @@ namespace MarketMaker.Hubs
             
 
             var orderFilledTask = transactions.Select<TransactionEvent, Task>(transaction =>
-                Clients.Group(groupName).TransactionEvent(transaction)
+                Clients.Group(groupName).TransactionEvent(new TransactionEventResponse(
+                        transaction. BuyerUser,
+                        transaction.BuyerOrderId,
+                        transaction. SellerUser,
+                        transaction.SellerOrderId,
+                        transaction. Price,
+                        transaction. Quantity,
+                        transaction. Aggressor,
+                        transaction. TimeStamp
+                    ))
             );
 
             await Task.WhenAll(orderFilledTask);
