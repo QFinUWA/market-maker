@@ -22,18 +22,18 @@ namespace MarketMaker.Services
                 {
                     case MarketState.Lobby:
                         if (value == MarketState.Open) break;
-                        return;
+                        throw new ArgumentException("Lobby state can only transition to Open");
                     case MarketState.Open:
                         if (value == MarketState.Paused) break;
                         if (value == MarketState.Closed) break;
-                        return;
+                        throw new ArgumentException("Open state can only transition to Paused or Closed");
                     case MarketState.Paused:
                         if (value == MarketState.Open) break;
                         if (value == MarketState.Closed) break;
-                        return;
+                        throw new ArgumentException("Paused state can only transition to Open or Closed");
                     case MarketState.Closed:
                         if (value == MarketState.Open) break;
-                        return;
+                        throw new ArgumentException("Closed state can only transition to Open");
                     default:
                         return;
                 }
@@ -42,10 +42,10 @@ namespace MarketMaker.Services
             }
         }
 
-        public abstract void AddParticipant(string username);
-        public abstract (Order, List<Transaction>) NewOrder(string username, string exchange, int price, int quantity);
-        public abstract void DeleteOrder(Guid id, string user);
-        public abstract void AddExchange(string market);
+        public abstract bool AddParticipant(string username);
+        public abstract List<Transaction>? NewOrder(Order newOrder);
+        public abstract bool DeleteOrder(Guid id, string user);
+        public abstract bool AddExchange(string market);
         public abstract Dictionary<string, float> CloseMarket(Dictionary<string, int> prices);
     }
 }
