@@ -42,8 +42,7 @@ function refreshMarket() {
   }
 
   ordersList += "</nav></ul>";
-  document.getElementById("marketName").innerHTML = "Market Name: " + marketName;
-  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
+  
   document.getElementById("exchangeNames").innerHTML =
     "Exchanges: " + exchanges.join(", ");
   document.getElementById("market").innerHTML = ordersList;
@@ -138,6 +137,7 @@ connection.on("MarketConfig", (message)=> {
 connection.on("MarketCreated", newMarketCode => {
   marketCode = newMarketCode;
   document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
+  document.getElementById("marketName").innerHTML = "Market Name: [unamed market]";
   loadAdminPage();
 });
 

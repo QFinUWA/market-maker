@@ -1,4 +1,5 @@
-﻿using MarketMaker.Services;
+﻿using MarketMaker.Contracts;
+using MarketMaker.Services;
 using MarketMaker.Models;
 using Microsoft.AspNetCore.SignalR;
 
@@ -39,9 +40,7 @@ namespace MarketMaker.Hubs
             // make user an admin
             _userServices.AddAdmin(Context.ConnectionId, marketCode);
             await Clients.Caller.MarketCreated(marketCode);
-            await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
-            await Clients.Caller.MarketConfig(ResponseConstructor.MarketConfig(marketService));
-            await Clients.Caller.MarketState(ResponseConstructor.MarketState(marketService));
+            await Clients.Caller.StateUpdated(MarketState.InLobby.ToString());
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -56,7 +55,14 @@ namespace MarketMaker.Hubs
             IMarketService marketService = _marketServices.Markets[group];
 
             // add new exchange
-            marketService.AddExchange(exchangeName);
+            try
+            {
+                marketService.AddExchange(exchangeName);
+            }
+            catch (InvalidOperationException e)
+            {
+                
+            }
 
             // notify clients
             // await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
@@ -74,8 +80,15 @@ namespace MarketMaker.Hubs
             if (!user.IsAdmin) return;
 
             IMarketService marketService = _marketServices.Markets[group];
-
-            var profits = marketService.CloseMarket(prices);
+            Dictionary<string, float> profits;
+            try
+            {
+                profits = marketService.CloseMarket(prices);
+            }
+            catch (InvalidOperationException e)
+            {
+                
+            }
 
             // await Clients.Group(group).UpdateGameState("paused");
             //TODO: possibly don't make the new exchanges until the game has started by the admin - add a "market open"
@@ -100,7 +113,6 @@ namespace MarketMaker.Hubs
         
         public async Task UpdateMarketState(string newStateString)
         {
-            
             var user = _userServices.GetUser(Context.ConnectionId);
             var marketCode = user.Market;
             
@@ -142,7 +154,7 @@ namespace MarketMaker.Hubs
 
             marketService.State = newState;
             
-            await Clients.Group(marketCode).StateUpdated(newState.ToString());
+            await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
         }
 
         public async Task JoinMarket(string username)
@@ -190,12 +202,21 @@ namespace MarketMaker.Hubs
 
             // TODO: NewOrder should raise an exception if the order was rejected, 
             //       in which case the clients shouldn't be alerted about a new order
-            
-            var (newOrder, transactions) = marketService.NewOrder(
-                user.Name,
-                exchange,
-                price,
-                quantity);
+
+            Order newOrder;
+            List<Transaction> transactions;
+            try
+            {
+                (newOrder, transactions) = marketService.NewOrder(
+                    user.Name,
+                    exchange,
+                    price,
+                    quantity);
+            }
+            catch (InvalidOperationException e)
+            {
+                throw e;
+            }
 
 
             await Clients.Group(groupName).NewOrder(ResponseConstructor.NewOrder(newOrder));

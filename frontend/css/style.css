@@ -11,3 +11,7 @@ li {
 
 nav ul{height:500px;}
 nav ul{overflow:hidden; overflow-y:scroll;}
+body {
+  background-color: black;
+  color: white;
+}

@@ -8,8 +8,8 @@ namespace MarketMaker.Services
         private readonly Dictionary<string, Exchange> _exchange = new();
         private readonly List<string> _participants = new();
         private readonly MarketConfig _config = new();
-        private readonly MarketState _state = MarketState.InLobby;
-
+        private MarketState _state = MarketState.InLobby;
+        // public int MyProperty { get; set; } = 42;
         public MarketConfig Config
         {
             get
@@ -18,7 +18,17 @@ namespace MarketMaker.Services
             }
         }
 
-        public MarketState State { get; set; }
+        public MarketState State
+        {
+            get
+            {
+                return _state;
+            }
+            set
+            {
+                _state = value;
+            }
+        }
         
         public List<string> Exchanges
         {
@@ -69,6 +79,8 @@ namespace MarketMaker.Services
         // return error
         public void DeleteOrder(Guid id, string user)
         {
+            if (_state != MarketState.Open) throw new InvalidOperationException();
+            
             foreach (var market in _exchange.Values)
             {
                 if (market.DeleteOrder(id, user)) return;
@@ -77,6 +89,8 @@ namespace MarketMaker.Services
 
         public (Order, List<Transaction>) NewOrder(string username, string exchange, int price, int quantity)
         {
+            if (_state != MarketState.Open) throw new InvalidOperationException();
+            
             var order = Order.MakeOrder(
                 username,
                 exchange,
@@ -92,11 +106,16 @@ namespace MarketMaker.Services
 
         public void AddExchange(string market)
         {
+            if (_state != MarketState.InLobby) throw new InvalidOperationException();
+            
             _exchange.Add(market, new Exchange());
         }
 
         public Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
         {
+            if (_state == MarketState.InLobby) throw new InvalidOperationException();
+            if (_state == MarketState.Closed) throw new InvalidOperationException();
+
             Dictionary<string, float> profits = new();
             foreach (var (exchangeName, exchange) in _exchange)
             {
