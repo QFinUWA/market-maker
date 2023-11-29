@@ -15,7 +15,7 @@ namespace MarketMaker.Services
 
         public MarketState State
         {
-            get { return _state; }
+            get => _state;
             set
             {
                 switch (_state)

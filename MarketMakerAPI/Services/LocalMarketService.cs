@@ -68,7 +68,7 @@ namespace MarketMaker.Services
         {
             if (State != MarketState.Open) throw new InvalidOperationException();
             
-            var order = Order.MakeOrder(
+            var order = new Order(
                 username,
                 exchange,
                 price,

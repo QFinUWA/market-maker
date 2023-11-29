@@ -15,39 +15,19 @@ namespace MarketMaker.Models
 
         public DateTime TimeStamp { get; }
 
-        private Order(
-            Guid id,
+        public Order(
             string user,
             string market,
             int price,
-            int quantity,
-            DateTime timeStamp
+            int quantity
             )
         {
-            Id = id;
+            Id = Guid.NewGuid();
             User = user.ToLower();
             Exchange = market;
             Price = price;
             Quantity = quantity;
-            TimeStamp = timeStamp;
-        }
-
-        public static Order MakeOrder(
-            string user,
-            string market, 
-            int price,
-            int quantity,
-            Guid? id = null
-            )
-        {
-            return new Order(
-                id ?? Guid.NewGuid(),
-                user,
-                market,
-                price,
-                quantity,
-                DateTime.Now
-                );
+            TimeStamp = DateTime.Now;
         }
 
         public object Clone()

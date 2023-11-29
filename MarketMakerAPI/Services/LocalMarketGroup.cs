@@ -2,11 +2,7 @@
 {
     public class MarketGroup
     {
-        public Dictionary<string, LocalMarketService> Markets { get; }
+        public Dictionary<string, LocalMarketService> Markets { get; } = new();
 
-        public MarketGroup() 
-        {
-            Markets = new();
-        }
     }
 }

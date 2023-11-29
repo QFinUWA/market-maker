@@ -14,7 +14,8 @@ namespace MarketMaker.UnitTests
         private readonly Exchange _exchange;
         private readonly ITestOutputHelper _testOutputHelper;
 
-        public ExchangeTests(ITestOutputHelper testOutputHelper) {
+        public ExchangeTests(ITestOutputHelper testOutputHelper)
+        {
             _exchange = new Exchange();
             _testOutputHelper = testOutputHelper;
         }
@@ -36,7 +37,7 @@ namespace MarketMaker.UnitTests
         public void AddSingleBid()
         {
             //Arange
-            Order bidOrder = Order.MakeOrder("userA", "ABC", 100, 1);
+            Order bidOrder = new Order("userA", "ABC", 100, 1);
 
             //Act
 
@@ -51,7 +52,7 @@ namespace MarketMaker.UnitTests
         public void AddSingleAsk()
         {
             //Arange
-            Order askOrder = Order.MakeOrder("userA", "ABC", 99, -1);
+            Order askOrder = new Order("userA", "ABC", 99, -1);
 
             //Act
 
@@ -66,8 +67,8 @@ namespace MarketMaker.UnitTests
         public void HitSingleBid()
         {
             //Arange
-            Order askOrder = Order.MakeOrder("userA", "ABC", 50, -1);
-            Order bidOrder = Order.MakeOrder("userB", "ABC", 50, 1);
+            Order askOrder = new Order("userA", "ABC", 50, -1);
+            Order bidOrder = new Order("userB", "ABC", 50, 1);
 
             //Act
             _exchange.NewOrder(bidOrder);
@@ -83,8 +84,8 @@ namespace MarketMaker.UnitTests
         public void HitSingleAsk()
         {
             //Arange
-            Order bidOrder = Order.MakeOrder("userB", "ABC", 51, 1);
-            Order askOrder = Order.MakeOrder("userA", "ABC", 51, -1);
+            Order bidOrder = new Order("userB", "ABC", 51, 1);
+            Order askOrder = new Order("userA", "ABC", 51, -1);
 
             //Act
             _exchange.NewOrder(askOrder);
@@ -101,10 +102,10 @@ namespace MarketMaker.UnitTests
         {
             int price = 60;
             //Arange
-            Order bidOrder = Order.MakeOrder("userA", "ABC", price, 10);
-            Order askOrder1 = Order.MakeOrder("userB", "ABC", price, -3);
-            Order askOrder2 = Order.MakeOrder("userC", "ABC", price, -4);
-            Order askOrder3 = Order.MakeOrder("userD", "ABC", price, -1);
+            Order bidOrder = new Order("userA", "ABC", price, 10);
+            Order askOrder1 = new Order("userB", "ABC", price, -3);
+            Order askOrder2 = new Order("userC", "ABC", price, -4);
+            Order askOrder3 = new Order("userD", "ABC", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -128,10 +129,10 @@ namespace MarketMaker.UnitTests
         {
             int price = 61;
             //Arange
-            Order bidOrder = Order.MakeOrder("userA", "ABC", price, 10);
-            Order askOrder1 = Order.MakeOrder("userB", "ABC", price, -3);
-            Order askOrder2 = Order.MakeOrder("userC", "ABC", price, -4);
-            Order askOrder3 = Order.MakeOrder("userD", "ABC", price, -1);
+            Order bidOrder = new Order("userA", "ABC", price, 10);
+            Order askOrder1 = new Order("userB", "ABC", price, -3);
+            Order askOrder2 = new Order("userC", "ABC", price, -4);
+            Order askOrder3 = new Order("userD", "ABC", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -156,10 +157,10 @@ namespace MarketMaker.UnitTests
         {
             int price = 71;
             //Arange
-            Order bidOrder = Order.MakeOrder("userA", "ABC", price, 10);
-            Order askOrder1 = Order.MakeOrder("userB", "ABC", price, -3);
-            Order askOrder2 = Order.MakeOrder("userC", "ABC", price, -4);
-            Order askOrder3 = Order.MakeOrder("userD", "ABC", price, -1);
+            Order bidOrder = new Order("userA", "ABC", price, 10);
+            Order askOrder1 = new Order("userB", "ABC", price, -3);
+            Order askOrder2 = new Order("userC", "ABC", price, -4);
+            Order askOrder3 = new Order("userD", "ABC", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -186,10 +187,10 @@ namespace MarketMaker.UnitTests
         {
             int price = 71;
             //Arange
-            Order bidOrder = Order.MakeOrder("userA", "ABC", price, 10);
-            Order askOrder1 = Order.MakeOrder("userB", "ABC", price, -3);
-            Order askOrder2 = Order.MakeOrder("userC", "ABC", price, -4);
-            Order askOrder3 = Order.MakeOrder("userD", "ABC", price, -1);
+            Order bidOrder = new Order("userA", "ABC", price, 10);
+            Order askOrder1 = new Order("userB", "ABC", price, -3);
+            Order askOrder2 = new Order("userC", "ABC", price, -4);
+            Order askOrder3 = new Order("userD", "ABC", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -217,8 +218,8 @@ namespace MarketMaker.UnitTests
         {
             int price = 71;
             //Arange
-            Order bidOrder1 = Order.MakeOrder("userA", "ABC", price, 10);
-            Order bidOrder2 = Order.MakeOrder("userA", "ABC", price+1, 10);
+            Order bidOrder1 = new Order("userA", "ABC", price, 10);
+            Order bidOrder2 = new Order("userA", "ABC", price+1, 10);
 
             //Act
             _exchange.NewOrder(bidOrder1);
