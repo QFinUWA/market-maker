@@ -1,4 +1,5 @@
 // get the element with id "market" and insert a list of items
+
 const connection = new signalR.HubConnectionBuilder()
   .withUrl("https://localhost:7221/market", {
   // .withUrl("https://market-maker-prod.azurewebsites.net/market", {
@@ -22,6 +23,7 @@ var exchanges = [];
 var marketName = "";
 var transactions = [];
 let state = "";
+let marketCode = "";
 // define function
 
 function refreshMarket() {
@@ -40,7 +42,8 @@ function refreshMarket() {
   }
 
   ordersList += "</nav></ul>";
-  document.getElementById("marketName").innerHTML = "Market Code: " + marketName;
+  document.getElementById("marketName").innerHTML = "Market Name: " + marketName;
+  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
   document.getElementById("exchangeNames").innerHTML =
     "Exchanges: " + exchanges.join(", ");
   document.getElementById("market").innerHTML = ordersList;
@@ -53,14 +56,26 @@ function refreshMarket() {
   document.getElementById("transactions").innerHTML = transactionsList;
 
   document.getElementById("state").innerHTML = "State: " + state;
-  console.log(document.getElementById("state").innerHTML);
+  // console.log(document.getElementById("state").innerHTML);
 }
 
 function formatOrder(order) {
+  var date = new Date(Date.parse(order["timeStamp"]));
+
+  const formattedDateString = date.toLocaleString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
+  const milliseconds = date.getMilliseconds();
+  const formattedWithMilliseconds = `${formattedDateString}.${milliseconds}`;
+
   return (
     order["exchange"] + 
     ") " + 
-    order["timeStamp"] +
+    formattedWithMilliseconds + 
     ": " +
     " $" +
     order["price"] +
@@ -78,8 +93,8 @@ function formatTransaction(transactionEvent) {
   var buyerIsAgressor = transactionEvent["aggressor"] == buyer;
   var users = buyerIsAgressor ? [buyer, seller] : [seller, buyer];
 
-  var action = buyerIsAgressor ? ["bought", "from"] : ["sold", "to"]; 
-  var str = `${users[0]} ${action[0]} ${transactionEvent["quantity"]} ${action[1]} ${users[1]} @ $${transactionEvent["price"]}`
+  var action = buyerIsAgressor ? "bought from" : "sold to"; 
+  var str = `${users[0]} ${action} ${users[1]}, ${transactionEvent["quantity"]} @ $${transactionEvent["price"]}`
 
   return str;
 }
@@ -92,7 +107,7 @@ connection.on("ReceiveMessage", (message) => {
 });
 
 connection.on("MarketState", (market) => {
-  console.log("marketState", market);
+  // console.log("marketState", market);
   // add all orders to orders dictionary
   market["orders"].forEach((order) => {
     orders[order["id"]] = order;
@@ -109,19 +124,25 @@ connection.on("MarketState", (market) => {
 
 connection.on("StateUpdated", (newState) => {
   state = newState;
-  console.log(newState)
+  // console.log(newState)
   refreshMarket();
 });
 
 connection.on("MarketConfig", (message)=> {
-  console.log("market config", message);  
-  marketName = message["marketName"]
+  // console.log("market config", message);  
+  marketName = message["marketName"] ?? "[unamed market]";
   exchanges = message["exchanges"]
   refreshMarket();
 });
 
+connection.on("MarketCreated", newMarketCode => {
+  marketCode = newMarketCode;
+  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
+  loadAdminPage();
+});
+
 connection.on("NewOrder", (order) => {
-  console.log(order)
+  // console.log(order)
   // console.log("new Order")
   orders[order["id"]] = order;
 
@@ -190,7 +211,7 @@ const adminHtml = `
 `;
 
 function updateState(element) {
-  
+
   let newState = element.value;
   connection.invoke("UpdateMarketState", newState);
 
@@ -222,7 +243,7 @@ function loadUserPage() {
     let market = document.getElementById("exchangeInput").value;
     let price = document.getElementById("priceInput").value;
     let quantity = document.getElementById("quantityInput").value;
-    console.log("placed order",  market, parseInt(price), parseInt(quantity)); 
+    // console.log("placed order",  market, parseInt(price), parseInt(quantity)); 
     connection
       .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity))
       .catch((err) => console.error(err.toString()));
@@ -247,11 +268,12 @@ document.getElementById("commands").innerHTML = loadingHtml;
 
 document.getElementById("makeMarket").onclick = () => {
   connection.invoke("MakeNewMarket");
-  loadAdminPage();
 };
 
 document.getElementById("joinMarket").onclick = () => {
   let market = document.getElementById("joinMakeMarketText").value;
   connection.invoke("JoinMarketLobby", market);
+  marketCode = market;
+  refreshMarket(); //
   loadUserPage();
 };

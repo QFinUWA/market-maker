@@ -1,10 +1,6 @@
-﻿using MarketMaker.Contracts;
-using MarketMaker.Services;
+﻿using MarketMaker.Services;
 using MarketMaker.Models;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Mvc;
-using System.Linq;
-//using Microsoft.AspNet.SignalR;
 
 namespace MarketMaker.Hubs
 {
@@ -42,10 +38,10 @@ namespace MarketMaker.Hubs
 
             // make user an admin
             _userServices.AddAdmin(Context.ConnectionId, marketCode);
-            
+            await Clients.Caller.MarketCreated(marketCode);
             await Clients.Caller.ReceiveMessage($"added {marketCode} as a market.");
-            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(marketCode));
-            await Clients.Caller.MarketState(MakeMarketStateResponse(marketCode));
+            await Clients.Caller.MarketConfig(ResponseConstructor.MarketConfig(marketService));
+            await Clients.Caller.MarketState(ResponseConstructor.MarketState(marketService));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -65,26 +61,8 @@ namespace MarketMaker.Hubs
             // notify clients
             // await Clients.Group(group).ReceiveMessage($"added {exchangeName} as an exchange.");
             // TODO: make marketconfigresponse take in the market service
-            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(group));
-        }
+            await Clients.Group(group).MarketConfig(ResponseConstructor.MarketConfig(marketService));
 
-        private MarketConfigResponse MakeMarketConfigResponse(string marketName)
-        {
-            IMarketService marketService = _marketServices.Markets[marketName];
-
-            return new MarketConfigResponse(marketName, marketService.Exchanges.ToList());
-        }
-
-
-        private MarketStateResponse MakeMarketStateResponse(string marketName)
-        {
-            IMarketService marketService = _marketServices.Markets[marketName];
-            return new MarketStateResponse(
-                marketService.Participants,
-                marketService.Orders,
-                marketService.Transactions,
-                MarketState.InLobby.ToString()
-            );
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
@@ -113,11 +91,11 @@ namespace MarketMaker.Hubs
 
             _userServices.AddUser(groupName, Context.ConnectionId);
             
-            await Clients.Caller.ReceiveMessage($"joined lobby");
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
             
-            await Clients.Caller.MarketConfig(MakeMarketConfigResponse(groupName));
-            await Clients.Caller.MarketState(MakeMarketStateResponse(groupName));
+            await Clients.Caller.MarketConfig(ResponseConstructor.MarketConfig(marketService));
+            await Clients.Caller.MarketState(ResponseConstructor.MarketState(marketService));
+
         }
         
         public async Task UpdateMarketState(string newStateString)
@@ -220,27 +198,11 @@ namespace MarketMaker.Hubs
                 quantity);
 
 
-            await Clients.Group(groupName).NewOrder(new NewOrderResponse(
-                newOrder.User,
-                newOrder.Exchange,
-                newOrder.Price,
-                newOrder.Quantity,
-                newOrder.TimeStamp,
-                newOrder.Id
-            ));
+            await Clients.Group(groupName).NewOrder(ResponseConstructor.NewOrder(newOrder));
             
 
             var orderFilledTask = transactions.Select<Transaction, Task>(transaction =>
-                Clients.Group(groupName).TransactionEvent(new TransactionResponse(
-                        transaction. BuyerUser,
-                        transaction.BuyerOrderId,
-                        transaction. SellerUser,
-                        transaction.SellerOrderId,
-                        transaction. Price,
-                        transaction. Quantity,
-                        transaction. Aggressor,
-                        transaction. TimeStamp
-                    ))
+                Clients.Group(groupName).TransactionEvent(ResponseConstructor.Transaction(transaction))
             );
 
             await Task.WhenAll(orderFilledTask);

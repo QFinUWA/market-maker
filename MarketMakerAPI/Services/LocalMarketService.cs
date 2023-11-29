@@ -8,9 +8,15 @@ namespace MarketMaker.Services
         private readonly Dictionary<string, Exchange> _exchange = new();
         private readonly List<string> _participants = new();
         private readonly MarketConfig _config = new();
-        private readonly MarketState _state = MarketState.InLobby; 
-        
-        public MarketConfig Config { get;  }
+        private readonly MarketState _state = MarketState.InLobby;
+
+        public MarketConfig Config
+        {
+            get
+            {
+                return _config;
+            }
+        }
 
         public MarketState State { get; set; }
         
