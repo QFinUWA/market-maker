@@ -31,10 +31,23 @@ namespace MarketMaker.Services
             
             foreach (var exchange in _exchange.Values)
             {
-                orders.AddRange(exchange.GetOrders());
+                orders.AddRange(exchange.Orders);
             }
 
             return orders;
+        }
+
+        public List<TransactionEvent> GetTransactions()
+        {
+            
+            List<TransactionEvent> transactions = new();
+            
+            foreach (var exchange in _exchange.Values)
+            {
+                transactions.AddRange(exchange.Transactions);
+            }
+
+            return transactions;
         }
 
         // return error
@@ -78,7 +91,7 @@ namespace MarketMaker.Services
                 
                 exchange.Close(price);
 
-                foreach (var userProfit in exchange.userProfits)
+                foreach (var userProfit in exchange.UserProfits)
                 {
                     profits[userProfit.Key] = profits.GetValueOrDefault(userProfit.Key, 0) + userProfit.Value;
                 }

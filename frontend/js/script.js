@@ -67,6 +67,18 @@ function formatOrder(order) {
   );
 }
 
+function formatTransaction(transactionEvent) {
+  var buyer = transactionEvent["buyerUser"] 
+  var seller = transactionEvent["sellerUser"]
+  
+  var buyerIsAgressor = transactionEvent["aggressor"] == buyer;
+  var users = buyerIsAgressor ? [buyer, seller] : [seller, buyer];
+
+  var action = buyerIsAgressor ? ["bought", "from"] : ["sold", "to"]; 
+  var str = `${users[0]} ${action[0]} ${transactionEvent["quantity"]} ${action[1]} ${users[1]} @ $${transactionEvent["price"]}`
+
+  return str;
+}
 connection.onclose(async () => {
   await start();
 });
@@ -76,15 +88,16 @@ connection.on("ReceiveMessage", (message) => {
 });
 
 connection.on("MarketState", (market) => {
-  // console.log(market);
 
   // add all orders to orders dictionary
-  for (var i = 0; i < orders.length; i++) {
-    orders[orders[i]["id"]] = orders[i];
-  }
+  market["orders"].forEach((order) => {
+    orders[order["id"]] = order;
+  });
 
-  // create a list of orders by price in html
-  // change innerHTML
+  market["transactions"].forEach((transactionEvent) => {
+    transactions.push(formatTransaction(transactionEvent));
+  });
+
   refreshMarket();
 });
 
@@ -113,7 +126,7 @@ connection.on("UserJoined", (user) => {
 
 function updateOrRemove(id, quantity)
 {
-  orders[id]["quantity"] -= Math.sign(orders[id]["quantity"]) * quantity;
+  orders[id]["quantity"] += quantity; 
   if (orders[id]["quantity"] == 0) {
     delete orders[id];
   }  
@@ -122,17 +135,10 @@ function updateOrRemove(id, quantity)
 
 connection.on("TransactionEvent", (transactionEvent) => {
 
-  var userA = orders[transactionEvent["aggressiveOrderId"]]["user"];
-  var userP = orders[transactionEvent["passiveOrderId"]]["user"];
-  var price = orders[transactionEvent["aggressiveOrderId"]]["price"];
+  transactions.push(formatTransaction(transactionEvent));
   
-  var action = orders[transactionEvent["aggressiveOrderId"]["quantity"]] > 0 ? ["bought", "from"] : ["sold", "to"]; 
-
-  var str = `${userA} ${action[0]} ${transactionEvent["quantityTraded"]} ${action[1]} ${userP} @ $${price}`
-  transactions.push(str);
-  
-  updateOrRemove(transactionEvent["aggressiveOrderId"], transactionEvent["quantityTraded"]);
-  updateOrRemove(transactionEvent["passiveOrderId"], transactionEvent["quantityTraded"]);
+  updateOrRemove(transactionEvent["buyerOrderId"], -transactionEvent["quantity"]);
+  updateOrRemove(transactionEvent["sellerOrderId"], transactionEvent["quantity"]);
   refreshMarket();
 });
 
@@ -151,6 +157,7 @@ const loadingHtml = `
 const userHtml = `
     <input type="text" id="nameInput" placeholder="Enter name">
     <button id="joinWithName">Join</button>
+    <button id="joinAsRandom">Join as Random</button>
     <input type="text" id="exchangeInput" placeholder="Enter exchange">
     <input type="number" id="priceInput" placeholder="Enter price">
     <input type="number" id="quantityInput" placeholder="Enter quantity">
@@ -172,6 +179,15 @@ function loadUserPage() {
 
   document.getElementById("joinWithName").onclick = () => {
     let name = document.getElementById("nameInput").value;
+    connection.invoke("JoinMarket", name);
+  };
+  
+  document.getElementById("joinAsRandom").onclick = () => {
+    let names = ["Tony", "Gil", "Jen", "Kate"];
+    let name = names[Math.floor(Math.random() * names.length)];
+
+    document.getElementById("nameInput").value = name;
+
     connection.invoke("JoinMarket", name);
   };
 

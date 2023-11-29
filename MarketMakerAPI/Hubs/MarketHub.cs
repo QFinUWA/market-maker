@@ -12,7 +12,7 @@ namespace MarketMaker.Hubs
     {
         private readonly MarketGroup _marketService;
         private readonly IUserService _userServices;
-        private readonly int _marketcodelength = 5;
+        private const int MarketCodeLength = 5;
         private readonly Random _random;
         public MarketHub(MarketGroup marketService, IUserService userService) 
         {
@@ -28,10 +28,10 @@ namespace MarketMaker.Hubs
         
         public async Task MakeNewMarket()
         {
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            var stringChars = new char[_marketcodelength];
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var stringChars = new char[MarketCodeLength];
 
-            for (int i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
+            for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
 
             var marketCode = new String(stringChars);
             
@@ -78,7 +78,9 @@ namespace MarketMaker.Hubs
             IMarketService marketService = _marketService.Markets[marketName];
             return new MarketStateResponse(
                 _userServices.GetUsers().Select(user => user.Name).ToList(),
-                marketService.GetOrders());
+                marketService.GetOrders(),
+                marketService.GetTransactions()
+            );
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
@@ -179,7 +181,16 @@ namespace MarketMaker.Hubs
             
 
             var orderFilledTask = transactions.Select<TransactionEvent, Task>(transaction =>
-                Clients.Group(groupName).TransactionEvent(transaction)
+                Clients.Group(groupName).TransactionEvent(new TransactionEventResponse(
+                        transaction. BuyerUser,
+                        transaction.BuyerOrderId,
+                        transaction. SellerUser,
+                        transaction.SellerOrderId,
+                        transaction. Price,
+                        transaction. Quantity,
+                        transaction. Aggressor,
+                        transaction. TimeStamp
+                    ))
             );
 
             await Task.WhenAll(orderFilledTask);
