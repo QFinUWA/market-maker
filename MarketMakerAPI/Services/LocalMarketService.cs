@@ -5,7 +5,7 @@ namespace MarketMaker.Services
 {
     public class LocalMarketService : MarketService
     {
-        private readonly Dictionary<string, Exchange> _exchange = new();
+        protected readonly Dictionary<string, Exchange> _exchange = new();
 
         public override List<string> Exchanges
         {
