@@ -5,7 +5,6 @@ namespace MarketMaker.Services
     public abstract class MarketService
     {
         public abstract List<string> Exchanges {  get; }
-        public abstract List<string> Participants { get; }
         public abstract List<Order> Orders { get; }
         public abstract List<Transaction> Transactions { get; }
 
@@ -18,6 +17,8 @@ namespace MarketMaker.Services
             get => _state;
             set
             {
+                if (_state == value) return;
+                
                 switch (_state)
                 {
                     case MarketState.Lobby:
@@ -32,7 +33,7 @@ namespace MarketMaker.Services
                         if (value == MarketState.Closed) break;
                         throw new ArgumentException("Paused state can only transition to Open or Closed");
                     case MarketState.Closed:
-                        if (value == MarketState.Open) break;
+                        if (value == MarketState.Lobby) break;
                         throw new ArgumentException("Closed state can only transition to Open");
                     default:
                         return;
@@ -42,7 +43,6 @@ namespace MarketMaker.Services
             }
         }
 
-        public abstract bool AddParticipant(string username);
         public abstract List<Transaction>? NewOrder(Order newOrder);
         public abstract bool DeleteOrder(Guid id, string user);
         public abstract bool AddExchange(string market);

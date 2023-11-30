@@ -28,11 +28,14 @@ namespace MarketMaker.Hubs
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             var stringChars = new char[MarketCodeLength];
+            string marketCode;
+            do
+            {
+                for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
+                marketCode = new String(stringChars);
+                
+            } while (!_marketServices.Markets.ContainsKey(marketCode));
 
-            for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
-
-            var marketCode = new String(stringChars);
-            
             // create new market service
             var marketService = new LocalMarketService();
             _marketServices.Markets[marketCode] = marketService;
@@ -145,9 +148,6 @@ namespace MarketMaker.Hubs
             var marketService = _marketServices.Markets[marketCode];
 
             // retrieve cookie/local storage/claim etc
-            
-            var userAdded = marketService.AddParticipant(username);
-            if (!userAdded) throw new Exception("Added user rejected");
             
             await Clients.Group(marketCode).UserJoined(username);
         }
