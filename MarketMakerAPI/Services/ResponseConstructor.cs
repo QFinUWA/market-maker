@@ -17,8 +17,8 @@ public static class ResponseConstructor
     public static MarketStateResponse MarketState(MarketService marketService)
     {
         return new MarketStateResponse(
-            marketService.Participants,
-            marketService.Orders,
+            new List<string>(),
+            marketService.Orders, // TODO: make lobbyState Response
             marketService.Transactions,
             marketService.State.ToString()
         );

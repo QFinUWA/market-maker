@@ -22,10 +22,9 @@ namespace MarketMaker.UnitTests
         public LocalMarketTests(ITestOutputHelper testOutputHelper)
         {
             _testOutputHelper = testOutputHelper;
-            _exchange.Add("ExchangeA", new Exchange());
-            _exchange.Add("ExchangeB", new Exchange());
-            _exchange.Add("ExchangeC", new Exchange());
-            _exchange.Add("ExchangeD", new Exchange());
+            Exchange.Add("ExchangeA", new Exchange());
+            Exchange.Add("ExchangeB", new Exchange());
+            Exchange.Add("ExchangeC", new Exchange());
         }
 
         [Fact]
@@ -36,9 +35,9 @@ namespace MarketMaker.UnitTests
             //Act
                                     
             //Assert
-            Assert.Empty(_exchange["ExchangeA"].Orders);
-            Assert.Empty(_exchange["ExchangeA"].Bid);
-            Assert.Empty(_exchange["ExchangeA"].Ask);
+            Assert.Empty(Exchange["ExchangeA"].Orders);
+            Assert.Empty(Exchange["ExchangeA"].Bid);
+            Assert.Empty(Exchange["ExchangeA"].Ask);
         }
 
         [Fact, ]
@@ -53,7 +52,7 @@ namespace MarketMaker.UnitTests
             NewOrder(bidOrder);
 
             //Assert
-            Assert.Equal(1, _exchange["ExchangeA"].Bid[_newPrice].Count);
+            Assert.Equal(1, Exchange["ExchangeA"].Bid[_newPrice].Count);
         }
 
         [Fact]
@@ -65,11 +64,11 @@ namespace MarketMaker.UnitTests
 
             //Act
 
-            _exchange["ExchangeA"].NewOrder(askOrder);
+            NewOrder(askOrder);
 
 
             //Assert
-            Assert.Equal(1, _exchange["ExchangeA"].Ask[price].Count);
+            Assert.Equal(1, Exchange["ExchangeA"].Ask[price].Count);
         }
 
         [Fact]
@@ -81,13 +80,13 @@ namespace MarketMaker.UnitTests
             Order bidOrder = new Order("userB", "ExchangeA", price, 1);
 
             //Act
-            _exchange["ExchangeA"].NewOrder(bidOrder);
-            _exchange["ExchangeA"].NewOrder(askOrder);
+            NewOrder(bidOrder);
+            NewOrder(askOrder);
 
 
             //Assert
-            Assert.Equal(0, _exchange["ExchangeA"].Ask[price].Count);
-            Assert.Equal(0, _exchange["ExchangeA"].Bid[price].Count);
+            Assert.Equal(0, Exchange["ExchangeA"].Ask[price].Count);
+            Assert.Equal(0, Exchange["ExchangeA"].Bid[price].Count);
         }
 
         [Fact]
@@ -99,13 +98,12 @@ namespace MarketMaker.UnitTests
             Order askOrder = new Order("userA", "ExchangeA", price, -1);
 
             //Act
-            _exchange["ExchangeA"].NewOrder(askOrder);
-            _exchange["ExchangeA"].NewOrder(bidOrder);
-
+            NewOrder(askOrder);
+            NewOrder(bidOrder);
 
             //Assert
-            Assert.Equal(0, _exchange["ExchangeA"].Ask[price].Count);
-            Assert.Equal(0, _exchange["ExchangeA"].Bid[price].Count);
+            Assert.Equal(0, Exchange["ExchangeA"].Ask[price].Count);
+            Assert.Equal(0, Exchange["ExchangeA"].Bid[price].Count);
         }
 
         [Fact]
@@ -120,19 +118,19 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            _exchange["ExchangeA"].NewOrder(askOrder1);
-            _exchange["ExchangeA"].NewOrder(askOrder2);
-            _exchange["ExchangeA"].NewOrder(askOrder3);
-            _exchange["ExchangeA"].NewOrder(bidOrder);
+            NewOrder(askOrder1);
+            NewOrder(askOrder2);
+            NewOrder(askOrder3);
+            NewOrder(bidOrder);
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
 
-            Assert.Equal(0, _exchange["ExchangeA"].Ask[price].Count);
-            Assert.Equal(1, _exchange["ExchangeA"].Bid[price].Count);
+            Assert.Equal(0, Exchange["ExchangeA"].Ask[price].Count);
+            Assert.Equal(1, Exchange["ExchangeA"].Bid[price].Count);
 
-            Assert.Equal(2, _exchange["ExchangeA"].GetOrder(bidOrderId).Quantity);
+            Assert.Equal(2, Exchange["ExchangeA"].GetOrder(bidOrderId).Quantity);
 
         }
         [Fact]
@@ -147,18 +145,18 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            _exchange["ExchangeA"].NewOrder(bidOrder);
-            _exchange["ExchangeA"].NewOrder(askOrder1);
-            _exchange["ExchangeA"].NewOrder(askOrder2);
-            _exchange["ExchangeA"].NewOrder(askOrder3);
+            NewOrder(bidOrder);
+            NewOrder(askOrder1);
+            NewOrder(askOrder2);
+            NewOrder(askOrder3);
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(0, _exchange["ExchangeA"].Ask[price].Count); 
-            Assert.Equal(1, _exchange["ExchangeA"].Bid[price].Count); 
+            Assert.Equal(0, Exchange["ExchangeA"].Ask[price].Count); 
+            Assert.Equal(1, Exchange["ExchangeA"].Bid[price].Count); 
 
-            Assert.Equal(2, _exchange["ExchangeA"].GetOrder(bidOrderId).Quantity);
+            Assert.Equal(2, Exchange["ExchangeA"].GetOrder(bidOrderId).Quantity);
 
         }
 
@@ -174,21 +172,21 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            _exchange["ExchangeA"].NewOrder(askOrder1);
-            _exchange["ExchangeA"].NewOrder(askOrder2);
-            _exchange["ExchangeA"].DeleteOrder(askOrder2.Id, "userC".ToLower());
-            _exchange["ExchangeA"].NewOrder(askOrder3);
-            _exchange["ExchangeA"].NewOrder(bidOrder);
+            NewOrder(askOrder1);
+            NewOrder(askOrder2);
+            DeleteOrder(askOrder2.Id, "userC".ToLower());
+            NewOrder(askOrder3);
+            NewOrder(bidOrder);
 
-            _exchange["ExchangeA"].RemoveEmptyOrders();
+            Exchange["ExchangeA"].RemoveEmptyOrders();
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.False(_exchange["ExchangeA"].Ask.ContainsKey(price));
-            Assert.Equal(1, _exchange["ExchangeA"].Bid[price].Count);
+            Assert.False(Exchange["ExchangeA"].Ask.ContainsKey(price));
+            Assert.Equal(1, Exchange["ExchangeA"].Bid[price].Count);
 
-            Assert.Equal(6, _exchange["ExchangeA"].GetOrder(bidOrderId).Quantity);
+            Assert.Equal(6, Exchange["ExchangeA"].GetOrder(bidOrderId).Quantity);
 
         }
         [Fact]
@@ -203,19 +201,19 @@ namespace MarketMaker.UnitTests
             Guid bidOrderId = bidOrder.Id;
 
             //Act
-            _exchange["ExchangeA"].NewOrder(bidOrder);
-            _exchange["ExchangeA"].DeleteOrder(bidOrderId, "userA".ToLower());
-            _exchange["ExchangeA"].NewOrder(askOrder1);
-            _exchange["ExchangeA"].NewOrder(askOrder2);
-            _exchange["ExchangeA"].NewOrder(askOrder3);
+            NewOrder(bidOrder);
+            DeleteOrder(bidOrderId, "userA".ToLower());
+            NewOrder(askOrder1);
+            NewOrder(askOrder2);
+            NewOrder(askOrder3);
 
-            _exchange["ExchangeA"].RemoveEmptyOrders();
+            Exchange["ExchangeA"].RemoveEmptyOrders();
 
 
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(3, _exchange["ExchangeA"].Ask[price].Count);
-            Assert.False(_exchange["ExchangeA"].Bid.ContainsKey(price));
+            Assert.Equal(3, Exchange["ExchangeA"].Ask[price].Count);
+            Assert.False(Exchange["ExchangeA"].Bid.ContainsKey(price));
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
 
@@ -232,20 +230,114 @@ namespace MarketMaker.UnitTests
             Order bidOrder2 = new Order("userA", "ExchangeA", priceB, 10);
 
             //Act
-            _exchange["ExchangeA"].NewOrder(bidOrder1);
-            _exchange["ExchangeA"].NewOrder(bidOrder2);
-            bool result1 = _exchange["ExchangeA"].DeleteOrder(bidOrder1.Id, "userA".ToLower());
-            bool result2 = _exchange["ExchangeA"].DeleteOrder(bidOrder2.Id, "not_userA".ToLower());
-            _exchange["ExchangeA"].RemoveEmptyOrders();
+            NewOrder(bidOrder1);
+            NewOrder(bidOrder2);
+            bool result1 = DeleteOrder(bidOrder1.Id, "userA".ToLower());
+            bool result2 = DeleteOrder(bidOrder2.Id, "not_userA".ToLower());
+            Exchange["ExchangeA"].RemoveEmptyOrders();
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.False(_exchange["ExchangeA"].Bid.ContainsKey(priceA));
-            Assert.Equal(1, _exchange["ExchangeA"].Bid[priceB].Count); 
+            Assert.False(Exchange["ExchangeA"].Bid.ContainsKey(priceA));
+            Assert.Equal(1, Exchange["ExchangeA"].Bid[priceB].Count); 
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
 
 
         }
+        // ordering on different exchanges
+        [Fact]
+        public void MultipleExchanges()
+        {
+            int price = NewPrice;
+            var bidOrderA = new Order("userA", "ExchangeA", price, 10);
+            var askOrderA = new Order("userB", "ExchangeB", price, -10);
+
+            NewOrder(bidOrderA);
+            NewOrder(askOrderA);
+            
+            Assert.Equal(1, Exchange["ExchangeA"].Bid[price].Count); 
+            Assert.Equal(1, Exchange["ExchangeB"].Ask[price].Count); 
+        }
+        // self-buying
+        [Fact]
+        public void CanSelfBuy()
+        {
+            int price = NewPrice;
+            var bidOrderA = new Order("userA", "ExchangeA", price, 10);
+            var askOrderA = new Order("userA", "ExchangeA", price, -10);
+
+            NewOrder(bidOrderA);
+            NewOrder(askOrderA);
+            
+            Assert.Equal(0, Exchange["ExchangeA"].Bid[price].Count); 
+            Assert.Equal(0, Exchange["ExchangeA"].Ask[price].Count); 
+        }
+        
+        // add exchange (new, existing, basic ordering)
+        [Fact]
+        public void CanAddExchange()
+        {
+            const string newExchangeName = "ExchangeD";
+            var firstAdd = AddExchange(newExchangeName);
+            Assert.True(firstAdd);
+            Assert.True(Exchange.ContainsKey(newExchangeName));
+            
+            var secondAdd = AddExchange(newExchangeName);
+            Assert.False(secondAdd);
+            Assert.True(Exchange.ContainsKey(newExchangeName));
+            
+        }
+        // state transitions
+        [Fact]
+        public void StateTransitions()
+        {
+            Assert.Equal(MarketState.Lobby, State);
+
+            State = MarketState.Lobby;
+            
+            Assert.Throws<ArgumentException>(() => State = MarketState.Paused);
+            Assert.Throws<ArgumentException>(() => State = MarketState.Closed);
+
+            State = MarketState.Open;
+            
+            Assert.Throws<ArgumentException>(() => State = MarketState.Lobby);
+
+            State = MarketState.Paused;
+            
+            Assert.Throws<ArgumentException>(() => State = MarketState.Lobby);
+
+            State = MarketState.Closed;
+            
+            Assert.Throws<ArgumentException>(() => State = MarketState.Open);
+            Assert.Throws<ArgumentException>(() => State = MarketState.Paused);
+            
+        }
+        // ordering from non-existant exchange
+        [Fact]
+        public void InvalidOrder()
+        {
+            var price = NewPrice;
+
+            var order = new Order("user", "Exchange_ERR", price, 10);
+            var transactions = NewOrder(order);
+            
+            Assert.Null(transactions);
+        }
+        // deleting non-existant order
+        [Fact]
+        public void InvalidDeletion()
+        {
+            var price = NewPrice;
+            
+            var order = new Order("userA", "ExchangeA", NewPrice, 10);
+            var transactions = NewOrder(order);
+            Assert.NotNull(transactions);
+           
+            Assert.False(DeleteOrder(Guid.NewGuid(), order.User)); 
+            Assert.False(DeleteOrder(order.Id, "")); 
+            
+        }
+        
         public void Dispose()
         {
             

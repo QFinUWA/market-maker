@@ -5,17 +5,15 @@ namespace MarketMaker.Services
 {
     public class LocalMarketService : MarketService
     {
-        protected readonly Dictionary<string, Exchange> _exchange = new();
+        protected readonly Dictionary<string, Exchange> Exchange = new();
 
         public override List<string> Exchanges
         {
             get
             {
-                return _exchange.Keys.ToList();
+                return Exchange.Keys.ToList();
             } 
         }
-
-        public override List<string> Participants { get; } = new(); 
 
         public override List<Transaction> Transactions
         {
@@ -23,7 +21,7 @@ namespace MarketMaker.Services
             {
                 List<Transaction> transactions = new();
             
-                foreach (var exchange in _exchange.Values)
+                foreach (var exchange in Exchange.Values)
                 {
                     transactions.AddRange(exchange.Transactions);
                 }
@@ -38,7 +36,7 @@ namespace MarketMaker.Services
             {
                 List<Order> orders = new();
                 
-                foreach (var exchange in _exchange.Values)
+                foreach (var exchange in Exchange.Values)
                 {
                     orders.AddRange(exchange.Orders);
                 }
@@ -46,38 +44,31 @@ namespace MarketMaker.Services
                 return orders;
             }
         }
-        public override bool AddParticipant(string username)
-        {
-            if (Participants.Contains(username)) return false;
-            
-            Participants.Add(username);
-            return true;
-        }
 
         public override bool DeleteOrder(Guid id, string user)
         {
-            return _exchange.Values.Any(market => market.DeleteOrder(id, user));
+            return Exchange.Values.Any(market => market.DeleteOrder(id, user));
         }
 
         public override List<Transaction>? NewOrder(Order newOrder)
         {
-            if (!_exchange.ContainsKey(newOrder.Exchange)) return null;
+            if (!Exchange.ContainsKey(newOrder.Exchange)) return null;
             
-            var transactions = _exchange[newOrder.Exchange].NewOrder(newOrder);
+            var transactions = Exchange[newOrder.Exchange].NewOrder(newOrder);
             return transactions;
         }
 
-        public override bool AddExchange(string market)
+        public override bool AddExchange(string exchange)
         {
-            if (_exchange.ContainsKey(market)) return false;
-            _exchange.Add(market, new Exchange());
+            if (Exchange.ContainsKey(exchange)) return false;
+            Exchange.Add(exchange, new Exchange());
             return true;
         }
 
         public override Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
         {
             Dictionary<string, float> profits = new();
-            foreach (var (exchangeName, exchange) in _exchange)
+            foreach (var (exchangeName, exchange) in Exchange)
             {
                 var price = prices[exchangeName];
                 
@@ -91,9 +82,6 @@ namespace MarketMaker.Services
 
             return profits;
         }
-
-
-
 
     }
 }

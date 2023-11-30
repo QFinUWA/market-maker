@@ -149,9 +149,6 @@ namespace MarketMaker.Hubs
 
             // retrieve cookie/local storage/claim etc
             
-            var userAdded = marketService.AddParticipant(username);
-            if (!userAdded) throw new Exception("Added user rejected");
-            
             await Clients.Group(marketCode).UserJoined(username);
         }
 
