@@ -46,53 +46,36 @@ namespace MarketMaker.Services
                 return orders;
             }
         }
-        public override void AddParticipant(string username)
+        public override bool AddParticipant(string username)
         {
-            if (Participants.Contains(username)) return;
+            if (Participants.Contains(username)) return false;
             
             Participants.Add(username);
+            return true;
         }
 
-        // return error
-        public override void DeleteOrder(Guid id, string user)
+        public override bool DeleteOrder(Guid id, string user)
         {
-            if (State != MarketState.Open) throw new InvalidOperationException();
-            
-            foreach (var market in _exchange.Values)
-            {
-                if (market.DeleteOrder(id, user)) return;
-            }
+            return _exchange.Values.Any(market => market.DeleteOrder(id, user));
         }
 
-        public override (Order, List<Transaction>) NewOrder(string username, string exchange, int price, int quantity)
+        public override List<Transaction>? NewOrder(Order newOrder)
         {
-            if (State != MarketState.Open) throw new InvalidOperationException();
+            if (!_exchange.ContainsKey(newOrder.Exchange)) return null;
             
-            var order = new Order(
-                username,
-                exchange,
-                price,
-                quantity);
-
-            var originalOrder = (Order)order.Clone();
-
-            var transactions = _exchange[order.Exchange].NewOrder(order);
-
-            return (originalOrder, transactions);
+            var transactions = _exchange[newOrder.Exchange].NewOrder(newOrder);
+            return transactions;
         }
 
-        public override void AddExchange(string market)
+        public override bool AddExchange(string market)
         {
-            if (State != MarketState.Lobby) throw new InvalidOperationException();
-            
+            if (_exchange.ContainsKey(market)) return false;
             _exchange.Add(market, new Exchange());
+            return true;
         }
 
         public override Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
         {
-            if (State == MarketState.Lobby) throw new InvalidOperationException();
-            if (State == MarketState.Closed) throw new InvalidOperationException();
-
             Dictionary<string, float> profits = new();
             foreach (var (exchangeName, exchange) in _exchange)
             {
