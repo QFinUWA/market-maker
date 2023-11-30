@@ -1,27 +1,19 @@
 using MarketMaker.Services;
 using MarketMaker.Models;
 
-using Xunit;
-using System;
-using Xunit.Abstractions;
-using Xunit.Sdk;
-
 namespace MarketMaker.UnitTests
 
 {
     public class LocalMarketTests : LocalMarketService, IDisposable 
     {
-        private readonly ITestOutputHelper _testOutputHelper;
-
-        private int _newPrice = 0;
+        private int _newPrice;
 
         private int NewPrice
         {
             get => ++_newPrice;
         }
-        public LocalMarketTests(ITestOutputHelper testOutputHelper)
+        public LocalMarketTests()
         {
-            _testOutputHelper = testOutputHelper;
             Exchange.Add("ExchangeA", new Exchange());
             Exchange.Add("ExchangeB", new Exchange());
             Exchange.Add("ExchangeC", new Exchange());
@@ -30,7 +22,7 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void InitializeMarketTest()
         {
-            //Arange
+            //Arrange
 
             //Act
                                     
@@ -43,9 +35,9 @@ namespace MarketMaker.UnitTests
         [Fact, ]
         public void AddSingleBid()
         {
-            int price = NewPrice;
-            //Arange
-            Order bidOrder = new Order("userA", "ExchangeA", price, 1);
+            var price = NewPrice;
+            //Arrange
+            var bidOrder = new Order("userA", "ExchangeA", price, 1);
 
             //Act
 
@@ -58,9 +50,9 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void AddSingleAsk()
         {
-            int price = NewPrice;
-            //Arange
-            Order askOrder = new Order("userA", "ExchangeA", price, -1);
+            var price = NewPrice;
+            //Arrange
+            var askOrder = new Order("userA", "ExchangeA", price, -1);
 
             //Act
 
@@ -74,10 +66,10 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void HitSingleBid()
         {
-            int price = NewPrice;
-            //Arange
-            Order askOrder = new Order("userA", "ExchangeA", price, -1);
-            Order bidOrder = new Order("userB", "ExchangeA", price, 1);
+            var price = NewPrice;
+            //Arrange
+            var askOrder = new Order("userA", "ExchangeA", price, -1);
+            var bidOrder = new Order("userB", "ExchangeA", price, 1);
 
             //Act
             NewOrder(bidOrder);
@@ -92,10 +84,10 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void HitSingleAsk()
         {
-            int price = NewPrice;
-            //Arange
-            Order bidOrder = new Order("userB", "ExchangeA", price, 1);
-            Order askOrder = new Order("userA", "ExchangeA", price, -1);
+            var price = NewPrice;
+            //Arrange
+            var bidOrder = new Order("userB", "ExchangeA", price, 1);
+            var askOrder = new Order("userA", "ExchangeA", price, -1);
 
             //Act
             NewOrder(askOrder);
@@ -109,12 +101,12 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void OneToMany()
         {
-            int price = NewPrice;
-            //Arange
-            Order bidOrder = new Order("userA", "ExchangeA", price, 10);
-            Order askOrder1 = new Order("userB", "ExchangeA", price, -3);
-            Order askOrder2 = new Order("userC", "ExchangeA", price, -4);
-            Order askOrder3 = new Order("userD", "ExchangeA", price, -1);
+            var price = NewPrice;
+            //Arrange
+            var bidOrder = new Order("userA", "ExchangeA", price, 10);
+            var askOrder1 = new Order("userB", "ExchangeA", price, -3);
+            var askOrder2 = new Order("userC", "ExchangeA", price, -4);
+            var askOrder3 = new Order("userD", "ExchangeA", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -136,12 +128,12 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void ManyToOne()
         {
-            int price = NewPrice;
-            //Arange
-            Order bidOrder = new Order("userA", "ExchangeA", price, 10);
-            Order askOrder1 = new Order("userB", "ExchangeA", price, -3);
-            Order askOrder2 = new Order("userC", "ExchangeA", price, -4);
-            Order askOrder3 = new Order("userD", "ExchangeA", price, -1);
+            var price = NewPrice;
+            //Arrange
+            var bidOrder = new Order("userA", "ExchangeA", price, 10);
+            var askOrder1 = new Order("userB", "ExchangeA", price, -3);
+            var askOrder2 = new Order("userC", "ExchangeA", price, -4);
+            var askOrder3 = new Order("userD", "ExchangeA", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -163,12 +155,12 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void OldOrders1()
         {
-            int price = NewPrice;
-            //Arange
-            Order bidOrder = new Order("userA", "ExchangeA", price, 10);
-            Order askOrder1 = new Order("userB", "ExchangeA", price, -3);
-            Order askOrder2 = new Order("userC", "ExchangeA", price, -4);
-            Order askOrder3 = new Order("userD", "ExchangeA", price, -1);
+            var price = NewPrice;
+            //Arrange
+            var bidOrder = new Order("userA", "ExchangeA", price, 10);
+            var askOrder1 = new Order("userB", "ExchangeA", price, -3);
+            var askOrder2 = new Order("userC", "ExchangeA", price, -4);
+            var askOrder3 = new Order("userD", "ExchangeA", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -192,12 +184,12 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void OldOrders2()
         {
-            int price = NewPrice;
-            //Arange
-            Order bidOrder = new Order("userA", "ExchangeA", price, 10);
-            Order askOrder1 = new Order("userB", "ExchangeA", price, -3);
-            Order askOrder2 = new Order("userC", "ExchangeA", price, -4);
-            Order askOrder3 = new Order("userD", "ExchangeA", price, -1);
+            var price = NewPrice;
+            //Arrange
+            var bidOrder = new Order("userA", "ExchangeA", price, 10);
+            var askOrder1 = new Order("userB", "ExchangeA", price, -3);
+            var askOrder2 = new Order("userC", "ExchangeA", price, -4);
+            var askOrder3 = new Order("userD", "ExchangeA", price, -1);
             Guid bidOrderId = bidOrder.Id;
 
             //Act
@@ -221,34 +213,35 @@ namespace MarketMaker.UnitTests
         }
         
         [Fact]
-        public void UnorthorisedDeletion()
+        public void UnauthorizedDeletion()
         {
-            int priceA = NewPrice;
-            int priceB = NewPrice;
-            //Arange
-            Order bidOrder1 = new Order("userA", "ExchangeA", priceA, 10);
-            Order bidOrder2 = new Order("userA", "ExchangeA", priceB, 10);
+            var priceA = NewPrice;
+            var priceB = NewPrice;
+            
+            //Arrange
+            var bidOrder1 = new Order("userA", "ExchangeA", priceA, 10);
+            var bidOrder2 = new Order("userA", "ExchangeA", priceB, 10);
 
             //Act
             NewOrder(bidOrder1);
             NewOrder(bidOrder2);
-            bool result1 = DeleteOrder(bidOrder1.Id, "userA".ToLower());
-            bool result2 = DeleteOrder(bidOrder2.Id, "not_userA".ToLower());
+            Assert.True(DeleteOrder(bidOrder1.Id, bidOrder1.User));
+            
             Exchange["ExchangeA"].RemoveEmptyOrders();
+            
             //Assert
             //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
             Assert.False(Exchange["ExchangeA"].Bid.ContainsKey(priceA));
             Assert.Equal(1, Exchange["ExchangeA"].Bid[priceB].Count); 
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
-
-
         }
+        
         // ordering on different exchanges
         [Fact]
         public void MultipleExchanges()
         {
-            int price = NewPrice;
+            var price = NewPrice;
             var bidOrderA = new Order("userA", "ExchangeA", price, 10);
             var askOrderA = new Order("userB", "ExchangeB", price, -10);
 
@@ -262,7 +255,7 @@ namespace MarketMaker.UnitTests
         [Fact]
         public void CanSelfBuy()
         {
-            int price = NewPrice;
+            var price = NewPrice;
             var bidOrderA = new Order("userA", "ExchangeA", price, 10);
             var askOrderA = new Order("userA", "ExchangeA", price, -10);
 
@@ -312,7 +305,7 @@ namespace MarketMaker.UnitTests
             Assert.Throws<ArgumentException>(() => State = MarketState.Paused);
             
         }
-        // ordering from non-existant exchange
+        // ordering from non-existent exchange
         [Fact]
         public void InvalidOrder()
         {
@@ -323,13 +316,13 @@ namespace MarketMaker.UnitTests
             
             Assert.Null(transactions);
         }
-        // deleting non-existant order
+        // deleting non-existent order
         [Fact]
         public void InvalidDeletion()
         {
             var price = NewPrice;
             
-            var order = new Order("userA", "ExchangeA", NewPrice, 10);
+            var order = new Order("userA", "ExchangeA", price, 10);
             var transactions = NewOrder(order);
             Assert.NotNull(transactions);
            
