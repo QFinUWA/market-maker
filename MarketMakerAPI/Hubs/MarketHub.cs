@@ -11,12 +11,14 @@ namespace MarketMaker.Hubs
         private readonly IUserService _userServices;
         private const int MarketCodeLength = 5;
         private readonly Random _random;
+        private readonly ResponseConstructor _responseConstructor;
 
         public MarketHub(MarketGroup marketServices, IUserService userService) 
         {
             _marketServices = marketServices;
             _userServices = userService;
             _random = new Random();
+            _responseConstructor = new ResponseConstructor(_marketServices, _userServices);
         }
 
         public override async Task OnConnectedAsync()
@@ -28,13 +30,9 @@ namespace MarketMaker.Hubs
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             var stringChars = new char[MarketCodeLength];
-            string marketCode;
-            do
-            {
-                for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
-                marketCode = new String(stringChars);
-                
-            } while (!_marketServices.Markets.ContainsKey(marketCode));
+            
+            for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
+            var marketCode = new String(stringChars);
 
             // create new market service
             var marketService = new LocalMarketService();
@@ -42,8 +40,8 @@ namespace MarketMaker.Hubs
 
             // make user an admin
             _userServices.AddAdmin(Context.ConnectionId, marketCode);
-            await Clients.Caller.MarketCreated(marketCode);
-            await Clients.Caller.StateUpdated(MarketState.Lobby.ToString());
+
+            await Clients.Caller.LobbyState(_responseConstructor.LobbyState(marketCode));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -68,7 +66,7 @@ namespace MarketMaker.Hubs
             if (!marketAdded) throw new Exception("Add exchange failed");
             
             // notify clients
-            await Clients.Group(group).MarketConfig(ResponseConstructor.MarketConfig(marketService));
+            await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
         }
 
         public async Task CloseMarket(Dictionary<string, int> prices)
@@ -97,13 +95,14 @@ namespace MarketMaker.Hubs
             if (!_marketServices.Markets.ContainsKey(groupNameUpper)) 
                 throw new Exception("Group doesn't exist");
             
+            
             _userServices.AddUser(groupNameUpper, Context.ConnectionId);
             
             MarketService marketService = _marketServices.Markets[groupNameUpper];
             
             await Groups.AddToGroupAsync(Context.ConnectionId, groupNameUpper);
-            await Clients.Caller.MarketConfig(ResponseConstructor.MarketConfig(marketService));
-            await Clients.Caller.MarketState(ResponseConstructor.MarketState(marketService));
+            await Clients.Group(groupName).LobbyState(_responseConstructor.LobbyState(groupName));
+            await Clients.Caller.MarketState(_responseConstructor.MarketState(groupName));
         }
         
         public async Task UpdateMarketState(string newStateString)
@@ -148,8 +147,8 @@ namespace MarketMaker.Hubs
             var marketService = _marketServices.Markets[marketCode];
 
             // retrieve cookie/local storage/claim etc
-            
-            await Clients.Group(marketCode).UserJoined(username);
+                        
+            await Clients.Group(marketCode).NewParticipant(username);
         }
 
         public async Task DeleteOrder(Guid orderId)
@@ -200,10 +199,10 @@ namespace MarketMaker.Hubs
             var transactions = marketService.NewOrder(newOrder);
             if (transactions == null) throw new Exception("Invalid Order");
             
-            await Clients.Group(groupName).NewOrder(ResponseConstructor.NewOrder(originalOrder));
+            await Clients.Group(groupName).NewOrder(_responseConstructor.NewOrder(originalOrder));
             
             var orderFilledTask = transactions.Select<Transaction, Task>(transaction =>
-                Clients.Group(groupName).TransactionEvent(ResponseConstructor.Transaction(transaction))
+                Clients.Group(groupName).TransactionEvent(_responseConstructor.Transaction(transaction))
             );
 
             await Task.WhenAll(orderFilledTask);

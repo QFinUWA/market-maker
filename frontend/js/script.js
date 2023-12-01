@@ -20,6 +20,7 @@ async function start() {
 }
 var orders = {};
 var exchanges = [];
+var participants = [];
 var marketName = "";
 var transactions = [];
 let state = "";
@@ -43,8 +44,6 @@ function refreshMarket() {
 
   ordersList += "</nav></ul>";
   
-  document.getElementById("exchangeNames").innerHTML =
-    "Exchanges: " + exchanges.join(", ");
   document.getElementById("market").innerHTML = ordersList;
 
   var transactionsList = "<nav><ul>";
@@ -53,9 +52,14 @@ function refreshMarket() {
   }
   transactionsList += "</nav></ul>";
   document.getElementById("transactions").innerHTML = transactionsList;
+}
 
+function refreshLobby() {
+  document.getElementById("exchangeNames").innerHTML =
+    "Exchanges: " + exchanges.join(", ");
   document.getElementById("state").innerHTML = "State: " + state;
-  // console.log(document.getElementById("state").innerHTML);
+  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
+  document.getElementById("marketName").innerHTML = "Market Name: " + marketName;
 }
 
 function formatOrder(order) {
@@ -88,11 +92,11 @@ function formatOrder(order) {
 function formatTransaction(transactionEvent) {
   var buyer = transactionEvent["buyerUser"] 
   var seller = transactionEvent["sellerUser"]
-  
+  var exchange = transactionEvent["exchange"] 
   var buyerIsAgressor = transactionEvent["aggressor"] == buyer;
   var users = buyerIsAgressor ? [buyer, seller] : [seller, buyer];
 
-  var action = buyerIsAgressor ? "bought from" : "sold to"; 
+  var action = buyerIsAgressor ? `bought ${exchange} from` : `sold ${exchange} to`; 
   var str = `${users[0]} ${action} ${users[1]}, ${transactionEvent["quantity"]} @ $${transactionEvent["price"]}`
 
   return str;
@@ -116,29 +120,27 @@ connection.on("MarketState", (market) => {
     transactions.push(formatTransaction(transactionEvent));
   });
 
-  state = market["state"];
-
   refreshMarket();
 });
 
 connection.on("StateUpdated", (newState) => {
   state = newState;
   // console.log(newState)
-  refreshMarket();
+  refreshLobby();
 });
 
-connection.on("MarketConfig", (message)=> {
-  // console.log("market config", message);  
-  marketName = message["marketName"] ?? "[unamed market]";
+connection.on("LobbyState", (message)=> {
+  console.log("lobby state", message);
   exchanges = message["exchanges"]
-  refreshMarket();
-});
+  participants = message["participants"]
+  state = message["state"];
 
-connection.on("MarketCreated", newMarketCode => {
-  marketCode = newMarketCode;
-  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
-  document.getElementById("marketName").innerHTML = "Market Name: [unamed market]";
-  loadAdminPage();
+  marketName = message["marketName"];
+
+  marketCode = message["marketCode"];
+
+  // console.log("market config", message);  
+  refreshLobby();
 });
 
 connection.on("NewOrder", (order) => {
@@ -154,8 +156,9 @@ connection.on("DeletedOrder", (orderID) => {
   refreshMarket();
 });
 
-connection.on("UserJoined", (user) => {
+connection.on("NewParticipant", (user) => {
   console.log(user + " joined the market");
+  refreshLobby();
 });
 
 function updateOrRemove(id, quantity)
@@ -267,14 +270,11 @@ function loadAdminPage() {
 document.getElementById("commands").innerHTML = loadingHtml;
 
 document.getElementById("makeMarket").onclick = () => {
-  connection.invoke("MakeNewMarket");
+  connection.invoke("MakeNewMarket").then(loadAdminPage);
 };
 
 document.getElementById("joinMarket").onclick = () => {
   let market = document.getElementById("joinMakeMarketText").value;
-  connection.invoke("JoinMarketLobby", market);
-  marketCode = market;
-  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
+  connection.invoke("JoinMarketLobby", market).then(loadUserPage);
   refreshMarket(); //
-  loadUserPage();
 };

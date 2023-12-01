@@ -3,28 +3,47 @@ using MarketMaker.Models;
 
 namespace MarketMaker.Services;
 
-public static class ResponseConstructor
+public class ResponseConstructor
 {
-    
-    public static MarketConfigResponse MarketConfig(MarketService marketService)
+    private readonly MarketGroup _marketGroup;
+    private readonly IUserService _userService;
+
+    public ResponseConstructor(MarketGroup marketGroup, IUserService userService)
     {
-        return new MarketConfigResponse(
-            marketService.Config.MarketName,
-            marketService.Exchanges.ToList()
+        this._marketGroup = marketGroup;
+        this._userService = userService;
+    }
+    
+    public LobbyStateResponse LobbyState(string gameCode)
+    {
+        var marketService = _marketGroup.Markets[gameCode];
+
+        var marketParticipants = _userService
+            .GetUsers(gameCode)
+            .Where(user => user.Name != null)
+            .Select(user => user.Name ?? "") // won't ever be null but this will shut my IDE up
+            .ToList();
+
+        return new LobbyStateResponse(
+            marketService.Exchanges.ToList(),
+            marketParticipants,
+            marketService.State.ToString(),
+            marketService.Config.MarketName ?? "unnamed market",
+            gameCode
         );
     }
     
-    public static MarketStateResponse MarketState(MarketService marketService)
+    public MarketStateResponse MarketState(string gameCode)
     {
+        var marketService = _marketGroup.Markets[gameCode];
+        
         return new MarketStateResponse(
-            new List<string>(),
-            marketService.Orders, // TODO: make lobbyState Response
-            marketService.Transactions,
-            marketService.State.ToString()
+            marketService.Orders,
+            marketService.Transactions
         );
     }
 
-    public static NewOrderResponse NewOrder(Order newOrder)
+    public NewOrderResponse NewOrder(Order newOrder)
     {
         return new NewOrderResponse(
             newOrder.User,
@@ -36,13 +55,14 @@ public static class ResponseConstructor
         );
     }
 
-    public static TransactionResponse Transaction(Transaction transaction)
+    public TransactionResponse Transaction(Transaction transaction)
     {
         return new TransactionResponse(
             transaction.BuyerUser,
             transaction.BuyerOrderId,
             transaction.SellerUser,
             transaction.SellerOrderId,
+            transaction.Exchange,
             transaction.Price,
             transaction.Quantity,
             transaction.Aggressor,

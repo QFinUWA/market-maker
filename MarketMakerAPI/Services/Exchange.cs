@@ -97,6 +97,7 @@ namespace MarketMaker.Services
                         buyer.Id,
                         seller.User,
                         seller.Id,
+                        order.Exchange,
                         order.Price,
                         Math.Abs(quantityTraded),
                         order.User,

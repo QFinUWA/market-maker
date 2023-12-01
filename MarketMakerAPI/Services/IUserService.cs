@@ -8,10 +8,8 @@ namespace MarketMaker.Services
 
         User? GetUser(string id);
 
-        IEnumerable<User> GetUsers();
-
+        IEnumerable<User> GetUsers(string? gameCode = null);
         void AddAdmin(string id, string marketCode);
-
 
     }
 }

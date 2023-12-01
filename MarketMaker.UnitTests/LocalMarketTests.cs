@@ -208,8 +208,6 @@ namespace MarketMaker.UnitTests
             Assert.False(Exchange["ExchangeA"].Bid.ContainsKey(price));
 
             //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
-
-
         }
         
         [Fact]
