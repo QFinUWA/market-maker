@@ -9,12 +9,17 @@ public class MarketConfig
 
         public void Update(ConfigUpdateRequest updateRequest)
         {
-            MarketName = updateRequest.MarketName;
-            foreach (var (key, name) in updateRequest.ExchangeNames)
+            if (updateRequest.MarketName != null)
             {
-                if (!ExchangeNames.ContainsKey(key)) 
-                    throw new ArgumentException($"\"{key}\" is not a valid exchange");
-                ExchangeNames[key] = name;
+                MarketName = updateRequest.MarketName;
+            }
+
+            if (updateRequest.ExchangeNames != null)
+            {
+                foreach (var (key, name) in updateRequest.ExchangeNames)
+                {
+                    ExchangeNames[key] = name;
+                }
             }
         }
 }

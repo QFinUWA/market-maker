@@ -26,9 +26,12 @@ namespace MarketMaker.Services
 
         public bool UpdateConfig(ConfigUpdateRequest updateRequest)
         {
-            if (updateRequest.ExchangeNames.Keys.Any(exchangeCode => !Exchanges.Contains(exchangeCode)))
+            if (updateRequest.ExchangeNames != null)
             {
-                return false;
+                if (updateRequest.ExchangeNames.Keys.Any(exchangeCode => !Exchanges.Contains(exchangeCode)))
+                {
+                    return false;
+                }
             }
             
             Config.Update(updateRequest);

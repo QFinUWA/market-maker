@@ -2,7 +2,7 @@
 
 const connection = new signalR.HubConnectionBuilder()
   .withUrl("https://localhost:7221/market", {
-    // .withUrl("https://market-maker-prod.azurewebsites.net/market", {
+    // .withUrl("https://market-maker.azurewebsites.net/market", {
     skipNegotiation: true,
     transport: signalR.HttpTransportType.WebSockets,
   })
@@ -293,7 +293,8 @@ function loadAdminPage() {
     config = {
       marketName: "Test Market",
       exchangeNames: {
-        A: "Bikes",
+        "A": "Bikes",
+        "B": "Cars"
       },
     };
     connection.invoke("UpdateConfig", config);

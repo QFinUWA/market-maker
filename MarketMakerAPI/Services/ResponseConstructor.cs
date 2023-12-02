@@ -10,8 +10,8 @@ public class ResponseConstructor
 
     public ResponseConstructor(MarketGroup marketGroup, IUserService userService)
     {
-        this._marketGroup = marketGroup;
-        this._userService = userService;
+        _marketGroup = marketGroup;
+        _userService = userService;
     }
     
     public LobbyStateResponse LobbyState(string gameCode)
@@ -21,7 +21,7 @@ public class ResponseConstructor
         var marketParticipants = _userService
             .GetUsers(gameCode)
             .Where(user => user.Name != null)
-            .Select(user => user.Name ?? "") // won't ever be null but this will shut my IDE up
+            .Select(user => user.Name!)
             .ToList();
 
         var exchangeNames = marketService.Config.ExchangeNames
