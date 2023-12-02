@@ -13,5 +13,6 @@ namespace MarketMaker.Hubs
         Task LobbyState(LobbyStateResponse lobbyState);
         Task NewParticipant(string username);
         Task StateUpdated(string newState);
+        Task ClosingPrices(Dictionary<string, int> closingPrices);
     }
 }

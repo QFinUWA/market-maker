@@ -21,6 +21,7 @@ namespace MarketMaker.Hubs
             _responseConstructor = new ResponseConstructor(_marketServices, _userServices);
         }
 
+
         public override async Task OnConnectedAsync()
         {
             await base.OnConnectedAsync();
@@ -32,7 +33,7 @@ namespace MarketMaker.Hubs
             var stringChars = new char[MarketCodeLength];
             
             for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[_random.Next(chars.Length)];
-            var marketCode = new String(stringChars);
+            var marketCode = new string(stringChars);
 
             // create new market service
             var marketService = new LocalMarketService();
@@ -47,16 +48,11 @@ namespace MarketMaker.Hubs
 
         public async Task MakeNewExchange()
         {
-            var user = _userServices.GetUser(Context.ConnectionId);
-            if (user == null) throw new Exception("You are not a user");
-
+            var user = _userServices.GetUser(Context.ConnectionId, admin: true);
             var group = user.Market;
-            if (group == null) throw new Exception("You are not a market participant");
-
-            // only allow admin access
-            if (!user.IsAdmin) throw new Exception("You are not admin");
 
             MarketService marketService = _marketServices.Markets[group];
+            
             if (marketService.State != MarketState.Lobby)
                 throw new Exception("Cannot add Exchange while game in progress");
 
@@ -70,14 +66,9 @@ namespace MarketMaker.Hubs
 
         public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
         {
-            var user = _userServices.GetUser(Context.ConnectionId);
-            if (user == null) throw new Exception("You are not a user");
+            var user = _userServices.GetUser(Context.ConnectionId, admin: true);
             
             var group = user.Market;
-            if (group == null) throw new Exception("You are not a market participant");
-            
-            // only allow admin access
-            if (!user.IsAdmin) throw new Exception("You are not admin");
             
             MarketService marketService = _marketServices.Markets[group];
 
@@ -102,8 +93,6 @@ namespace MarketMaker.Hubs
             
             _userServices.AddUser(groupNameUpper, Context.ConnectionId);
             
-            MarketService marketService = _marketServices.Markets[groupNameUpper];
-            
             await Groups.AddToGroupAsync(Context.ConnectionId, groupNameUpper);
             await Clients.Group(groupName).LobbyState(_responseConstructor.LobbyState(groupName));
             await Clients.Caller.MarketState(_responseConstructor.MarketState(groupName));
@@ -111,16 +100,11 @@ namespace MarketMaker.Hubs
         
         public async Task UpdateMarketState(string newStateString)
         {
-            var user = _userServices.GetUser(Context.ConnectionId);
-            if (user == null) throw new Exception("You are not a user");
-            
-            var marketCode = user.Market;
-            if (marketCode == null) throw new Exception("You are not a market participant");
-            
-            // only allow admin access
-            if (!user.IsAdmin) throw new Exception("You are not admin");
+            var user = _userServices.GetUser(Context.ConnectionId, admin:true);
 
-            var stateExists = MarketState.TryParse(newStateString, true, out MarketState newState);
+            var marketCode = user.Market;
+            
+            var stateExists = Enum.TryParse(newStateString, true, out MarketState newState);
             if (!stateExists) throw new Exception("Invalid state");
                 
             var marketService = _marketServices.Markets[marketCode];
@@ -141,16 +125,12 @@ namespace MarketMaker.Hubs
         {
             var user = _userServices.GetUser(Context.ConnectionId);
             if (username.Length == 0) throw new Exception("Username must be at least 1 character long");
-            
-            if (user == null) throw new Exception("You are not a user");
+
             user.Name = username;
             
             var marketCode = user.Market;
-            if (marketCode == null) throw new Exception("You are not a market participant");
             
-            var marketService = _marketServices.Markets[marketCode];
-
-            // retrieve cookie/local storage/claim etc
+            // TODO: retrieve cookie/local storage/claim etc
                         
             await Clients.Group(marketCode).NewParticipant(username);
         }
@@ -158,12 +138,10 @@ namespace MarketMaker.Hubs
         public async Task DeleteOrder(Guid orderId)
         {
             var user = _userServices.GetUser(Context.ConnectionId);
-            if (user?.Name == null) throw new Exception("You are not a user");
-            
             var group = user.Market;
-            if (group == null) throw new Exception("You are not a market participant");
 
             var username = user.Name;
+            if (username == null) throw new Exception("You are not a participant");
             
             MarketService marketService = _marketServices.Markets[group];
 
@@ -181,10 +159,8 @@ namespace MarketMaker.Hubs
             if (price <= 0) throw new Exception("Price must be > 0");
             
             var user = _userServices.GetUser(Context.ConnectionId);
-
-            if (user?.Name == null) throw new Exception("You are not a user");
-
-            if (user.Market == null) throw new Exception("You are not a market participant"); 
+            var username = user.Name;
+            if (username == null) throw new Exception("You are not a participant");
             
             var groupName = user.Market;
             
@@ -192,7 +168,7 @@ namespace MarketMaker.Hubs
             if (marketService.State != MarketState.Open) throw new Exception("Market is not open");
 
             var newOrder = new Order(
-                user.Name,
+                username,
                 exchange,
                 price,
                 quantity
@@ -210,6 +186,39 @@ namespace MarketMaker.Hubs
             );
 
             await Task.WhenAll(orderFilledTask);
+        }
+
+        public async Task CloseMarket(Dictionary<string, int>? closePrices= null) 
+        {
+            
+            var user = _userServices.GetUser(Context.ConnectionId, admin: true);
+            
+            var marketCode = user.Market;
+            
+            MarketService marketService = _marketServices.Markets[marketCode];
+            if (marketService.State == MarketState.Lobby) throw new Exception("Market cannot be closed from the lobby");
+
+            marketService.State = MarketState.Closed;
+
+            if (closePrices == null)
+            {
+                marketService.Clear();
+                await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
+                return;
+            }
+            
+            if (!(closePrices.Keys.All(marketService.Exchanges.Contains) 
+                && closePrices.Count == marketService.Exchanges.Count))
+            {
+                throw new Exception("Incorrect exchange names");
+            }
+
+            if (closePrices.Values.Any(price => price < 0))
+                throw new Exception("Price must be positive");
+            
+            marketService.Clear();
+            await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
+            await Clients.Group(marketCode).ClosingPrices(closePrices);
         }
     }
 }

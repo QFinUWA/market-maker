@@ -52,23 +52,11 @@ namespace MarketMaker.Services
             return transactions;
         }
 
-        public override Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)
+        public override void Clear()
         {
-            Dictionary<string, float> profits = new();
-            foreach (var (exchangeName, exchange) in Exchange)
-            {
-                var price = prices[exchangeName];
-                
-                exchange.Close(price);
-
-                foreach (var userProfit in exchange.UserProfits)
-                {
-                    profits[userProfit.Key] = profits.GetValueOrDefault(userProfit.Key, 0) + userProfit.Value;
-                }
-            }
-
-            return profits;
+            Exchanges.Clear();
+            Orders.Clear();
+            Transactions.Clear();
         }
-
     }
 }
