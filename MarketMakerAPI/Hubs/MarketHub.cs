@@ -1,8 +1,10 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Diagnostics;
 using MarketMaker.Contracts;
 using MarketMaker.Services;
 using MarketMaker.Models;
 using Microsoft.AspNetCore.SignalR;
+using System.Text.Json;
+using Microsoft.Win32.SafeHandles;
 
 namespace MarketMaker.Hubs
 {
@@ -86,14 +88,15 @@ namespace MarketMaker.Hubs
             var marketCode = new string(stringChars);
 
             // create new market service
-            var marketService = new LocalMarketService();
-            _marketServices.Markets[marketCode] = marketService;
+
+            _marketServices.Markets[marketCode] = new LocalMarketService();
 
             // make user an admin
             _userService.AddAdmin(Context.ConnectionId, marketCode);
             
-            _logger.LogInformation($"Created new market - {marketCode}");
+            _logger.LogInformation($"Added new market - {marketCode}");
             await Clients.Caller.LobbyState(_responseConstructor.LobbyState(marketCode));
+            // await Clients.Caller.MarketState(_responseConstructor.MarketState(marketCode));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
@@ -116,6 +119,21 @@ namespace MarketMaker.Hubs
             await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
         }
 
+        public async Task LoadMarket(string jsonSerialized)
+        {
+            var user = _userService.GetUser(Context.ConnectionId, admin: true);
+            var marketCode = user.Market;
+            
+            var market = JsonSerializer.Deserialize<LocalMarketService>(jsonSerialized);
+
+            if (market == null) throw new Exception("Failed loading market.");
+            _marketServices.Markets[marketCode] = market;
+            
+            _logger.LogInformation($"Loaded market from JSON - {marketCode}");
+
+            await Clients.Group(marketCode).LobbyState(_responseConstructor.LobbyState(marketCode));
+            await Clients.Group(marketCode).MarketState(_responseConstructor.MarketState(marketCode));
+        }
         public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
         {
             var user = _userService.GetUser(Context.ConnectionId, admin: true);
@@ -169,16 +187,32 @@ namespace MarketMaker.Hubs
             if (!stateExists) throw new Exception("Invalid state");
                 
             var marketService = _marketServices.Markets[marketCode];
+            var oldState = marketService.State; 
             
-            try
-            {
-                marketService.State = newState;
-            }
-            catch (ArgumentException e)
-            {
-                throw new Exception(e.Message);
-            }
+            if (newState == oldState) return;
             
+            switch (oldState)
+            {
+                case MarketState.Lobby:
+                    if (newState == MarketState.Open) break;
+                    throw new ArgumentException("Lobby state can only transition to Open");
+                case MarketState.Open:
+                    if (newState == MarketState.Paused) break;
+                    if (newState == MarketState.Closed) break;
+                    throw new ArgumentException("Open state can only transition to Paused or Closed");
+                case MarketState.Paused:
+                    if (newState == MarketState.Open) break;
+                    if (newState == MarketState.Closed) break;
+                    throw new ArgumentException("Paused state can only transition to Open or Closed");
+                case MarketState.Closed:
+                    if (newState == MarketState.Lobby) break;
+                    throw new ArgumentException("Closed state can only transition to Open");
+                default:
+                    return;
+            }
+
+            marketService.State = newState;
+
             _logger.LogInformation($"Lobby {marketCode} - state updated to {marketService.State.ToString()}"); 
             await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
         }
@@ -290,6 +324,17 @@ namespace MarketMaker.Hubs
             _logger.LogInformation($"Lobby {marketCode} - market closed with price");
             await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
             await Clients.Group(marketCode).ClosingPrices(closePrices);
+        }
+
+        public async Task Serialize()
+        {
+            var user = _userService.GetUser(Context.ConnectionId, admin:true);
+
+            var marketService = _marketServices.Markets[user.Market];
+
+            var json = JsonSerializer.Serialize(marketService);
+
+            await Clients.Caller.ReceiveMessage(json);
         }
     }
 }

@@ -62,6 +62,7 @@ function refreshLobby() {
     "Market Code: " + marketCode;
   document.getElementById("marketName").innerHTML =
     "Market Name: " + marketName;
+  document.getElementById("stateList").value = state.toLowerCase();
 }
 
 function formatOrder(order) {
@@ -219,7 +220,7 @@ const userHtml = `
 const adminHtml = `
     <button id="newExchangeSend">Add Exchange</button> 
     <select id="stateList" name="state", onchange = "updateState(this)">
-      <option value="Lobby">Lobby</option>
+      <option value="lobby">Lobby</option>
       <option value="open">Open</option>
       <option value="paused">Paused</option>
       <option value="closed">Closed</option>
@@ -227,6 +228,11 @@ const adminHtml = `
     <button id="updateConfig">Update Config</button>
     <input type="number" id="closeMarketInput" placeholder="Enter closing price">
     <button id="closeMarket">Close Market</button>
+    <div>
+      <button id="Serialize">Serialize</button>
+      <input type="file" id="fileInput" accept=".json">
+      <button id="loadJson">Load Market</button>
+    </div>
 `;
 
 function updateState(element) {
@@ -308,7 +314,22 @@ function loadAdminPage() {
 
     closingPrice = null;
     connection.invoke("CloseMarket", closingPrice);
+
   };
+
+  document.getElementById("Serialize").onclick = () => {
+    connection.invoke("Serialize");
+  };
+
+  document.getElementById("loadJson").onclick = () => {
+    var file = document.getElementById("fileInput").files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var text = reader.result;
+      connection.invoke("LoadMarket", text);
+    };
+    reader.readAsText(file);
+  }
 }
 document.getElementById("commands").innerHTML = loadingHtml;
 
