@@ -2,10 +2,11 @@
 
 namespace MarketMaker.Models;
 
+[Serializable]
 public class MarketConfig
 {
         public string? MarketName { get; set; }
-        public readonly Dictionary<string, string?> ExchangeNames = new();
+        public Dictionary<string, string?> ExchangeNames { get; set; }= new();
 
         public void Update(ConfigUpdateRequest updateRequest)
         {

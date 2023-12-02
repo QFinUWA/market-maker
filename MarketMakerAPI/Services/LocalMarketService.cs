@@ -19,7 +19,15 @@ namespace MarketMaker.Services
                 }
                 
                 return transactions;
-            } 
+            }
+            set
+            {
+                foreach (var transaction in value)
+                {
+                    Exchange.TryAdd(transaction.Exchange, new Exchange());
+                    Exchange[transaction.Exchange].Transactions.Add(transaction);
+                }
+            }
         }
         
         public override List<Order> Orders
@@ -34,6 +42,14 @@ namespace MarketMaker.Services
                 }
 
                 return orders;
+            }
+            set
+            {
+                foreach (var order in value)
+                {
+                    Exchange.TryAdd(order.Exchange, new Exchange());
+                    Exchange[order.Exchange].NewOrder(order);
+                }
             }
         }
 
