@@ -1,7 +1,5 @@
 using MarketMaker.Hubs;
 using MarketMaker.Services;
-using Microsoft.AspNet.SignalR;
-using Microsoft.AspNetCore.SignalR;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -22,7 +20,11 @@ builder.Services.AddSignalR(options =>
       options.EnableDetailedErrors = true;   
 });
 builder.Services.AddSwaggerGen();
- 
+builder.Services.AddLogging(loggingBuilder =>
+{
+    loggingBuilder.AddConsole();
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -34,9 +36,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors(builder =>
+app.UseCors(corsPolicyBuilder =>
 {
-    builder.WithOrigins("http://127.0.0.1:5500/") //Source
+    corsPolicyBuilder.WithOrigins("http://127.0.0.1:5500/") //Source
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
