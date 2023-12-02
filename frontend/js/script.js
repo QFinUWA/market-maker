@@ -2,7 +2,7 @@
 
 const connection = new signalR.HubConnectionBuilder()
   .withUrl("https://localhost:7221/market", {
-  // .withUrl("https://market-maker-prod.azurewebsites.net/market", {
+    // .withUrl("https://market-maker-prod.azurewebsites.net/market", {
     skipNegotiation: true,
     transport: signalR.HttpTransportType.WebSockets,
   })
@@ -37,13 +37,13 @@ function refreshMarket() {
   listorders.sort(function (a, b) {
     return a["price"] - b["price"];
   });
-  
+
   for (var i = 0; i < listorders.length; i++) {
     ordersList += "<li>" + formatOrder(listorders[i]) + "</li>";
   }
 
   ordersList += "</nav></ul>";
-  
+
   document.getElementById("market").innerHTML = ordersList;
 
   var transactionsList = "<nav><ul>";
@@ -58,27 +58,29 @@ function refreshLobby() {
   document.getElementById("exchangeNames").innerHTML =
     "Exchanges: " + exchanges.join(", ");
   document.getElementById("state").innerHTML = "State: " + state;
-  document.getElementById("marketCode").innerHTML = "Market Code: " + marketCode;
-  document.getElementById("marketName").innerHTML = "Market Name: " + marketName;
+  document.getElementById("marketCode").innerHTML =
+    "Market Code: " + marketCode;
+  document.getElementById("marketName").innerHTML =
+    "Market Name: " + marketName;
 }
 
 function formatOrder(order) {
   var date = new Date(Date.parse(order["timeStamp"]));
 
-  const formattedDateString = date.toLocaleString('en-US', {
+  const formattedDateString = date.toLocaleString("en-US", {
     hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   });
-  
+
   const milliseconds = date.getMilliseconds();
   const formattedWithMilliseconds = `${formattedDateString}.${milliseconds}`;
 
   return (
-    order["exchange"] + 
-    ") " + 
-    formattedWithMilliseconds + 
+    order["exchange"] +
+    ") " +
+    formattedWithMilliseconds +
     ": " +
     " $" +
     order["price"] +
@@ -90,14 +92,16 @@ function formatOrder(order) {
 }
 
 function formatTransaction(transactionEvent) {
-  var buyer = transactionEvent["buyerUser"] 
-  var seller = transactionEvent["sellerUser"]
-  var exchange = transactionEvent["exchange"] 
+  var buyer = transactionEvent["buyerUser"];
+  var seller = transactionEvent["sellerUser"];
+  var exchange = transactionEvent["exchange"];
   var buyerIsAgressor = transactionEvent["aggressor"] == buyer;
   var users = buyerIsAgressor ? [buyer, seller] : [seller, buyer];
 
-  var action = buyerIsAgressor ? `bought ${exchange} from` : `sold ${exchange} to`; 
-  var str = `${users[0]} ${action} ${users[1]}, ${transactionEvent["quantity"]} @ $${transactionEvent["price"]}`
+  var action = buyerIsAgressor
+    ? `bought ${exchange} from`
+    : `sold ${exchange} to`;
+  var str = `${users[0]} ${action} ${users[1]}, ${transactionEvent["quantity"]} @ $${transactionEvent["price"]}`;
 
   return str;
 }
@@ -130,26 +134,26 @@ connection.on("StateUpdated", (newState) => {
   refreshLobby();
 });
 
-connection.on("LobbyState", (message)=> {
+connection.on("LobbyState", (message) => {
   console.log("lobby state", message);
 
-  exchanges = message["exchanges"].map(codeName => {
+  exchanges = message["exchanges"].map((codeName) => {
     [code, marketName] = codeName;
-    return `${code}` + (marketName == null? "" : ` (${marketName})`);
-  })
-  participants = message["participants"]
+    return `${code}` + (marketName == null ? "" : ` (${marketName})`);
+  });
+  participants = message["participants"];
   state = message["state"];
 
   marketName = message["marketName"];
 
   marketCode = message["marketCode"];
 
-  // console.log("market config", message);  
+  // console.log("market config", message);
   refreshLobby();
 });
 
 connection.on("NewOrder", (order) => {
-  // console.log(order)
+  console.log(order)
   // console.log("new Order")
   orders[order["id"]] = order;
 
@@ -157,7 +161,7 @@ connection.on("NewOrder", (order) => {
 });
 
 connection.on("DeletedOrder", (orderID) => {
-  delete orders[orderID]; 
+  delete orders[orderID];
   refreshMarket();
 });
 
@@ -166,27 +170,30 @@ connection.on("NewParticipant", (user) => {
   refreshLobby();
 });
 
-function updateOrRemove(id, quantity)
-{
-  orders[id]["quantity"] += quantity; 
+function updateOrRemove(id, quantity) {
+  orders[id]["quantity"] += quantity;
   if (orders[id]["quantity"] == 0) {
     delete orders[id];
-  }  
+  }
 }
 
-
 connection.on("TransactionEvent", (transactionEvent) => {
-
   transactions.push(formatTransaction(transactionEvent));
-  
-  updateOrRemove(transactionEvent["buyerOrderId"], -transactionEvent["quantity"]);
-  updateOrRemove(transactionEvent["sellerOrderId"], transactionEvent["quantity"]);
+
+  updateOrRemove(
+    transactionEvent["buyerOrderId"],
+    -transactionEvent["quantity"]
+  );
+  updateOrRemove(
+    transactionEvent["sellerOrderId"],
+    transactionEvent["quantity"]
+  );
   refreshMarket();
 });
 
 connection.on("ClosingPrices", (closingPrices) => {
-  console.log("closing prices", closingPrices); 
-}); 
+  console.log("closing prices", closingPrices);
+});
 
 // Start the connection.
 start();
@@ -224,10 +231,8 @@ const adminHtml = `
 `;
 
 function updateState(element) {
-
   let newState = element.value;
   connection.invoke("UpdateMarketState", newState);
-
 }
 
 function loadUserPage() {
@@ -241,7 +246,7 @@ function loadUserPage() {
     let name = document.getElementById("nameInput").value;
     connection.invoke("JoinMarket", name);
   };
-  
+
   document.getElementById("joinAsRandom").onclick = () => {
     let names = ["Tony", "Gil", "Jen", "Kate"];
     let name = names[Math.floor(Math.random() * names.length)];
@@ -256,13 +261,24 @@ function loadUserPage() {
     let market = document.getElementById("exchangeInput").value;
     let price = document.getElementById("priceInput").value;
     let quantity = document.getElementById("quantityInput").value;
-    // console.log("placed order",  market, parseInt(price), parseInt(quantity)); 
+    // console.log("placed order",  market, parseInt(price), parseInt(quantity));
     connection
       .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity))
       .catch((err) => console.error(err.toString()));
   };
 
   document.getElementById("deleteLastOrder").onclick = () => {
+    user = document.getElementById("nameInput").value;
+
+    var order = Object.values(orders).filter(order => order.user == user.toLowerCase())[0]
+    console.log(order)
+
+    if (order == null) {
+      console.log("no orders to delete");
+      return;
+    }
+
+    connection.invoke("DeleteOrder", order.id);
   };
 }
 
@@ -281,21 +297,19 @@ function loadAdminPage() {
         A: "Bikes",
       },
     };
+    connection.invoke("UpdateConfig", config);
   };
   // var closingPrice = document.getElementById("closeMarketInput").value ? parseInt(document.getElementById("closeMarketInput").value) : null;
 
-  var closingPrice = {
-    A: 10,
-  };
-
-  closingPrice = null;
-
   document.getElementById("closeMarket").onclick = () => {
+    var closingPrice = {
+      A: 10,
+    };
+
+    closingPrice = null;
     connection.invoke("CloseMarket", closingPrice);
   };
-  connection.invoke("UpdateConfig", config);
 }
-
 document.getElementById("commands").innerHTML = loadingHtml;
 
 document.getElementById("makeMarket").onclick = () => {

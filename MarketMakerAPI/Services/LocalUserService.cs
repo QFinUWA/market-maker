@@ -8,10 +8,7 @@ namespace MarketMaker.Services
         private readonly Dictionary<string, List<User>> _groups = new();
         public void AddUser(string group, string id)
         {
-            var newUser = new User
-            {
-                Market = group
-            };
+            var newUser = new User(group);
             _users[id] = newUser;
             
             if (!_groups.ContainsKey(group)) _groups.Add(group, new List<User>());
@@ -19,9 +16,16 @@ namespace MarketMaker.Services
             
         }
 
-        public User? GetUser(string id)
+        public User GetUser(string id, bool admin=false)
         {
-            return !_users.ContainsKey(id) ? null : _users[id];
+            if (!_users.ContainsKey(id)) throw new Exception("You are not a user");
+
+            var user = _users[id];
+            
+            // only allow admin access
+            if (admin && !user.IsAdmin) throw new Exception("You are not admin");
+
+            return user;
         }
 
         public IEnumerable<User> GetUsers(string? gameCode = null)
@@ -33,11 +37,11 @@ namespace MarketMaker.Services
 
         public void AddAdmin(string id, string marketCode)
         {
-            _users[id] = new User
+            var user = new User(marketCode)
             {
-                Market = marketCode,
-                IsAdmin = true,
+                IsAdmin = true
             };
+            _users[id] = user;
         }
 
     }
