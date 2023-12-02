@@ -11,6 +11,7 @@ public class User
         set => _name = value?.ToLower();
     }
 
+    public bool Connected = true;
     public string Secret { get; } = "";
     public bool IsAdmin = false;
 

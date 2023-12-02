@@ -196,7 +196,6 @@ connection.on("ClosingPrices", (closingPrices) => {
 });
 
 // Start the connection.
-start();
 
 // ------------------------------
 
@@ -313,11 +312,15 @@ function loadAdminPage() {
 document.getElementById("commands").innerHTML = loadingHtml;
 
 document.getElementById("makeMarket").onclick = () => {
-  connection.invoke("MakeNewMarket").then(loadAdminPage);
+  start().then(() => {
+    connection.invoke("MakeNewMarket").then(loadAdminPage);
+  });
 };
 
 document.getElementById("joinMarket").onclick = () => {
-  let market = document.getElementById("joinMakeMarketText").value;
-  connection.invoke("JoinMarketLobby", market).then(loadUserPage);
-  refreshMarket(); //
+  start().then(() => {
+    let market = document.getElementById("joinMakeMarketText").value;
+    connection.invoke("JoinMarketLobby", market).then(loadUserPage);
+    refreshMarket(); //
+  });
 };
