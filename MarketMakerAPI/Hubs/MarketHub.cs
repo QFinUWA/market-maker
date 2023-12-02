@@ -211,5 +211,43 @@ namespace MarketMaker.Hubs
 
             await Task.WhenAll(orderFilledTask);
         }
+
+        public async Task CloseMarket(Dictionary<string, int>? closePrices= null) 
+        {
+            
+            var user = _userServices.GetUser(Context.ConnectionId);
+            if (user == null) throw new Exception("You are not a user");
+            
+            var marketCode = user.Market;
+            if (marketCode == null) throw new Exception("You are not a market participant");
+            
+            // only allow admin access
+            if (!user.IsAdmin) throw new Exception("You are not admin");
+            
+            MarketService marketService = _marketServices.Markets[marketCode];
+            if (marketService.State == MarketState.Lobby) throw new Exception("Market cannot be closed from the lobby");
+
+            marketService.State = MarketState.Closed;
+
+            if (closePrices == null)
+            {
+                marketService.Clear();
+                await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
+                return;
+            }
+            
+            if (!(closePrices.Keys.All(marketService.Exchanges.Contains) 
+                && closePrices.Count == marketService.Exchanges.Count))
+            {
+                throw new Exception("Incorrect exchange names");
+            }
+
+            if (closePrices.Values.Any(price => price < 0))
+                throw new Exception("Price must be positive");
+            
+            marketService.Clear();
+            await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
+            await Clients.Group(marketCode).ClosingPrices(closePrices);
+        }
     }
 }

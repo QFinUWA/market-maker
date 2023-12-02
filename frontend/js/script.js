@@ -184,6 +184,9 @@ connection.on("TransactionEvent", (transactionEvent) => {
   refreshMarket();
 });
 
+connection.on("ClosingPrices", (closingPrices) => {
+  console.log("closing prices", closingPrices); 
+}); 
 
 // Start the connection.
 start();
@@ -216,6 +219,8 @@ const adminHtml = `
       <option value="closed">Closed</option>
     </select>
     <button id="updateConfig">Update Config</button>
+    <input type="number" id="closeMarketInput" placeholder="Enter closing price">
+    <button id="closeMarket">Close Market</button>
 `;
 
 function updateState(element) {
@@ -265,19 +270,30 @@ function loadAdminPage() {
   document.getElementById("commands").innerHTML = adminHtml;
 
   document.getElementById("newExchangeSend").onclick = () => {
-    connection.invoke("MakeNewExchange")
+    connection.invoke("MakeNewExchange");
   };
 
   document.getElementById("updateConfig").onclick = () => {
     // console.log("update config");
     config = {
-      "marketName": "Test Market",
-      "exchangeNames": {
-        "A": "Bikes",
-      }
-    }
-    connection.invoke("UpdateConfig", config);
+      marketName: "Test Market",
+      exchangeNames: {
+        A: "Bikes",
+      },
+    };
   };
+  // var closingPrice = document.getElementById("closeMarketInput").value ? parseInt(document.getElementById("closeMarketInput").value) : null;
+
+  var closingPrice = {
+    A: 10,
+  };
+
+  closingPrice = null;
+
+  document.getElementById("closeMarket").onclick = () => {
+    connection.invoke("CloseMarket", closingPrice);
+  };
+  connection.invoke("UpdateConfig", config);
 }
 
 document.getElementById("commands").innerHTML = loadingHtml;

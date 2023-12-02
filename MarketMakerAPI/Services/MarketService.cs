@@ -69,6 +69,8 @@ namespace MarketMaker.Services
         }
         public abstract List<Transaction>? NewOrder(Order newOrder);
         public abstract bool DeleteOrder(Guid id, string user);
-        public abstract Dictionary<string, float> CloseMarket(Dictionary<string, int> prices);
+
+        public abstract void Clear();
+
     }
 }
