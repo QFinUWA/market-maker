@@ -11,7 +11,7 @@ namespace MarketMaker.Services
 
         public readonly Dictionary<string, float> UserProfits = new();
         public readonly List<Transaction> Transactions = new();
-
+        
         public Order GetOrder(Guid id)
         {
             return _orders[id];
@@ -28,12 +28,12 @@ namespace MarketMaker.Services
             
             // TODO: maybe set Order price to the lowestAsk if it is above it etc ...
 
-            bool sideIsBid = order.Quantity > 0;
+            var sideIsBid = order.Quantity > 0;
 
             var side = sideIsBid ? Bid : Ask;
             var otherSide = !sideIsBid ? Bid : Ask;
 
-            int price = order.Price;
+            var price = order.Price;
 
             side.TryAdd(price, new PriorityQueue<Guid, DateTime>());
 
@@ -51,8 +51,8 @@ namespace MarketMaker.Services
             // keep removing from queue until first order exists
             while (otherSide[price].Count > 0 && order.Quantity != 0)
             {
-                DateTime now = DateTime.Now;
-                Guid otherId = otherSide[price].Peek();
+                var now = DateTime.Now;
+                var otherId = otherSide[price].Peek();
 
                 // dormant deleted orders
                 if (!_orders.ContainsKey(otherId))
@@ -61,7 +61,7 @@ namespace MarketMaker.Services
                     continue;
                 }
                 
-                Order otherOrder = _orders[otherId];
+                var otherOrder = _orders[otherId];
                 int quantityTraded; 
                 
                 if (Math.Sign(order.Quantity + otherOrder.Quantity) != Math.Sign(order.Quantity))
@@ -108,7 +108,7 @@ namespace MarketMaker.Services
             
             if (order.Quantity == 0)
             {
-                Guid removeId = side[price].Dequeue();
+                var removeId = side[price].Dequeue();
                 _orders.Remove(removeId);
             }
             Transactions.AddRange(transactions); 

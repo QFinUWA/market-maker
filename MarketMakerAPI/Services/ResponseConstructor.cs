@@ -24,8 +24,12 @@ public class ResponseConstructor
             .Select(user => user.Name ?? "") // won't ever be null but this will shut my IDE up
             .ToList();
 
+        var exchangeNames = marketService.Config.ExchangeNames
+            .Select(e => (e.Key, e.Value))
+            .ToList();
+        
         return new LobbyStateResponse(
-            marketService.Exchanges.ToList(),
+            exchangeNames,
             marketParticipants,
             marketService.State.ToString(),
             marketService.Config.MarketName ?? "unnamed market",

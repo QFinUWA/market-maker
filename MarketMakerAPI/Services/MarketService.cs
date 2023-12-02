@@ -1,4 +1,5 @@
-﻿using MarketMaker.Models;
+﻿using MarketMaker.Contracts;
+using MarketMaker.Models;
 
 namespace MarketMaker.Services
 {
@@ -8,7 +9,18 @@ namespace MarketMaker.Services
         public abstract List<Order> Orders { get; }
         public abstract List<Transaction> Transactions { get; }
 
-        public MarketConfig Config { get; } = new();
+        public readonly MarketConfig Config = new();
+
+        public bool UpdateConfig(ConfigUpdateRequest updateRequest)
+        {
+            if (updateRequest.ExchangeNames.Keys.Any(exchangeCode => !Exchanges.Contains(exchangeCode)))
+            {
+                return false;
+            }
+            
+            Config.Update(updateRequest);
+            return true;
+        }
 
         private MarketState _state = MarketState.Lobby;
 

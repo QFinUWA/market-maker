@@ -101,6 +101,7 @@ function formatTransaction(transactionEvent) {
 
   return str;
 }
+
 connection.onclose(async () => {
   await start();
 });
@@ -211,6 +212,7 @@ const adminHtml = `
       <option value="paused">Paused</option>
       <option value="closed">Closed</option>
     </select>
+    <button id="updateConfig">Update Config</button>
 `;
 
 function updateState(element) {
@@ -264,6 +266,17 @@ function loadAdminPage() {
     let exchange = document.getElementById("newExchangeInput").value;
 
     connection.invoke("MakeNewExchange", exchange);
+  };
+
+  document.getElementById("updateConfig").onclick = () => {
+    // console.log("update config");
+    config = {
+      "marketName": "Test Market",
+      "exchangeNames": {
+        "A": "Bikes",
+      }
+    }
+    connection.invoke("UpdateConfig", config);
   };
 }
 

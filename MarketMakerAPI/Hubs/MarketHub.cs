@@ -69,7 +69,7 @@ namespace MarketMaker.Hubs
             await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
         }
 
-        public async Task CloseMarket(Dictionary<string, int> prices)
+        public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
         {
             var user = _userServices.GetUser(Context.ConnectionId);
             if (user == null) throw new Exception("You are not a user");
@@ -80,9 +80,14 @@ namespace MarketMaker.Hubs
             // only allow admin access
             if (!user.IsAdmin) throw new Exception("You are not admin");
             
-            // TODO: use marketservice.state setter to throw error
             MarketService marketService = _marketServices.Markets[group];
-            var profits = marketService.CloseMarket(prices);
+
+            if (marketService.State != MarketState.Lobby)
+                throw new Exception("Cannot update config while game in progress");
+
+            marketService.UpdateConfig(configUpdate);
+
+            await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
         }
 
         public async Task JoinMarketLobby(string groupName)
