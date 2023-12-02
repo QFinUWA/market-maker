@@ -132,7 +132,11 @@ connection.on("StateUpdated", (newState) => {
 
 connection.on("LobbyState", (message)=> {
   console.log("lobby state", message);
-  exchanges = message["exchanges"]
+
+  exchanges = message["exchanges"].map(codeName => {
+    [code, marketName] = codeName;
+    return `${code}` + (marketName == null? "" : ` (${marketName})`);
+  })
   participants = message["participants"]
   state = message["state"];
 
@@ -204,7 +208,6 @@ const userHtml = `
 `;
 
 const adminHtml = `
-    <input type="text" id="newExchangeInput" placeholder="IYE">
     <button id="newExchangeSend">Add Exchange</button> 
     <select id="stateList" name="state", onchange = "updateState(this)">
       <option value="Lobby">Lobby</option>
@@ -260,12 +263,9 @@ function loadUserPage() {
 
 function loadAdminPage() {
   document.getElementById("commands").innerHTML = adminHtml;
-  document.getElementById("newExchangeInput").value = "A";
 
   document.getElementById("newExchangeSend").onclick = () => {
-    let exchange = document.getElementById("newExchangeInput").value;
-
-    connection.invoke("MakeNewExchange", exchange);
+    connection.invoke("MakeNewExchange")
   };
 
   document.getElementById("updateConfig").onclick = () => {

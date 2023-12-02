@@ -25,7 +25,7 @@ public class ResponseConstructor
             .ToList();
 
         var exchangeNames = marketService.Config.ExchangeNames
-            .Select(e => (e.Key, e.Value))
+            .Select(e => new List<string?> {e.Key, e.Value})
             .ToList();
         
         return new LobbyStateResponse(

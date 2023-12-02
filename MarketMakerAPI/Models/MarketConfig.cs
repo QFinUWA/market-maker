@@ -5,7 +5,7 @@ namespace MarketMaker.Models;
 public class MarketConfig
 {
         public string? MarketName { get; set; }
-        public readonly Dictionary<string, string> ExchangeNames = new();
+        public readonly Dictionary<string, string?> ExchangeNames = new();
 
         public void Update(ConfigUpdateRequest updateRequest)
         {

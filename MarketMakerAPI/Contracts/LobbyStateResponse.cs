@@ -1,7 +1,7 @@
 ﻿namespace MarketMaker.Contracts;
 
 public record LobbyStateResponse(
-        List<(string, string)> Exchanges,
+        List<List<string?>> Exchanges,
         List<string> Participants,
         string State,
         string MarketName,

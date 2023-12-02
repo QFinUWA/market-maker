@@ -45,7 +45,7 @@ namespace MarketMaker.Hubs
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
 
-        public async Task MakeNewExchange(string exchangeName)
+        public async Task MakeNewExchange()
         {
             var user = _userServices.GetUser(Context.ConnectionId);
             if (user == null) throw new Exception("You are not a user");
@@ -54,18 +54,17 @@ namespace MarketMaker.Hubs
             if (group == null) throw new Exception("You are not a market participant");
 
             // only allow admin access
-            if (!user.IsAdmin) return;
+            if (!user.IsAdmin) throw new Exception("You are not admin");
 
             MarketService marketService = _marketServices.Markets[group];
             if (marketService.State != MarketState.Lobby)
                 throw new Exception("Cannot add Exchange while game in progress");
 
             // add new exchange
-            if (exchangeName.Length == 0) throw new Exception("Exchange name must be 1 character or longer");
-            var marketAdded = marketService.AddExchange(exchangeName);
-            if (!marketAdded) throw new Exception("Add exchange failed");
+             marketService.AddExchange();
             
             // notify clients
+            
             await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
         }
 
