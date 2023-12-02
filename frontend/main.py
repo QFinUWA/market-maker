@@ -45,3 +45,24 @@ with Session() as session:
         # chat.server.invoke('send', 'Bye-bye!')
         #wait a second before exit
         connection.wait(1)
+
+
+example = "safsfsdf1sadfdsdfsd2asdsa"
+
+def solution(input):
+
+    def one_pass(reversed):
+        
+        letters = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+        D = {l[::-1] if reversed else l: str(i) for i, l in enumerate(letters, 1)}
+
+        for i, c in enumerate(input):
+            for d in D:
+                if input.starts_with(d, i): 
+                    return D[d]
+
+            if c in D.values:
+                return c
+
+            
+    return one_pass(False) + one_pass(True)

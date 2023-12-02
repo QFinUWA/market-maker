@@ -7,14 +7,6 @@ namespace MarketMaker.Services
     {
         protected readonly Dictionary<string, Exchange> Exchange = new();
 
-        public override List<string> Exchanges
-        {
-            get
-            {
-                return Exchange.Keys.ToList();
-            } 
-        }
-
         public override List<Transaction> Transactions
         {
             get
@@ -52,17 +44,12 @@ namespace MarketMaker.Services
 
         public override List<Transaction>? NewOrder(Order newOrder)
         {
-            if (!Exchange.ContainsKey(newOrder.Exchange)) return null;
+            if (!Exchanges.Contains(newOrder.Exchange)) return null;
+
+            Exchange.TryAdd(newOrder.Exchange, new Exchange());
             
             var transactions = Exchange[newOrder.Exchange].NewOrder(newOrder);
             return transactions;
-        }
-
-        public override bool AddExchange(string exchange)
-        {
-            if (Exchange.ContainsKey(exchange)) return false;
-            Exchange.Add(exchange, new Exchange());
-            return true;
         }
 
         public override Dictionary<string, float> CloseMarket(Dictionary<string, int> prices)

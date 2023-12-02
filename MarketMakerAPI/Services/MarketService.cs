@@ -1,14 +1,39 @@
-﻿using MarketMaker.Models;
+﻿using MarketMaker.Contracts;
+using MarketMaker.Models;
 
 namespace MarketMaker.Services
 {
     public abstract class MarketService
     {
-        public abstract List<string> Exchanges {  get; }
         public abstract List<Order> Orders { get; }
         public abstract List<Transaction> Transactions { get; }
 
-        public MarketConfig Config { get; } = new();
+        public readonly MarketConfig Config = new();
+
+        public List<string> Exchanges => Config.ExchangeNames.Keys.ToList();
+
+        public string AddExchange()
+        {
+            var i = Exchanges.Count;
+            var code = ((char)('A' + i % 26)).ToString();
+
+            if (Config.ExchangeNames.ContainsKey(code)) throw new Exception("Maximum of 26 markets allowed");
+            
+            Config.ExchangeNames[code] = null;
+
+            return code;
+        }
+
+        public bool UpdateConfig(ConfigUpdateRequest updateRequest)
+        {
+            if (updateRequest.ExchangeNames.Keys.Any(exchangeCode => !Exchanges.Contains(exchangeCode)))
+            {
+                return false;
+            }
+            
+            Config.Update(updateRequest);
+            return true;
+        }
 
         private MarketState _state = MarketState.Lobby;
 
@@ -42,10 +67,8 @@ namespace MarketMaker.Services
                 _state = value;
             }
         }
-
         public abstract List<Transaction>? NewOrder(Order newOrder);
         public abstract bool DeleteOrder(Guid id, string user);
-        public abstract bool AddExchange(string market);
         public abstract Dictionary<string, float> CloseMarket(Dictionary<string, int> prices);
     }
 }
