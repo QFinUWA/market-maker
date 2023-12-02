@@ -10,6 +10,7 @@ builder.Services.AddControllers();
 // LocalMarketGroup<LocalMarketService>
 builder.Services.AddSingleton<MarketGroup>();
 builder.Services.AddSingleton<IUserService, LocalUserService>();
+builder.Services.AddSingleton<Dictionary<string, CancellationTokenSource>>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

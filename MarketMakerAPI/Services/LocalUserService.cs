@@ -6,14 +6,16 @@ namespace MarketMaker.Services
     {
         private readonly Dictionary<string, User> _users = new();
         private readonly Dictionary<string, List<User>> _groups = new();
-        public void AddUser(string group, string id)
+        public User AddUser(string group, string id)
         {
             var newUser = new User(group);
             _users[id] = newUser;
             
             if (!_groups.ContainsKey(group)) _groups.Add(group, new List<User>());
             _groups[group].Add(newUser);
-            
+
+            return newUser;
+
         }
 
         public User GetUser(string id, bool admin=false)
@@ -35,13 +37,23 @@ namespace MarketMaker.Services
             return _groups.GetValueOrDefault(gameCode, new List<User>());
         }
 
-        public void AddAdmin(string id, string marketCode)
+        public User AddAdmin(string id, string marketCode)
         {
             var user = new User(marketCode)
             {
                 IsAdmin = true
             };
             _users[id] = user;
+            return user; 
+        }
+
+        public void DeleteUsers(string gameCode)
+        {
+            if (!_users.ContainsKey(gameCode)) return;
+            if (!_groups.ContainsKey(gameCode)) return;
+            
+            _users.Remove(gameCode);
+            _groups.Remove(gameCode);
         }
 
     }

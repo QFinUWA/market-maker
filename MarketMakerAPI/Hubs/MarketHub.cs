@@ -1,4 +1,5 @@
-﻿using MarketMaker.Contracts;
+﻿using System.Collections.Concurrent;
+using MarketMaker.Contracts;
 using MarketMaker.Services;
 using MarketMaker.Models;
 using Microsoft.AspNetCore.SignalR;
@@ -8,25 +9,66 @@ namespace MarketMaker.Hubs
     public sealed class MarketHub: Hub<IMarketClient>
     {
         private readonly MarketGroup _marketServices;
-        private readonly IUserService _userServices;
+        private readonly IUserService _userService;
         private const int MarketCodeLength = 5;
         private readonly Random _random;
         private readonly ResponseConstructor _responseConstructor;
+        private readonly Dictionary<string, CancellationTokenSource> _marketCancellationTokens;
+        private const int EmptyMarketLifetimeMinutes = 60;
 
-        public MarketHub(MarketGroup marketServices, IUserService userService) 
+        public MarketHub(MarketGroup marketServices, IUserService userService, Dictionary<string, CancellationTokenSource> cancellationTokens) 
         {
             _marketServices = marketServices;
-            _userServices = userService;
+            _userService = userService;
             _random = new Random();
-            _responseConstructor = new ResponseConstructor(_marketServices, _userServices);
+            _responseConstructor = new ResponseConstructor(_marketServices, _userService);
+            _marketCancellationTokens = cancellationTokens;
         }
 
 
         public override async Task OnConnectedAsync()
         {
+            
             await base.OnConnectedAsync();
         }
-        
+
+        public override async Task OnDisconnectedAsync(Exception? e)
+        {
+            User user;
+            try
+            {
+                user = _userService.GetUser(Context.ConnectionId);
+            }
+            catch (Exception) {return;}
+                
+            user.Connected = false;
+            
+            var group = user.Market;
+
+            if (_userService.GetUsers(group).Any(u => u.Connected)) return;
+
+            var source = new CancellationTokenSource();
+                
+            _marketCancellationTokens[group] = source;
+            
+            try
+            {
+                await Task.Delay(TimeSpan.FromMinutes(EmptyMarketLifetimeMinutes), source.Token);
+                _marketServices.DeleteMarket(group);
+                _userService.DeleteUsers(group);
+            }
+            catch (AggregateException ae)
+            {
+                foreach (var ie in ae.InnerExceptions)
+                   await Clients.All.ReceiveMessage($"{ie.GetType().Name}, {ie.Message}");
+            }
+            
+            await Clients.All.ReceiveMessage("Disposing of token");
+            source.Dispose();
+
+            _marketCancellationTokens.Remove(group);
+
+        }
         public async Task MakeNewMarket()
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -40,7 +82,7 @@ namespace MarketMaker.Hubs
             _marketServices.Markets[marketCode] = marketService;
 
             // make user an admin
-            _userServices.AddAdmin(Context.ConnectionId, marketCode);
+            _userService.AddAdmin(Context.ConnectionId, marketCode);
 
             await Clients.Caller.LobbyState(_responseConstructor.LobbyState(marketCode));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
@@ -48,7 +90,7 @@ namespace MarketMaker.Hubs
 
         public async Task MakeNewExchange()
         {
-            var user = _userServices.GetUser(Context.ConnectionId, admin: true);
+            var user = _userService.GetUser(Context.ConnectionId, admin: true);
             var group = user.Market;
 
             MarketService marketService = _marketServices.Markets[group];
@@ -66,7 +108,7 @@ namespace MarketMaker.Hubs
 
         public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
         {
-            var user = _userServices.GetUser(Context.ConnectionId, admin: true);
+            var user = _userService.GetUser(Context.ConnectionId, admin: true);
             
             var group = user.Market;
             
@@ -90,9 +132,16 @@ namespace MarketMaker.Hubs
             if (!_marketServices.Markets.ContainsKey(groupNameUpper)) 
                 throw new Exception("Group doesn't exist");
             
-            
-            _userServices.AddUser(groupNameUpper, Context.ConnectionId);
-            
+            var user = _userService.AddUser(groupNameUpper, Context.ConnectionId);
+
+            if (_marketCancellationTokens.ContainsKey(groupName))
+            {
+                var token = _marketCancellationTokens[groupName];
+                token.Cancel();
+                token.Dispose();
+                _marketCancellationTokens.Remove(user.Market);
+            }
+
             await Groups.AddToGroupAsync(Context.ConnectionId, groupNameUpper);
             await Clients.Group(groupName).LobbyState(_responseConstructor.LobbyState(groupName));
             await Clients.Caller.MarketState(_responseConstructor.MarketState(groupName));
@@ -100,7 +149,7 @@ namespace MarketMaker.Hubs
         
         public async Task UpdateMarketState(string newStateString)
         {
-            var user = _userServices.GetUser(Context.ConnectionId, admin:true);
+            var user = _userService.GetUser(Context.ConnectionId, admin:true);
 
             var marketCode = user.Market;
             
@@ -123,7 +172,7 @@ namespace MarketMaker.Hubs
 
         public async Task JoinMarket(string username)
         {
-            var user = _userServices.GetUser(Context.ConnectionId);
+            var user = _userService.GetUser(Context.ConnectionId);
             if (username.Length == 0) throw new Exception("Username must be at least 1 character long");
 
             user.Name = username;
@@ -137,7 +186,7 @@ namespace MarketMaker.Hubs
 
         public async Task DeleteOrder(Guid orderId)
         {
-            var user = _userServices.GetUser(Context.ConnectionId);
+            var user = _userService.GetUser(Context.ConnectionId);
             var group = user.Market;
 
             var username = user.Name;
@@ -158,7 +207,7 @@ namespace MarketMaker.Hubs
         {
             if (price <= 0) throw new Exception("Price must be > 0");
             
-            var user = _userServices.GetUser(Context.ConnectionId);
+            var user = _userService.GetUser(Context.ConnectionId);
             var username = user.Name;
             if (username == null) throw new Exception("You are not a participant");
             
@@ -191,7 +240,7 @@ namespace MarketMaker.Hubs
         public async Task CloseMarket(Dictionary<string, int>? closePrices= null) 
         {
             
-            var user = _userServices.GetUser(Context.ConnectionId, admin: true);
+            var user = _userService.GetUser(Context.ConnectionId, admin: true);
             
             var marketCode = user.Market;
             
