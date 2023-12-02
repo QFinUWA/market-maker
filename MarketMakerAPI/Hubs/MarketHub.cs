@@ -15,25 +15,33 @@ namespace MarketMaker.Hubs
         private readonly ResponseConstructor _responseConstructor;
         private readonly Dictionary<string, CancellationTokenSource> _marketCancellationTokens;
         private const int EmptyMarketLifetimeMinutes = 60;
-
-        public MarketHub(MarketGroup marketServices, IUserService userService, Dictionary<string, CancellationTokenSource> cancellationTokens) 
+        private readonly ILogger<MarketHub> _logger;
+        
+        public MarketHub(
+            MarketGroup marketServices,
+            IUserService userService,
+            Dictionary<string, CancellationTokenSource> cancellationTokens,
+            ILogger<MarketHub> logger
+            ) 
         {
             _marketServices = marketServices;
             _userService = userService;
             _random = new Random();
             _responseConstructor = new ResponseConstructor(_marketServices, _userService);
             _marketCancellationTokens = cancellationTokens;
+            _logger = logger;
         }
 
 
         public override async Task OnConnectedAsync()
         {
-            
+            _logger.LogInformation("User Connected");
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? e)
         {
+            _logger.LogInformation("User Disconnected");
             User user;
             try
             {
@@ -46,7 +54,8 @@ namespace MarketMaker.Hubs
             var group = user.Market;
 
             if (_userService.GetUsers(group).Any(u => u.Connected)) return;
-
+            
+            _logger.LogInformation($"Lobby {group} empty - starting deletion countdown");            
             var source = new CancellationTokenSource();
                 
             _marketCancellationTokens[group] = source;
@@ -57,13 +66,12 @@ namespace MarketMaker.Hubs
                 _marketServices.DeleteMarket(group);
                 _userService.DeleteUsers(group);
             }
-            catch (AggregateException ae)
+            catch (Exception)
             {
-                foreach (var ie in ae.InnerExceptions)
-                   await Clients.All.ReceiveMessage($"{ie.GetType().Name}, {ie.Message}");
+                _logger.LogInformation($"Lobby {group} - countdown cancelled");
             }
-            
-            await Clients.All.ReceiveMessage("Disposing of token");
+             
+            _logger.LogInformation($"Lobby {group} - countdown complete: deleted");
             source.Dispose();
 
             _marketCancellationTokens.Remove(group);
@@ -83,7 +91,8 @@ namespace MarketMaker.Hubs
 
             // make user an admin
             _userService.AddAdmin(Context.ConnectionId, marketCode);
-
+            
+            _logger.LogInformation($"Created new market - {marketCode}");
             await Clients.Caller.LobbyState(_responseConstructor.LobbyState(marketCode));
             await Groups.AddToGroupAsync(Context.ConnectionId, marketCode);
         }
@@ -99,10 +108,11 @@ namespace MarketMaker.Hubs
                 throw new Exception("Cannot add Exchange while game in progress");
 
             // add new exchange
-             marketService.AddExchange();
+            var exchangeCode = marketService.AddExchange();
             
             // notify clients
             
+            _logger.LogInformation($"Lobby {group} - added exchange {exchangeCode}");
             await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
         }
 
@@ -118,13 +128,14 @@ namespace MarketMaker.Hubs
                 throw new Exception("Cannot update config while game in progress");
 
             marketService.UpdateConfig(configUpdate);
-
+            
+            _logger.LogInformation($"Lobby {group} - updated config"); 
             await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
         }
 
         public async Task JoinMarketLobby(string groupName)
         {
-            if (groupName.Length != MarketCodeLength || !groupName.All(Char.IsLetter)) 
+            if (groupName.Length != MarketCodeLength || !groupName.All(char.IsLetter)) 
                 throw new Exception("Invalid Group ID");
             
             var groupNameUpper = groupName.ToUpper();
@@ -142,6 +153,7 @@ namespace MarketMaker.Hubs
                 _marketCancellationTokens.Remove(user.Market);
             }
 
+            _logger.LogInformation($"Lobby {groupName} - user joined lobby"); 
             await Groups.AddToGroupAsync(Context.ConnectionId, groupNameUpper);
             await Clients.Group(groupName).LobbyState(_responseConstructor.LobbyState(groupName));
             await Clients.Caller.MarketState(_responseConstructor.MarketState(groupName));
@@ -167,6 +179,7 @@ namespace MarketMaker.Hubs
                 throw new Exception(e.Message);
             }
             
+            _logger.LogInformation($"Lobby {marketCode} - state updated to {marketService.State.ToString()}"); 
             await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
         }
 
@@ -180,7 +193,8 @@ namespace MarketMaker.Hubs
             var marketCode = user.Market;
             
             // TODO: retrieve cookie/local storage/claim etc
-                        
+
+            _logger.LogInformation($"Lobby {marketCode} - {username} joined as participant"); 
             await Clients.Group(marketCode).NewParticipant(username);
         }
 
@@ -198,7 +212,8 @@ namespace MarketMaker.Hubs
             
             var orderDeleted = marketService.DeleteOrder(orderId, username);
             if (!orderDeleted) throw new Exception("Order deletion rejected");
-            
+
+            _logger.LogInformation($"Lobby {group} - order deleted"); 
             await Clients.Group(group).DeletedOrder(orderId);
             
         }
@@ -227,13 +242,18 @@ namespace MarketMaker.Hubs
 
             var transactions = marketService.NewOrder(newOrder);
             if (transactions == null) throw new Exception("Invalid Order");
-            
+
+
+            _logger.LogInformation($"Lobby {groupName} - order placed"); 
             await Clients.Group(groupName).NewOrder(_responseConstructor.NewOrder(originalOrder));
             
             var orderFilledTask = transactions.Select<Transaction, Task>(transaction =>
-                Clients.Group(groupName).TransactionEvent(_responseConstructor.Transaction(transaction))
+                {
+                return Clients.Group(groupName).TransactionEvent(_responseConstructor.Transaction(transaction));
+            }
             );
-
+            
+            _logger.LogInformation($"Lobby {groupName} - {transactions.Count()} new transaction(s)"); 
             await Task.WhenAll(orderFilledTask);
         }
 
@@ -252,6 +272,7 @@ namespace MarketMaker.Hubs
             if (closePrices == null)
             {
                 marketService.Clear();
+                _logger.LogInformation($"Lobby {marketCode} - market closed");
                 await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
                 return;
             }
@@ -266,6 +287,7 @@ namespace MarketMaker.Hubs
                 throw new Exception("Price must be positive");
             
             marketService.Clear();
+            _logger.LogInformation($"Lobby {marketCode} - market closed with price");
             await Clients.Group(marketCode).StateUpdated(marketService.State.ToString());
             await Clients.Group(marketCode).ClosingPrices(closePrices);
         }
