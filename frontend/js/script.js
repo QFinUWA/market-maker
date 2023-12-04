@@ -1,8 +1,8 @@
 // get the element with id "market" and insert a list of items
 
 const connection = new signalR.HubConnectionBuilder()
-  .withUrl("https://localhost:7221/market", {
-    // .withUrl("https://market-maker.azurewebsites.net/market", {
+  // .withUrl("https://localhost:7221/market", {
+    .withUrl("https://market-maker.azurewebsites.net/market", {
     skipNegotiation: true,
     transport: signalR.HttpTransportType.WebSockets,
   })
@@ -138,16 +138,16 @@ connection.on("StateUpdated", (newState) => {
 connection.on("LobbyState", (message) => {
   console.log("lobby state", message);
 
-  exchanges = message["exchanges"].map((codeName) => {
+  exchanges = message.exchanges.map((codeName) => {
     [code, marketName] = codeName;
     return `${code}` + (marketName == null ? "" : ` (${marketName})`);
   });
-  participants = message["participants"];
-  state = message["state"];
+  participants = message.participants;
+  state = message.state;
 
-  marketName = message["marketName"];
+  marketName = message.marketName;
 
-  marketCode = message["marketCode"];
+  marketCode = message.marketCode;
 
   // console.log("market config", message);
   refreshLobby();

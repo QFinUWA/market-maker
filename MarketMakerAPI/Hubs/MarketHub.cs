@@ -79,6 +79,7 @@ namespace MarketMaker.Hubs
             _marketCancellationTokens.Remove(group);
 
         }
+        
         public async Task MakeNewMarket()
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -134,6 +135,7 @@ namespace MarketMaker.Hubs
             await Clients.Group(marketCode).LobbyState(_responseConstructor.LobbyState(marketCode));
             await Clients.Group(marketCode).MarketState(_responseConstructor.MarketState(marketCode));
         }
+        
         public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
         {
             var user = _userService.GetUser(Context.ConnectionId, admin: true);
@@ -206,7 +208,7 @@ namespace MarketMaker.Hubs
                     throw new ArgumentException("Paused state can only transition to Open or Closed");
                 case MarketState.Closed:
                     if (newState == MarketState.Lobby) break;
-                    throw new ArgumentException("Closed state can only transition to Open");
+                    throw new ArgumentException("Closed state can only transition to Lobby");
                 default:
                     return;
             }
@@ -281,11 +283,10 @@ namespace MarketMaker.Hubs
             _logger.LogInformation($"Lobby {groupName} - order placed"); 
             await Clients.Group(groupName).NewOrder(_responseConstructor.NewOrder(originalOrder));
             
-            var orderFilledTask = transactions.Select<Transaction, Task>(transaction =>
-                {
-                return Clients.Group(groupName).TransactionEvent(_responseConstructor.Transaction(transaction));
-            }
-            );
+            var orderFilledTask = transactions
+                .Select<Transaction, Task>(transaction => 
+                    Clients.Group(groupName).TransactionEvent(_responseConstructor.Transaction(transaction)
+                ));
             
             _logger.LogInformation($"Lobby {groupName} - {transactions.Count()} new transaction(s)"); 
             await Task.WhenAll(orderFilledTask);
