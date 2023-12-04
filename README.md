@@ -203,25 +203,25 @@ public async Task DeleteOrder(Guid orderId)
 
 ### Lobby
 Represents the market as it is being configured and before the game starts.
-#### Allowed Transitions
-Open
+
+**Allowed Transitions:** Open
 
 ### Open
 Represents the market being open for trading.
-#### Allowed Transitions
-Paused, Closed
+
+**Allowed Transitions:** Paused, Closed 
 
 ### Paused
 Represents the market being temporarily paused from trading by the admin.
-#### Allowed Transitions
-Open, Closed
+
+**Allowed Transitions:** Open, Closed 
 
 ### Closed
 Represents the market when trading has completed, for example when the market closes at a price.
-#### Allowed Transitions
-Lobby
+
+**Allowed Transitions:** Lobby 
 
 ## Future Direction
 - Add OAuth for secure sign-in
 - Add a database for storing users and previous games
-- Scale the application for 1000s of users and add a rate limiter. 
+- Scale the application for 1000s of users and add a rate limiter.
