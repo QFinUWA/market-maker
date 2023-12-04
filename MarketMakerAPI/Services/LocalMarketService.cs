@@ -3,9 +3,9 @@ using MarketMaker.Models;
 
 namespace MarketMaker.Services
 {
-    public class LocalMarketService : MarketService
+    public class LocalExchangeService : ExchangeService
     {
-        protected readonly Dictionary<string, Exchange> Exchange = new();
+        protected readonly Dictionary<string, Market> Market = new();
 
         public override List<Transaction> Transactions
         {
@@ -13,9 +13,9 @@ namespace MarketMaker.Services
             {
                 List<Transaction> transactions = new();
             
-                foreach (var exchange in Exchange.Values)
+                foreach (var market in Market.Values)
                 {
-                    transactions.AddRange(exchange.Transactions);
+                    transactions.AddRange(market.Transactions);
                 }
                 
                 return transactions;
@@ -24,8 +24,8 @@ namespace MarketMaker.Services
             {
                 foreach (var transaction in value)
                 {
-                    Exchange.TryAdd(transaction.Exchange, new Exchange());
-                    Exchange[transaction.Exchange].Transactions.Add(transaction);
+                    Market.TryAdd(transaction.Market, new Market());
+                    Market[transaction.Market].Transactions.Add(transaction);
                 }
             }
         }
@@ -36,9 +36,9 @@ namespace MarketMaker.Services
             {
                 List<Order> orders = new();
                 
-                foreach (var exchange in Exchange.Values)
+                foreach (var market in Market.Values)
                 {
-                    orders.AddRange(exchange.Orders);
+                    orders.AddRange(market.Orders);
                 }
 
                 return orders;
@@ -47,30 +47,30 @@ namespace MarketMaker.Services
             {
                 foreach (var order in value)
                 {
-                    Exchange.TryAdd(order.Exchange, new Exchange());
-                    Exchange[order.Exchange].NewOrder(order);
+                    Market.TryAdd(order.Market, new Market());
+                    Market[order.Market].NewOrder(order);
                 }
             }
         }
 
         public override bool DeleteOrder(Guid id, string user)
         {
-            return Exchange.Values.Any(market => market.DeleteOrder(id, user));
+            return Market.Values.Any(exchange => exchange.DeleteOrder(id, user));
         }
 
         public override List<Transaction>? NewOrder(Order newOrder)
         {
-            if (!Exchanges.Contains(newOrder.Exchange)) return null;
+            if (!Markets.Contains(newOrder.Market)) return null;
 
-            Exchange.TryAdd(newOrder.Exchange, new Exchange());
+            Market.TryAdd(newOrder.Market, new Market());
             
-            var transactions = Exchange[newOrder.Exchange].NewOrder(newOrder);
+            var transactions = Market[newOrder.Market].NewOrder(newOrder);
             return transactions;
         }
 
         public override void Clear()
         {
-            Exchanges.Clear();
+            Markets.Clear();
             Orders.Clear();
             Transactions.Clear();
         }

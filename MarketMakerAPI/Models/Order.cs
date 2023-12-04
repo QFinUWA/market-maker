@@ -10,33 +10,33 @@ namespace MarketMaker.Models
 
         public int Price { get; }
 
-        public string Exchange {  get; }
+        public string Market {  get; }
 
         public int Quantity { get; set; }
 
         public DateTime TimeStamp { get; }
 
         [JsonConstructor]
-        public Order(Guid id, string user, int price, string exchange, int quantity, DateTime timeStamp)
+        public Order(Guid id, string user, int price, string market, int quantity, DateTime timeStamp)
         {
             Id = Guid.NewGuid();
             User = user.ToLower();
             Price = price;
-            Exchange = exchange;
+            Market = market;
             Quantity = quantity;
             TimeStamp = DateTime.Now;
         }
 
         public Order(
             string user,
-            string exchange,
+            string market,
             int price,
             int quantity
             )
         {
             Id = Guid.NewGuid();
             User = user.ToLower();
-            Exchange = exchange;
+            Market = market;
             Price = price;
             Quantity = quantity;
             TimeStamp = DateTime.Now;

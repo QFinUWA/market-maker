@@ -2,7 +2,7 @@
 
 public class User
 {
-    public string Market { get; }
+    public string Exchange { get; }
 
     private string? _name;
     public string? Name
@@ -15,9 +15,9 @@ public class User
     public string Secret { get; } = "";
     public bool IsAdmin = false;
 
-    public User(string market)
+    public User(string exchange)
     {
-        Market = market;
+        Exchange = exchange;
     }
 
 }

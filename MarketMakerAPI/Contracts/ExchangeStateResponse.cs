@@ -2,7 +2,7 @@
 
 namespace MarketMaker.Contracts
 {
-    public record MarketStateResponse(
+    public record ExchangeStateResponse(
         List<Order> Orders,
         List<Transaction> Transactions
         );

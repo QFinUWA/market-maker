@@ -5,7 +5,7 @@ public record TransactionResponse(
         Guid BuyerOrderId,
         string SellerUser,
         Guid SellerOrderId,
-        string exchange,
+        string market,
         int Price,
         int Quantity,
         string Aggressor,

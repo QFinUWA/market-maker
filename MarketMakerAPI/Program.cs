@@ -5,8 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// LocalMarketGroup<LocalMarketService>
-builder.Services.AddSingleton<MarketGroup>();
+// LocalExchangeGroup<LocalExchangeService>
+builder.Services.AddSingleton<ExchangeGroup>();
 builder.Services.AddSingleton<IUserService, LocalUserService>();
 builder.Services.AddSingleton<Dictionary<string, CancellationTokenSource>>();
 
@@ -45,7 +45,7 @@ app.UseCors(corsPolicyBuilder =>
 });
 
 
-app.MapHub<MarketHub>("/market");
+app.MapHub<ExchangeHub>("/market");
 
 //app.UseAuthentication();
 //app.UseAuthorization();

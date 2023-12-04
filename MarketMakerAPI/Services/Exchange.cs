@@ -2,7 +2,7 @@
 
 namespace MarketMaker.Services
 {
-    public class Exchange
+    public class Market
     {
         private readonly Dictionary<Guid, Order> _orders = new();
 
@@ -37,7 +37,7 @@ namespace MarketMaker.Services
 
             side.TryAdd(price, new PriorityQueue<Guid, DateTime>());
 
-            // assuming market was balanced before, only check for new updates
+            // assuming exchange was balanced before, only check for new updates
             // if this is the newest order
             List<Transaction> transactions = new();
 
@@ -97,7 +97,7 @@ namespace MarketMaker.Services
                         buyer.Id,
                         seller.User,
                         seller.Id,
-                        order.Exchange,
+                        order.Market,
                         order.Price,
                         Math.Abs(quantityTraded),
                         order.User,

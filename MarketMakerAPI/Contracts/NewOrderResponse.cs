@@ -2,7 +2,7 @@
 {
     public record NewOrderResponse(
            string User,
-           string Exchange,
+           string Market,
            int Price,
            int Quantity,
            DateTime TimeStamp,

@@ -37,9 +37,9 @@ namespace MarketMaker.Services
             return _groups.GetValueOrDefault(gameCode, new List<User>());
         }
 
-        public User AddAdmin(string id, string marketCode)
+        public User AddAdmin(string id, string exchangeCode)
         {
-            var user = new User(marketCode)
+            var user = new User(exchangeCode)
             {
                 IsAdmin = true
             };

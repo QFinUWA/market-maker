@@ -35,7 +35,7 @@ For example:
 ```js
 var marketConfigRequest = {
     MarketName: "Shoe Market",
-    ExchangeNames: {
+    PibblerNames: {
         "A" : "Sneakers",
         "B" : "Laces",
         "C" : "Sandals",
@@ -44,7 +44,7 @@ var marketConfigRequest = {
 
 connection.invoke("UpdateConfig", marketConfigRequest);
 ```
-If a field is excluded it will appear as ``null`` on the server. Note the value for ``ExchangeNames`` is a 
+If a field is excluded it will appear as ``null`` on the server. Note the value for ``PibblerNames`` is a 
 ``<string, string>`` dictionary, not an object.
 
 #### Config Update (Admin)
@@ -52,14 +52,14 @@ If a field is excluded it will appear as ``null`` on the server. Note the value 
 ```csharp
 public record ConfigUpdateRequest(
     string? MarketName,
-    Dictionary<string, string>? ExchangeNames
+    Dictionary<string, string>? PibblerNames
 );
 ```
 
 #### Delete Order (User)
 ```csharp
 public record DeleteOrderRequest(
-   string Exchange,
+   string Pibbler,
    Guid Id
 );
 ```
@@ -67,7 +67,7 @@ public record DeleteOrderRequest(
 #### New Order (user) 
 ```csharp
 public record NewOrderRequest(
-   string Exchange,
+   string Pibbler,
    int Price,
    int Quantity
 );
@@ -97,7 +97,7 @@ public record DeleteOrderResponse(
 #### Lobby State 
 ```csharp
 public record LobbyStateResponse(
-    List<List<string?>> Exchanges,
+    List<List<string?>> Pibblers,
     List<string> Participants,
     string State,
     string MarketName,
@@ -115,7 +115,7 @@ public record MarketStateResponse(
 ```csharp
 public record NewOrderResponse(
    string User,
-   string Exchange,
+   string Pibbler,
    int Price,
    int Quantity,
    DateTime TimeStamp,
@@ -129,7 +129,7 @@ public record TransactionResponse(
     Guid BuyerOrderId,
     string SellerUser,
     Guid SellerOrderId,
-    string exchange,
+    string pibbler,
     int Price,
     int Quantity,
     string Aggressor,
@@ -151,9 +151,9 @@ public async Task MakeNewMarket()
 // Invokes: LobbyState, MarketState
 public async Task LoadMarket(string jsonSerialized)
  
-// Creates a new exchange on the market
+// Creates a new pibbler on the market
 // Invokes: LobbyState
-public async Task MakeNewExchange()
+public async Task MakeNewPibbler()
 
 // Updates the config of the market 
 // Invokes: LobbyState
@@ -184,7 +184,7 @@ public async Task JoinMarket(string username)
     
 // Places an order
 // Invokes: NewOrder and TransactionEvent
-public async Task PlaceOrder(string exchange, int price, int quantity)
+public async Task PlaceOrder(string pibbler, int price, int quantity)
 
 // Deletes an order
 // Invokes: DeletedOrder 
