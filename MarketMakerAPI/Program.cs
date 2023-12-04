@@ -1,5 +1,6 @@
 using MarketMaker.Hubs;
 using MarketMaker.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -15,15 +16,9 @@ builder.Services.AddEndpointsApiExplorer();
 //builder.Services.AddAuthentication();
 //builder.Services.AddAuthorization();
 builder.Services.AddCors();
-builder.Services.AddSignalR(options =>
-{
-      options.EnableDetailedErrors = true;   
-});
+builder.Services.AddSignalR(options => { options.EnableDetailedErrors = true; });
 builder.Services.AddSwaggerGen();
-builder.Services.AddLogging(loggingBuilder =>
-{
-    loggingBuilder.AddConsole();
-});
+builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddConsole(); });
 
 var app = builder.Build();
 

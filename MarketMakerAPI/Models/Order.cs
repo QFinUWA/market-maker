@@ -1,50 +1,49 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MarketMaker.Models
+namespace MarketMaker.Models;
+
+[Serializable]
+public class Order : ICloneable
 {
-    [Serializable]
-    public class Order : ICloneable
+    [JsonConstructor]
+    public Order(Guid id, string user, int price, string market, int quantity, DateTime timeStamp)
     {
-        public Guid Id { get; }
-        public string User { get; }
+        Id = Guid.NewGuid();
+        User = user.ToLower();
+        Price = price;
+        Market = market;
+        Quantity = quantity;
+        TimeStamp = DateTime.Now;
+    }
 
-        public int Price { get; }
+    public Order(
+        string user,
+        string market,
+        int price,
+        int quantity
+    )
+    {
+        Id = Guid.NewGuid();
+        User = user.ToLower();
+        Market = market;
+        Price = price;
+        Quantity = quantity;
+        TimeStamp = DateTime.Now;
+    }
 
-        public string Market {  get; }
+    public Guid Id { get; }
+    public string User { get; }
 
-        public int Quantity { get; set; }
+    public int Price { get; }
 
-        public DateTime TimeStamp { get; }
+    public string Market { get; }
 
-        [JsonConstructor]
-        public Order(Guid id, string user, int price, string market, int quantity, DateTime timeStamp)
-        {
-            Id = Guid.NewGuid();
-            User = user.ToLower();
-            Price = price;
-            Market = market;
-            Quantity = quantity;
-            TimeStamp = DateTime.Now;
-        }
+    public int Quantity { get; set; }
 
-        public Order(
-            string user,
-            string market,
-            int price,
-            int quantity
-            )
-        {
-            Id = Guid.NewGuid();
-            User = user.ToLower();
-            Market = market;
-            Price = price;
-            Quantity = quantity;
-            TimeStamp = DateTime.Now;
-        }
+    public DateTime TimeStamp { get; }
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+    public object Clone()
+    {
+        return MemberwiseClone();
     }
 }

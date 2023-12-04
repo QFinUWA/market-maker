@@ -13,7 +13,7 @@ public class ResponseConstructor
         _exchangeCode = exchangeCode;
         _userService = userService;
     }
-    
+
     public LobbyStateResponse LobbyState(string exchangeCode)
     {
         var exchangeService = _exchangeCode.Exchanges[exchangeCode];
@@ -25,9 +25,9 @@ public class ResponseConstructor
             .ToList();
 
         var marketNames = exchangeService.Config.MarketNames
-            .Select(e => new List<string?> {e.Key, e.Value})
+            .Select(e => new List<string?> { e.Key, e.Value })
             .ToList();
-        
+
         return new LobbyStateResponse(
             marketNames,
             exchangeParticipants,
@@ -36,11 +36,11 @@ public class ResponseConstructor
             exchangeCode
         );
     }
-    
+
     public ExchangeStateResponse ExchangeState(string exchangeCode)
     {
         var exchangeService = _exchangeCode.Exchanges[exchangeCode];
-        
+
         return new ExchangeStateResponse(
             exchangeService.Orders,
             exchangeService.Transactions
@@ -73,5 +73,4 @@ public class ResponseConstructor
             transaction.TimeStamp
         );
     }
-
 }

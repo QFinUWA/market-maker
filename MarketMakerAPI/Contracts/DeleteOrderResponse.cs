@@ -1,7 +1,5 @@
-﻿namespace MarketMaker.Contracts
-{
-    public record DeleteOrderResponse(
-           Guid Id
-        );
+﻿namespace MarketMaker.Contracts;
 
-}
+public record DeleteOrderResponse(
+    Guid Id
+);
