@@ -2,7 +2,7 @@
 
 public class User
 {
-    public string Exchange { get; }
+    public string ExchangeCode { get; }
 
     private string? _name;
     public string? Name
@@ -15,9 +15,9 @@ public class User
     public string Secret { get; } = "";
     public bool IsAdmin = false;
 
-    public User(string exchange)
+    public User(string exchangeCode)
     {
-        Exchange = exchange;
+        ExchangeCode = exchangeCode;
     }
 
 }

@@ -5,21 +5,21 @@ namespace MarketMaker.Services;
 
 public class ResponseConstructor
 {
-    private readonly ExchangeGroup _exchangeGroup;
+    private readonly ExchangeGroup _exchangeCode;
     private readonly IUserService _userService;
 
-    public ResponseConstructor(ExchangeGroup exchangeGroup, IUserService userService)
+    public ResponseConstructor(ExchangeGroup exchangeCode, IUserService userService)
     {
-        _exchangeGroup = exchangeGroup;
+        _exchangeCode = exchangeCode;
         _userService = userService;
     }
     
-    public LobbyStateResponse LobbyState(string gameCode)
+    public LobbyStateResponse LobbyState(string exchangeCode)
     {
-        var exchangeService = _exchangeGroup.Exchanges[gameCode];
+        var exchangeService = _exchangeCode.Exchanges[exchangeCode];
 
         var exchangeParticipants = _userService
-            .GetUsers(gameCode)
+            .GetUsers(exchangeCode)
             .Where(user => user.Name != null)
             .Select(user => user.Name!)
             .ToList();
@@ -33,13 +33,13 @@ public class ResponseConstructor
             exchangeParticipants,
             exchangeService.State.ToString(),
             exchangeService.Config.ExchangeName ?? "unnamed exchange",
-            gameCode
+            exchangeCode
         );
     }
     
-    public ExchangeStateResponse ExchangeState(string gameCode)
+    public ExchangeStateResponse ExchangeState(string exchangeCode)
     {
-        var exchangeService = _exchangeGroup.Exchanges[gameCode];
+        var exchangeService = _exchangeCode.Exchanges[exchangeCode];
         
         return new ExchangeStateResponse(
             exchangeService.Orders,

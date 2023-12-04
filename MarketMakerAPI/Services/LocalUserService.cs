@@ -30,11 +30,11 @@ namespace MarketMaker.Services
             return user;
         }
 
-        public IEnumerable<User> GetUsers(string? gameCode = null)
+        public IEnumerable<User> GetUsers(string? exchangeCode = null)
         {
-            if (gameCode == null) return _users.Values;
+            if (exchangeCode == null) return _users.Values;
 
-            return _groups.GetValueOrDefault(gameCode, new List<User>());
+            return _groups.GetValueOrDefault(exchangeCode, new List<User>());
         }
 
         public User AddAdmin(string id, string exchangeCode)
@@ -47,13 +47,13 @@ namespace MarketMaker.Services
             return user; 
         }
 
-        public void DeleteUsers(string gameCode)
+        public void DeleteUsers(string exchangeCode)
         {
-            if (!_users.ContainsKey(gameCode)) return;
-            if (!_groups.ContainsKey(gameCode)) return;
+            if (!_users.ContainsKey(exchangeCode)) return;
+            if (!_groups.ContainsKey(exchangeCode)) return;
             
-            _users.Remove(gameCode);
-            _groups.Remove(gameCode);
+            _users.Remove(exchangeCode);
+            _groups.Remove(exchangeCode);
         }
 
     }

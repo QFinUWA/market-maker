@@ -10,9 +10,9 @@ public class ExchangeConfig
 
         public void Update(ConfigUpdateRequest updateRequest)
         {
-            if (updateRequest.ExchangeName != null)
+            if (updateRequest.ExchangeCode != null)
             {
-                ExchangeName = updateRequest.ExchangeName;
+                ExchangeName = updateRequest.ExchangeCode;
             }
 
             if (updateRequest.MarketNames != null)

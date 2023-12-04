@@ -45,7 +45,7 @@ app.UseCors(corsPolicyBuilder =>
 });
 
 
-app.MapHub<ExchangeHub>("/market");
+app.MapHub<MarketHub>("/market");
 
 //app.UseAuthentication();
 //app.UseAuthorization();

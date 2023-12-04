@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace MarketMaker.Hubs
 {
-    public sealed class ExchangeHub: Hub<IExchangeClient>
+    public sealed class MarketHub: Hub<IExchangeClient>
     {
         private readonly ExchangeGroup _exchangeServices;
         private readonly IUserService _userService;
@@ -17,13 +17,13 @@ namespace MarketMaker.Hubs
         private readonly ResponseConstructor _responseConstructor;
         private readonly Dictionary<string, CancellationTokenSource> _exchangeCancellationTokens;
         private const int EmptyExchangeLifetimeMinutes = 60;
-        private readonly ILogger<ExchangeHub> _logger;
+        private readonly ILogger<MarketHub> _logger;
         
-        public ExchangeHub(
+        public MarketHub(
             ExchangeGroup exchangeServices,
             IUserService userService,
             Dictionary<string, CancellationTokenSource> cancellationTokens,
-            ILogger<ExchangeHub> logger
+            ILogger<MarketHub> logger
             ) 
         {
             _exchangeServices = exchangeServices;
@@ -53,30 +53,30 @@ namespace MarketMaker.Hubs
                 
             user.Connected = false;
             
-            var group = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
 
-            if (_userService.GetUsers(group).Any(u => u.Connected)) return;
+            if (_userService.GetUsers(exchangeCode).Any(u => u.Connected)) return;
             
-            _logger.LogInformation($"Lobby {group} empty - starting deletion countdown");            
+            _logger.LogInformation($"Lobby {exchangeCode} empty - starting deletion countdown");            
             var source = new CancellationTokenSource();
                 
-            _exchangeCancellationTokens[group] = source;
+            _exchangeCancellationTokens[exchangeCode] = source;
             
             try
             {
                 await Task.Delay(TimeSpan.FromMinutes(EmptyExchangeLifetimeMinutes), source.Token);
-                _exchangeServices.DeleteExchange(group);
-                _userService.DeleteUsers(group);
+                _exchangeServices.DeleteExchange(exchangeCode);
+                _userService.DeleteUsers(exchangeCode);
             }
             catch (Exception)
             {
-                _logger.LogInformation($"Lobby {group} - countdown cancelled");
+                _logger.LogInformation($"Lobby {exchangeCode} - countdown cancelled");
             }
              
-            _logger.LogInformation($"Lobby {group} - countdown complete: deleted");
+            _logger.LogInformation($"Lobby {exchangeCode} - countdown complete: deleted");
             source.Dispose();
 
-            _exchangeCancellationTokens.Remove(group);
+            _exchangeCancellationTokens.Remove(exchangeCode);
 
         }
         
@@ -104,9 +104,9 @@ namespace MarketMaker.Hubs
         public async Task MakeNewMarket()
         {
             var user = _userService.GetUser(Context.ConnectionId, admin: true);
-            var group = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
 
-            ExchangeService exchangeService = _exchangeServices.Exchanges[group];
+            ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
             
             if (exchangeService.State != ExchangeState.Lobby)
                 throw new Exception("Cannot add Market while game in progress");
@@ -116,14 +116,14 @@ namespace MarketMaker.Hubs
             
             // notify clients
             
-            _logger.LogInformation($"Lobby {group} - added market {marketCode}");
-            await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
+            _logger.LogInformation($"Lobby {exchangeCode} - added market {marketCode}");
+            await Clients.Group(exchangeCode).LobbyState(_responseConstructor.LobbyState(exchangeCode));
         }
 
         public async Task LoadExchange(string jsonSerialized)
         {
             var user = _userService.GetUser(Context.ConnectionId, admin: true);
-            var exchangeCode = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
             
             var exchange = JsonSerializer.Deserialize<LocalExchangeService>(jsonSerialized);
 
@@ -140,50 +140,50 @@ namespace MarketMaker.Hubs
         {
             var user = _userService.GetUser(Context.ConnectionId, admin: true);
             
-            var group = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
             
-            ExchangeService exchangeService = _exchangeServices.Exchanges[group];
+            ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
 
             if (exchangeService.State != ExchangeState.Lobby)
                 throw new Exception("Cannot update config while game in progress");
 
             exchangeService.UpdateConfig(configUpdate);
             
-            _logger.LogInformation($"Lobby {group} - updated config"); 
-            await Clients.Group(group).LobbyState(_responseConstructor.LobbyState(group));
+            _logger.LogInformation($"Lobby {exchangeCode} - updated config"); 
+            await Clients.Group(exchangeCode).LobbyState(_responseConstructor.LobbyState(exchangeCode));
         }
 
-        public async Task JoinExchangeLobby(string groupName)
+        public async Task JoinExchangeLobby(string exchangeCode)
         {
-            if (groupName.Length != ExchangeCodeLength || !groupName.All(char.IsLetter)) 
-                throw new Exception("Invalid Group ID");
+            if (exchangeCode.Length != ExchangeCodeLength || !exchangeCode.All(char.IsLetter)) 
+                throw new Exception("Invalid exchange ID");
             
-            var groupNameUpper = groupName.ToUpper();
+            var exchangeCodeUpper = exchangeCode.ToUpper();
 
-            if (!_exchangeServices.Exchanges.ContainsKey(groupNameUpper)) 
+            if (!_exchangeServices.Exchanges.ContainsKey(exchangeCodeUpper)) 
                 throw new Exception("Group doesn't exist");
             
-            var user = _userService.AddUser(groupNameUpper, Context.ConnectionId);
+            var user = _userService.AddUser(exchangeCodeUpper, Context.ConnectionId);
 
-            if (_exchangeCancellationTokens.ContainsKey(groupName))
+            if (_exchangeCancellationTokens.ContainsKey(exchangeCode))
             {
-                var token = _exchangeCancellationTokens[groupName];
+                var token = _exchangeCancellationTokens[exchangeCode];
                 token.Cancel();
                 token.Dispose();
-                _exchangeCancellationTokens.Remove(user.Exchange);
+                _exchangeCancellationTokens.Remove(user.ExchangeCode);
             }
 
-            _logger.LogInformation($"Lobby {groupName} - user joined lobby"); 
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupNameUpper);
-            await Clients.Group(groupName).LobbyState(_responseConstructor.LobbyState(groupName));
-            await Clients.Caller.ExchangeState(_responseConstructor.ExchangeState(groupName));
+            _logger.LogInformation($"Lobby {exchangeCode} - user joined lobby"); 
+            await Groups.AddToGroupAsync(Context.ConnectionId, exchangeCodeUpper);
+            await Clients.Group(exchangeCode).LobbyState(_responseConstructor.LobbyState(exchangeCode));
+            await Clients.Caller.ExchangeState(_responseConstructor.ExchangeState(exchangeCode));
         }
         
         public async Task UpdateExchangeState(string newStateString)
         {
             var user = _userService.GetUser(Context.ConnectionId, admin:true);
 
-            var exchangeCode = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
             
             var stateExists = Enum.TryParse(newStateString, true, out ExchangeState newState);
             if (!stateExists) throw new Exception("Invalid state");
@@ -226,7 +226,7 @@ namespace MarketMaker.Hubs
 
             user.Name = username;
             
-            var exchangeCode = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
             
             // TODO: retrieve cookie/local storage/claim etc
 
@@ -237,20 +237,20 @@ namespace MarketMaker.Hubs
         public async Task DeleteOrder(Guid orderId)
         {
             var user = _userService.GetUser(Context.ConnectionId);
-            var group = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
 
             var username = user.Name;
             if (username == null) throw new Exception("You are not a participant");
             
-            ExchangeService exchangeService = _exchangeServices.Exchanges[group];
+            ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
 
             if (exchangeService.State != ExchangeState.Open) throw new Exception("Exchange is not open");
             
             var orderDeleted = exchangeService.DeleteOrder(orderId, username);
             if (!orderDeleted) throw new Exception("Order deletion rejected");
 
-            _logger.LogInformation($"Lobby {group} - order deleted"); 
-            await Clients.Group(group).DeletedOrder(orderId);
+            _logger.LogInformation($"Lobby {exchangeCode} - order deleted"); 
+            await Clients.Group(exchangeCode).DeletedOrder(orderId);
             
         }
 
@@ -262,9 +262,9 @@ namespace MarketMaker.Hubs
             var username = user.Name;
             if (username == null) throw new Exception("You are not a participant");
             
-            var groupName = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
             
-            ExchangeService exchangeService = _exchangeServices.Exchanges[groupName];
+            ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
             if (exchangeService.State != ExchangeState.Open) throw new Exception("Exchange is not open");
 
             var newOrder = new Order(
@@ -280,15 +280,15 @@ namespace MarketMaker.Hubs
             if (transactions == null) throw new Exception("Invalid Order");
 
 
-            _logger.LogInformation($"Lobby {groupName} - order placed"); 
-            await Clients.Group(groupName).NewOrder(_responseConstructor.NewOrder(originalOrder));
+            _logger.LogInformation($"Lobby {exchangeCode} - order placed"); 
+            await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(originalOrder));
             
             var orderFilledTask = transactions
                 .Select<Transaction, Task>(transaction => 
-                    Clients.Group(groupName).TransactionEvent(_responseConstructor.Transaction(transaction)
+                    Clients.Group(exchangeCode).TransactionEvent(_responseConstructor.Transaction(transaction)
                 ));
             
-            _logger.LogInformation($"Lobby {groupName} - {transactions.Count()} new transaction(s)"); 
+            _logger.LogInformation($"Lobby {exchangeCode} - {transactions.Count()} new transaction(s)"); 
             await Task.WhenAll(orderFilledTask);
         }
 
@@ -297,7 +297,7 @@ namespace MarketMaker.Hubs
             
             var user = _userService.GetUser(Context.ConnectionId, admin: true);
             
-            var exchangeCode = user.Exchange;
+            var exchangeCode = user.ExchangeCode;
             
             ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
             if (exchangeService.State == ExchangeState.Lobby) throw new Exception("Exchange cannot be closed from the lobby");
@@ -331,7 +331,7 @@ namespace MarketMaker.Hubs
         {
             var user = _userService.GetUser(Context.ConnectionId, admin:true);
 
-            var exchangeService = _exchangeServices.Exchanges[user.Exchange];
+            var exchangeService = _exchangeServices.Exchanges[user.ExchangeCode];
 
             var json = JsonSerializer.Serialize(exchangeService);
 

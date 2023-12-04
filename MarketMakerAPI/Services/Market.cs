@@ -37,7 +37,7 @@ namespace MarketMaker.Services
 
             side.TryAdd(price, new PriorityQueue<Guid, DateTime>());
 
-            // assuming exchange was balanced before, only check for new updates
+            // assuming market was balanced before, only check for new updates
             // if this is the newest order
             List<Transaction> transactions = new();
 
