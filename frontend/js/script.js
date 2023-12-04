@@ -1,8 +1,8 @@
-// get the element with id "market" and insert a list of items
+// get the element with id "exchange" and insert a list of items
 
 const connection = new signalR.HubConnectionBuilder()
-  // .withUrl("https://localhost:7221/market", {
-    .withUrl("https://market-maker.azurewebsites.net/market", {
+  .withUrl("https://localhost:7221/market", {
+    // .withUrl("https://market-maker.azurewebsites.net/market", {
     skipNegotiation: true,
     transport: signalR.HttpTransportType.WebSockets,
   })
@@ -19,15 +19,15 @@ async function start() {
   }
 }
 var orders = {};
-var exchanges = [];
+var markets = [];
 var participants = [];
-var marketName = "";
+var exchangeName = "";
 var transactions = [];
 let state = "";
-let marketCode = "";
+let exchangeCode = "";
 // define function
 
-function refreshMarket() {
+function refreshExchange() {
   var listorders = [];
   var ordersList = "<nav><ul>";
   Object.keys(orders).forEach(function (key) {
@@ -44,7 +44,7 @@ function refreshMarket() {
 
   ordersList += "</nav></ul>";
 
-  document.getElementById("market").innerHTML = ordersList;
+  document.getElementById("exchange").innerHTML = ordersList;
 
   var transactionsList = "<nav><ul>";
   for (var i = 0; i < transactions.length; i++) {
@@ -55,14 +55,17 @@ function refreshMarket() {
 }
 
 function refreshLobby() {
-  document.getElementById("exchangeNames").innerHTML =
-    "Exchanges: " + exchanges.join(", ");
+  document.getElementById("marketNames").innerHTML =
+    "Markets: " + markets.join(", ");
   document.getElementById("state").innerHTML = "State: " + state;
-  document.getElementById("marketCode").innerHTML =
-    "Market Code: " + marketCode;
-  document.getElementById("marketName").innerHTML =
-    "Market Name: " + marketName;
-  document.getElementById("stateList").value = state.toLowerCase();
+  document.getElementById("exchangeCode").innerHTML =
+    "Exchange Code: " + exchangeCode;
+  document.getElementById("exchangeName").innerHTML =
+    "Exchange Name: " + exchangeName;
+  let stateList = document.getElementById("stateList")
+  if (stateList != null) {
+    stateList.value = state.toLowerCase();
+  }
 }
 
 function formatOrder(order) {
@@ -79,7 +82,7 @@ function formatOrder(order) {
   const formattedWithMilliseconds = `${formattedDateString}.${milliseconds}`;
 
   return (
-    order["exchange"] +
+    order["market"] +
     ") " +
     formattedWithMilliseconds +
     ": " +
@@ -95,13 +98,13 @@ function formatOrder(order) {
 function formatTransaction(transactionEvent) {
   var buyer = transactionEvent["buyerUser"];
   var seller = transactionEvent["sellerUser"];
-  var exchange = transactionEvent["exchange"];
+  var market = transactionEvent["market"];
   var buyerIsAgressor = transactionEvent["aggressor"] == buyer;
   var users = buyerIsAgressor ? [buyer, seller] : [seller, buyer];
 
   var action = buyerIsAgressor
-    ? `bought ${exchange} from`
-    : `sold ${exchange} to`;
+    ? `bought ${market} from`
+    : `sold ${market} to`;
   var str = `${users[0]} ${action} ${users[1]}, ${transactionEvent["quantity"]} @ $${transactionEvent["price"]}`;
 
   return str;
@@ -115,18 +118,18 @@ connection.on("ReceiveMessage", (message) => {
   console.log("server: " + message);
 });
 
-connection.on("MarketState", (market) => {
-  // console.log("marketState", market);
+connection.on("ExchangeState", (exchange) => {
+  // console.log("exchangeState", exchange);
   // add all orders to orders dictionary
-  market["orders"].forEach((order) => {
+  exchange["orders"].forEach((order) => {
     orders[order["id"]] = order;
   });
 
-  market["transactions"].forEach((transactionEvent) => {
+  exchange["transactions"].forEach((transactionEvent) => {
     transactions.push(formatTransaction(transactionEvent));
   });
 
-  refreshMarket();
+  refreshExchange();
 });
 
 connection.on("StateUpdated", (newState) => {
@@ -138,18 +141,18 @@ connection.on("StateUpdated", (newState) => {
 connection.on("LobbyState", (message) => {
   console.log("lobby state", message);
 
-  exchanges = message.exchanges.map((codeName) => {
-    [code, marketName] = codeName;
-    return `${code}` + (marketName == null ? "" : ` (${marketName})`);
+  markets = message.markets.map((codeName) => {
+    [code, exchangeName] = codeName;
+    return `${code}` + (exchangeName == null ? "" : ` (${exchangeName})`);
   });
   participants = message.participants;
   state = message.state;
 
-  marketName = message.marketName;
+  exchangeName = message.exchangeName;
 
-  marketCode = message.marketCode;
+  exchangeCode = message.exchangeCode;
 
-  // console.log("market config", message);
+  // console.log("exchange config", message);
   refreshLobby();
 });
 
@@ -158,16 +161,16 @@ connection.on("NewOrder", (order) => {
   // console.log("new Order")
   orders[order["id"]] = order;
 
-  refreshMarket();
+  refreshExchange();
 });
 
 connection.on("DeletedOrder", (orderID) => {
   delete orders[orderID];
-  refreshMarket();
+  refreshExchange();
 });
 
 connection.on("NewParticipant", (user) => {
-  console.log(user + " joined the market");
+  console.log(user + " joined the exchange");
   refreshLobby();
 });
 
@@ -189,7 +192,7 @@ connection.on("TransactionEvent", (transactionEvent) => {
     transactionEvent["sellerOrderId"],
     transactionEvent["quantity"]
   );
-  refreshMarket();
+  refreshExchange();
 });
 
 connection.on("ClosingPrices", (closingPrices) => {
@@ -201,16 +204,16 @@ connection.on("ClosingPrices", (closingPrices) => {
 // ------------------------------
 
 const loadingHtml = `
-    <button id="makeMarket">Make Market</button>
-    <input type="text" id="joinMakeMarketText" placeholder="Enter market">
-    <button id="joinMarket">Join Market</button>
+    <button id="makeExchange">Make Exchange</button>
+    <input type="text" id="joinMakeExchangeText" placeholder="Enter exchange">
+    <button id="joinExchange">Join Exchange</button>
 `;
 
 const userHtml = `
     <input type="text" id="nameInput" placeholder="Enter name">
     <button id="joinWithName">Join</button>
     <button id="joinAsRandom">Join as Random</button>
-    <input type="text" id="exchangeInput" placeholder="Enter exchange">
+    <input type="text" id="marketInput" placeholder="Enter market">
     <input type="number" id="priceInput" placeholder="Enter price">
     <input type="number" id="quantityInput" placeholder="Enter quantity">
     <button id="send">Send</button>
@@ -218,7 +221,7 @@ const userHtml = `
 `;
 
 const adminHtml = `
-    <button id="newExchangeSend">Add Exchange</button> 
+    <button id="newMarketSend">Add Market</button> 
     <select id="stateList" name="state", onchange = "updateState(this)">
       <option value="lobby">Lobby</option>
       <option value="open">Open</option>
@@ -226,30 +229,30 @@ const adminHtml = `
       <option value="closed">Closed</option>
     </select>
     <button id="updateConfig">Update Config</button>
-    <input type="number" id="closeMarketInput" placeholder="Enter closing price">
-    <button id="closeMarket">Close Market</button>
+    <input type="number" id="closeExchangeInput" placeholder="Enter closing price">
+    <button id="closeExchange">Close Exchange</button>
     <div>
       <button id="Serialize">Serialize</button>
       <input type="file" id="fileInput" accept=".json">
-      <button id="loadJson">Load Market</button>
+      <button id="loadJson">Load Exchange</button>
     </div>
 `;
 
 function updateState(element) {
   let newState = element.value;
-  connection.invoke("UpdateMarketState", newState);
+  connection.invoke("UpdateExchangeState", newState);
 }
 
 function loadUserPage() {
   document.getElementById("commands").innerHTML = userHtml;
 
-  document.getElementById("exchangeInput").value = "A";
+  document.getElementById("marketInput").value = "A";
   document.getElementById("priceInput").value = 10;
   document.getElementById("quantityInput").value = 4;
 
   document.getElementById("joinWithName").onclick = () => {
     let name = document.getElementById("nameInput").value;
-    connection.invoke("JoinMarket", name);
+    connection.invoke("JoinExchange", name);
   };
 
   document.getElementById("joinAsRandom").onclick = () => {
@@ -258,17 +261,17 @@ function loadUserPage() {
 
     document.getElementById("nameInput").value = name;
 
-    connection.invoke("JoinMarket", name);
+    connection.invoke("JoinExchange", name);
   };
 
   // set onclick
   document.getElementById("send").onclick = () => {
-    let market = document.getElementById("exchangeInput").value;
+    let exchange = document.getElementById("marketInput").value;
     let price = document.getElementById("priceInput").value;
     let quantity = document.getElementById("quantityInput").value;
-    // console.log("placed order",  market, parseInt(price), parseInt(quantity));
+    // console.log("placed order",  exchange, parseInt(price), parseInt(quantity));
     connection
-      .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity))
+      .invoke("PlaceOrder", exchange, parseInt(price), parseInt(quantity))
       .catch((err) => console.error(err.toString()));
   };
 
@@ -290,30 +293,30 @@ function loadUserPage() {
 function loadAdminPage() {
   document.getElementById("commands").innerHTML = adminHtml;
 
-  document.getElementById("newExchangeSend").onclick = () => {
-    connection.invoke("MakeNewExchange");
+  document.getElementById("newMarketSend").onclick = () => {
+    connection.invoke("MakeNewMarket");
   };
 
   document.getElementById("updateConfig").onclick = () => {
     // console.log("update config");
     config = {
-      marketName: "Test Market",
-      exchangeNames: {
+      exchangeName: "Test Exchange",
+      marketNames: {
         "A": "Bikes",
         "B": "Cars"
       },
     };
     connection.invoke("UpdateConfig", config);
   };
-  // var closingPrice = document.getElementById("closeMarketInput").value ? parseInt(document.getElementById("closeMarketInput").value) : null;
+  // var closingPrice = document.getElementById("closeExchangeInput").value ? parseInt(document.getElementById("closeExchangeInput").value) : null;
 
-  document.getElementById("closeMarket").onclick = () => {
+  document.getElementById("closeExchange").onclick = () => {
     var closingPrice = {
       A: 10,
     };
 
     closingPrice = null;
-    connection.invoke("CloseMarket", closingPrice);
+    connection.invoke("CloseExchange", closingPrice);
 
   };
 
@@ -326,23 +329,23 @@ function loadAdminPage() {
     var reader = new FileReader();
     reader.onload = function (e) {
       var text = reader.result;
-      connection.invoke("LoadMarket", text);
+      connection.invoke("LoadExchange", text);
     };
     reader.readAsText(file);
   }
 }
 document.getElementById("commands").innerHTML = loadingHtml;
 
-document.getElementById("makeMarket").onclick = () => {
+document.getElementById("makeExchange").onclick = () => {
   start().then(() => {
-    connection.invoke("MakeNewMarket").then(loadAdminPage);
+    connection.invoke("MakeNewExchange").then(loadAdminPage);
   });
 };
 
-document.getElementById("joinMarket").onclick = () => {
+document.getElementById("joinExchange").onclick = () => {
   start().then(() => {
-    let market = document.getElementById("joinMakeMarketText").value;
-    connection.invoke("JoinMarketLobby", market).then(loadUserPage);
-    refreshMarket(); //
+    let exchange = document.getElementById("joinMakeExchangeText").value;
+    connection.invoke("JoinExchangeLobby", exchange).then(loadUserPage);
+    refreshExchange(); //
   });
 };

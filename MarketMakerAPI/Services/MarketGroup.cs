@@ -1,15 +1,13 @@
-﻿namespace MarketMaker.Services
+﻿namespace MarketMaker.Services;
+
+public class ExchangeGroup
 {
-    public class MarketGroup
+    public Dictionary<string, LocalExchangeService> Exchanges { get; } = new();
+
+    public void DeleteExchange(string exchangeCode)
     {
-        public Dictionary<string, LocalMarketService> Markets { get; } = new();
+        if (!Exchanges.ContainsKey(exchangeCode)) return;
 
-        public void DeleteMarket(string marketCode)
-        {
-            if (!Markets.ContainsKey(marketCode)) return;
-
-            Markets.Remove(marketCode);
-        }
-
+        Exchanges.Remove(exchangeCode);
     }
 }

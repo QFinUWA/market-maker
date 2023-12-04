@@ -4,7 +4,7 @@ using MarketMaker.Models;
 namespace MarketMaker.UnitTests
 
 {
-    public class LocalMarketTests : LocalMarketService, IDisposable 
+    public class LocalExchangeTests : LocalExchangeService, IDisposable 
     {
         private int _newPrice;
 
@@ -12,22 +12,22 @@ namespace MarketMaker.UnitTests
         {
             get => ++_newPrice;
         }
-        public LocalMarketTests()
+        public LocalExchangeTests()
         {
-           AddExchange(); 
-           AddExchange(); 
-           AddExchange(); 
+           AddMarket(); 
+           AddMarket(); 
+           AddMarket(); 
         }
 
         [Fact]
-        public void InitializeMarketTest()
+        public void InitializeExchangeTest()
         {
             //Arrange
 
             //Act
                                     
             //Assert
-            Assert.Empty(Exchange);
+            Assert.Empty(Market);
         }
 
         [Fact, ]
@@ -42,7 +42,7 @@ namespace MarketMaker.UnitTests
             NewOrder(bidOrder);
 
             //Assert
-            Assert.Equal(1, Exchange["A"].Bid[_newPrice].Count);
+            Assert.Equal(1, Market["A"].Bid[_newPrice].Count);
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            Assert.Equal(1, Exchange["A"].Ask[price].Count);
+            Assert.Equal(1, Market["A"].Ask[price].Count);
         }
 
         [Fact]
@@ -75,8 +75,8 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            Assert.Equal(0, Exchange["A"].Ask[price].Count);
-            Assert.Equal(0, Exchange["A"].Bid[price].Count);
+            Assert.Equal(0, Market["A"].Ask[price].Count);
+            Assert.Equal(0, Market["A"].Bid[price].Count);
         }
 
         [Fact]
@@ -92,8 +92,8 @@ namespace MarketMaker.UnitTests
             NewOrder(bidOrder);
 
             //Assert
-            Assert.Equal(0, Exchange["A"].Ask[price].Count);
-            Assert.Equal(0, Exchange["A"].Bid[price].Count);
+            Assert.Equal(0, Market["A"].Ask[price].Count);
+            Assert.Equal(0, Market["A"].Bid[price].Count);
         }
 
         [Fact]
@@ -115,12 +115,12 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
+            //_testOutputHelper.WriteLine(market._bid[price].ToString());
 
-            Assert.Equal(0, Exchange["A"].Ask[price].Count);
-            Assert.Equal(1, Exchange["A"].Bid[price].Count);
+            Assert.Equal(0, Market["A"].Ask[price].Count);
+            Assert.Equal(1, Market["A"].Bid[price].Count);
 
-            Assert.Equal(2, Exchange["A"].GetOrder(bidOrderId).Quantity);
+            Assert.Equal(2, Market["A"].GetOrder(bidOrderId).Quantity);
 
         }
         [Fact]
@@ -142,11 +142,11 @@ namespace MarketMaker.UnitTests
 
 
             //Assert
-            //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(0, Exchange["A"].Ask[price].Count); 
-            Assert.Equal(1, Exchange["A"].Bid[price].Count); 
+            //_testOutputHelper.WriteLine(market._bid[price].ToString());
+            Assert.Equal(0, Market["A"].Ask[price].Count); 
+            Assert.Equal(1, Market["A"].Bid[price].Count); 
 
-            Assert.Equal(2, Exchange["A"].GetOrder(bidOrderId).Quantity);
+            Assert.Equal(2, Market["A"].GetOrder(bidOrderId).Quantity);
 
         }
 
@@ -168,15 +168,15 @@ namespace MarketMaker.UnitTests
             NewOrder(askOrder3);
             NewOrder(bidOrder);
 
-            Exchange["A"].RemoveEmptyOrders();
+            Market["A"].RemoveEmptyOrders();
 
 
             //Assert
-            //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.False(Exchange["A"].Ask.ContainsKey(price));
-            Assert.Equal(1, Exchange["A"].Bid[price].Count);
+            //_testOutputHelper.WriteLine(market._bid[price].ToString());
+            Assert.False(Market["A"].Ask.ContainsKey(price));
+            Assert.Equal(1, Market["A"].Bid[price].Count);
 
-            Assert.Equal(6, Exchange["A"].GetOrder(bidOrderId).Quantity);
+            Assert.Equal(6, Market["A"].GetOrder(bidOrderId).Quantity);
 
         }
         [Fact]
@@ -197,15 +197,15 @@ namespace MarketMaker.UnitTests
             NewOrder(askOrder2);
             NewOrder(askOrder3);
 
-            Exchange["A"].RemoveEmptyOrders();
+            Market["A"].RemoveEmptyOrders();
 
 
             //Assert
-            //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.Equal(3, Exchange["A"].Ask[price].Count);
-            Assert.False(Exchange["A"].Bid.ContainsKey(price));
+            //_testOutputHelper.WriteLine(market._bid[price].ToString());
+            Assert.Equal(3, Market["A"].Ask[price].Count);
+            Assert.False(Market["A"].Bid.ContainsKey(price));
 
-            //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
+            //Assert.Equal(6, market.GetOrder(bidOrderId).Quantity);
         }
         
         [Fact]
@@ -223,19 +223,19 @@ namespace MarketMaker.UnitTests
             NewOrder(bidOrder2);
             Assert.True(DeleteOrder(bidOrder1.Id, bidOrder1.User));
             
-            Exchange["A"].RemoveEmptyOrders();
+            Market["A"].RemoveEmptyOrders();
             
             //Assert
-            //_testOutputHelper.WriteLine(exchange._bid[price].ToString());
-            Assert.False(Exchange["A"].Bid.ContainsKey(priceA));
-            Assert.Equal(1, Exchange["A"].Bid[priceB].Count); 
+            //_testOutputHelper.WriteLine(market._bid[price].ToString());
+            Assert.False(Market["A"].Bid.ContainsKey(priceA));
+            Assert.Equal(1, Market["A"].Bid[priceB].Count); 
 
-            //Assert.Equal(6, exchange.GetOrder(bidOrderId).Quantity);
+            //Assert.Equal(6, market.GetOrder(bidOrderId).Quantity);
         }
         
-        // ordering on different exchanges
+        // ordering on different markets
         [Fact]
-        public void MultipleExchanges()
+        public void MultipleMarkets()
         {
             var price = NewPrice;
             var bidOrderA = new Order("userA", "A", price, 10);
@@ -244,8 +244,8 @@ namespace MarketMaker.UnitTests
             NewOrder(bidOrderA);
             NewOrder(askOrderA);
             
-            Assert.Equal(1, Exchange["A"].Bid[price].Count); 
-            Assert.Equal(1, Exchange["B"].Ask[price].Count); 
+            Assert.Equal(1, Market["A"].Bid[price].Count); 
+            Assert.Equal(1, Market["B"].Ask[price].Count); 
         }
         // self-buying
         [Fact]
@@ -258,50 +258,50 @@ namespace MarketMaker.UnitTests
             NewOrder(bidOrderA);
             NewOrder(askOrderA);
             
-            Assert.Equal(0, Exchange["A"].Bid[price].Count); 
-            Assert.Equal(0, Exchange["A"].Ask[price].Count); 
+            Assert.Equal(0, Market["A"].Bid[price].Count); 
+            Assert.Equal(0, Market["A"].Ask[price].Count); 
         }
         
-        // add exchange (new, existing, basic ordering)
+        // add market (new, existing, basic ordering)
         [Fact]
-        public void CanAddExchange()
+        public void CanAddMarket()
         {
-            var code = AddExchange();
-            Assert.False(Exchange.ContainsKey(code));
-            Assert.Contains(code, Exchanges);
+            var code = AddMarket();
+            Assert.False(Market.ContainsKey(code));
+            Assert.Contains(code, Markets);
         }
         // state transitions
         [Fact]
         public void StateTransitions()
         {
-            Assert.Equal(MarketState.Lobby, State);
+            Assert.Equal(ExchangeState.Lobby, State);
 
-            State = MarketState.Lobby;
+            State = ExchangeState.Lobby;
             
-            Assert.Throws<ArgumentException>(() => State = MarketState.Paused);
-            Assert.Throws<ArgumentException>(() => State = MarketState.Closed);
+            Assert.Throws<ArgumentException>(() => State = ExchangeState.Paused);
+            Assert.Throws<ArgumentException>(() => State = ExchangeState.Closed);
 
-            State = MarketState.Open;
+            State = ExchangeState.Open;
             
-            Assert.Throws<ArgumentException>(() => State = MarketState.Lobby);
+            Assert.Throws<ArgumentException>(() => State = ExchangeState.Lobby);
 
-            State = MarketState.Paused;
+            State = ExchangeState.Paused;
             
-            Assert.Throws<ArgumentException>(() => State = MarketState.Lobby);
+            Assert.Throws<ArgumentException>(() => State = ExchangeState.Lobby);
 
-            State = MarketState.Closed;
+            State = ExchangeState.Closed;
             
-            Assert.Throws<ArgumentException>(() => State = MarketState.Open);
-            Assert.Throws<ArgumentException>(() => State = MarketState.Paused);
+            Assert.Throws<ArgumentException>(() => State = ExchangeState.Open);
+            Assert.Throws<ArgumentException>(() => State = ExchangeState.Paused);
             
         }
-        // ordering from non-existent exchange
+        // ordering from non-existent market
         [Fact]
         public void InvalidOrder()
         {
             var price = NewPrice;
 
-            var order = new Order("user", "Exchange_ERR", price, 10);
+            var order = new Order("user", "Market_ERR", price, 10);
             var transactions = NewOrder(order);
             
             Assert.Null(transactions);

@@ -5,45 +5,45 @@ namespace MarketMaker.Services;
 
 public class ResponseConstructor
 {
-    private readonly MarketGroup _marketGroup;
+    private readonly ExchangeGroup _exchangeCode;
     private readonly IUserService _userService;
 
-    public ResponseConstructor(MarketGroup marketGroup, IUserService userService)
+    public ResponseConstructor(ExchangeGroup exchangeCode, IUserService userService)
     {
-        _marketGroup = marketGroup;
+        _exchangeCode = exchangeCode;
         _userService = userService;
     }
-    
-    public LobbyStateResponse LobbyState(string gameCode)
-    {
-        var marketService = _marketGroup.Markets[gameCode];
 
-        var marketParticipants = _userService
-            .GetUsers(gameCode)
+    public LobbyStateResponse LobbyState(string exchangeCode)
+    {
+        var exchangeService = _exchangeCode.Exchanges[exchangeCode];
+
+        var exchangeParticipants = _userService
+            .GetUsers(exchangeCode)
             .Where(user => user.Name != null)
             .Select(user => user.Name!)
             .ToList();
 
-        var exchangeNames = marketService.Config.ExchangeNames
-            .Select(e => new List<string?> {e.Key, e.Value})
+        var marketNames = exchangeService.Config.MarketNames
+            .Select(e => new List<string?> { e.Key, e.Value })
             .ToList();
-        
+
         return new LobbyStateResponse(
-            exchangeNames,
-            marketParticipants,
-            marketService.State.ToString(),
-            marketService.Config.MarketName ?? "unnamed market",
-            gameCode
+            marketNames,
+            exchangeParticipants,
+            exchangeService.State.ToString(),
+            exchangeService.Config.ExchangeName ?? "unnamed exchange",
+            exchangeCode
         );
     }
-    
-    public MarketStateResponse MarketState(string gameCode)
+
+    public ExchangeStateResponse ExchangeState(string exchangeCode)
     {
-        var marketService = _marketGroup.Markets[gameCode];
-        
-        return new MarketStateResponse(
-            marketService.Orders,
-            marketService.Transactions
+        var exchangeService = _exchangeCode.Exchanges[exchangeCode];
+
+        return new ExchangeStateResponse(
+            exchangeService.Orders,
+            exchangeService.Transactions
         );
     }
 
@@ -51,7 +51,7 @@ public class ResponseConstructor
     {
         return new NewOrderResponse(
             newOrder.User,
-            newOrder.Exchange,
+            newOrder.Market,
             newOrder.Price,
             newOrder.Quantity,
             newOrder.TimeStamp,
@@ -66,12 +66,11 @@ public class ResponseConstructor
             transaction.BuyerOrderId,
             transaction.SellerUser,
             transaction.SellerOrderId,
-            transaction.Exchange,
+            transaction.Market,
             transaction.Price,
             transaction.Quantity,
             transaction.Aggressor,
             transaction.TimeStamp
         );
     }
-
 }

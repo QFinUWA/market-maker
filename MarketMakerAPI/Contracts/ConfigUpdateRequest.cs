@@ -1,6 +1,6 @@
 ﻿namespace MarketMaker.Contracts;
 
 public record ConfigUpdateRequest(
-        string? MarketName,
-        Dictionary<string, string>? ExchangeNames
+    string? ExchangeCode,
+    Dictionary<string, string>? MarketNames
 );

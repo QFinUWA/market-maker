@@ -1,6 +1,6 @@
 ﻿namespace MarketMaker.Models;
 
-public enum MarketState
+public enum ExchangeState
 {
     Lobby,
     Open,
