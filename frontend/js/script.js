@@ -1,23 +1,6 @@
 // get the element with id "exchange" and insert a list of items
 
-const connection = new signalR.HubConnectionBuilder()
-  .withUrl("https://localhost:7221/market", {
-    // .withUrl("https://market-maker.azurewebsites.net/market", {
-    skipNegotiation: true,
-    transport: signalR.HttpTransportType.WebSockets,
-  })
-  .configureLogging(signalR.LogLevel.Debug)
-  .build();
 
-async function start() {
-  try {
-    await connection.start();
-    console.log("SignalR Connected.");
-  } catch (err) {
-    console.log(err);
-    setTimeout(start, 5000);
-  }
-}
 var orders = {};
 var markets = [];
 var participants = [];
@@ -25,6 +8,8 @@ var exchangeName = "";
 var transactions = [];
 let state = "";
 let exchangeCode = "";
+
+
 // define function
 
 function refreshExchange() {
@@ -110,97 +95,120 @@ function formatTransaction(transactionEvent) {
   return str;
 }
 
-connection.onclose(async () => {
-  await start();
-});
+function bindConnection(jwt) {
+  const connection = new signalR.HubConnectionBuilder()
+    .withUrl("https://localhost:7221/market", {
+      // .withUrl("https://market-maker.azurewebsites.net/market", {
+      skipNegotiation: true,
+      transport: signalR.HttpTransportType.WebSockets,
+    accessTokenFactory: () => { return jwt } ,
+    })
+    // .configureLogging(signalR.LogLevel.Debug)
+    .build();
 
-connection.on("ReceiveMessage", (message) => {
-  console.log("server: " + message);
-});
-
-connection.on("ExchangeState", (exchange) => {
-  // console.log("exchangeState", exchange);
-  // add all orders to orders dictionary
-  exchange["orders"].forEach((order) => {
-    orders[order["id"]] = order;
-  });
-
-  exchange["transactions"].forEach((transactionEvent) => {
-    transactions.push(formatTransaction(transactionEvent));
-  });
-
-  refreshExchange();
-});
-
-connection.on("StateUpdated", (newState) => {
-  state = newState;
-  // console.log(newState)
-  refreshLobby();
-});
-
-connection.on("LobbyState", (message) => {
-  console.log("lobby state", message);
-
-  markets = message.markets.map((codeName) => {
-    [code, exchangeName] = codeName;
-    return `${code}` + (exchangeName == null ? "" : ` (${exchangeName})`);
-  });
-  participants = message.participants;
-  state = message.state;
-
-  exchangeName = message.exchangeName;
-
-  exchangeCode = message.exchangeCode;
-
-  // console.log("exchange config", message);
-  refreshLobby();
-});
-
-connection.on("NewOrder", (order) => {
-  console.log(order)
-  // console.log("new Order")
-  orders[order["id"]] = order;
-
-  refreshExchange();
-});
-
-connection.on("DeletedOrder", (orderID) => {
-  delete orders[orderID];
-  refreshExchange();
-});
-
-connection.on("NewParticipant", (user) => {
-  console.log(user + " joined the exchange");
-  refreshLobby();
-});
-
-function updateOrRemove(id, quantity) {
-  orders[id]["quantity"] += quantity;
-  if (orders[id]["quantity"] == 0) {
-    delete orders[id];
+  async function start() {
+    try {
+      await connection.start();
+      console.log("SignalR Connected.");
+    } catch (err) {
+      console.log(err);
+      // setTimeout(start, 50000000);
+    }
   }
+
+  connection.onclose(async () => {
+    await start();
+  });
+
+  connection.on("ReceiveMessage", (message) => {
+    console.log("server: " + message);
+  });
+
+  connection.on("ExchangeState", (exchange) => {
+    console.log("exchangeState", exchange);
+    // add all orders to orders dictionary
+    exchange["orders"].forEach((order) => {
+      orders[order["id"]] = order;
+    });
+
+    exchange["transactions"].forEach((transactionEvent) => {
+      transactions.push(formatTransaction(transactionEvent));
+    });
+
+    refreshExchange();
+  });
+
+  connection.on("StateUpdated", (newState) => {
+    state = newState;
+    // console.log(newState)
+    refreshLobby();
+  });
+
+  connection.on("LobbyState", (message) => {
+    console.log("lobby state", message);
+
+    markets = message.markets.map((codeName) => {
+      [code, exchangeName] = codeName;
+      return `${code}` + (exchangeName == null ? "" : ` (${exchangeName})`);
+    });
+    participants = message.participants;
+    state = message.state;
+
+    exchangeName = message.exchangeName;
+
+    exchangeCode = message.exchangeCode;
+
+    // console.log("exchange config", message);
+    refreshLobby();
+  });
+
+  connection.on("NewOrder", (order) => {
+    console.log(order)
+    // console.log("new Order")
+    orders[order["id"]] = order;
+
+    refreshExchange();
+  });
+
+  connection.on("DeletedOrder", (orderID) => {
+    delete orders[orderID];
+    refreshExchange();
+  });
+
+  connection.on("NewParticipant", (user) => {
+    console.log(user + " joined the exchange");
+    refreshLobby();
+  });
+
+  function updateOrRemove(id, quantity) {
+    orders[id]["quantity"] += quantity;
+    if (orders[id]["quantity"] == 0) {
+      delete orders[id];
+    }
+  }
+
+  connection.on("TransactionEvent", (transactionEvent) => {
+    transactions.push(formatTransaction(transactionEvent));
+
+    updateOrRemove(
+      transactionEvent["buyerOrderId"],
+      -transactionEvent["quantity"]
+    );
+    updateOrRemove(
+      transactionEvent["sellerOrderId"],
+      transactionEvent["quantity"]
+    );
+    refreshExchange();
+  });
+
+  connection.on("ClosingPrices", (closingPrices) => {
+    console.log("closing prices", closingPrices);
+  });
+
+  return [connection, start];
 }
 
-connection.on("TransactionEvent", (transactionEvent) => {
-  transactions.push(formatTransaction(transactionEvent));
-
-  updateOrRemove(
-    transactionEvent["buyerOrderId"],
-    -transactionEvent["quantity"]
-  );
-  updateOrRemove(
-    transactionEvent["sellerOrderId"],
-    transactionEvent["quantity"]
-  );
-  refreshExchange();
-});
-
-connection.on("ClosingPrices", (closingPrices) => {
-  console.log("closing prices", closingPrices);
-});
-
 // Start the connection.
-
 // ------------------------------
 
 const loadingHtml = `
@@ -222,7 +230,7 @@ const userHtml = `
 
 const adminHtml = `
     <button id="newMarketSend">Add Market</button> 
-    <select id="stateList" name="state", onchange = "updateState(this)">
+    <select id="stateList" name="state">
       <option value="lobby">Lobby</option>
       <option value="open">Open</option>
       <option value="paused">Paused</option>
@@ -238,12 +246,7 @@ const adminHtml = `
     </div>
 `;
 
-function updateState(element) {
-  let newState = element.value;
-  connection.invoke("UpdateExchangeState", newState);
-}
-
-function loadUserPage() {
+function loadUserPage(connection) {
   document.getElementById("commands").innerHTML = userHtml;
 
   document.getElementById("marketInput").value = "A";
@@ -290,8 +293,14 @@ function loadUserPage() {
   };
 }
 
-function loadAdminPage() {
+function loadAdminPage(connection) {
   document.getElementById("commands").innerHTML = adminHtml;
+
+  document.getElementById("stateList").onchange = () => {
+    let newState = document.getElementById("stateList").value;
+    console.log("new state", newState);
+    connection.invoke("UpdateExchangeState", newState);
+  }
 
   document.getElementById("newMarketSend").onclick = () => {
     connection.invoke("MakeNewMarket");
@@ -336,16 +345,26 @@ function loadAdminPage() {
 }
 document.getElementById("commands").innerHTML = loadingHtml;
 
-document.getElementById("makeExchange").onclick = () => {
+document.getElementById("makeExchange").onclick = async () => {
+  const res = await fetch("http://localhost:5044/create/")
+  const data = await res.text();
+  let jwt = data;
+  let [connection, start] = bindConnection(jwt);
   start().then(() => {
-    connection.invoke("MakeNewExchange").then(loadAdminPage);
+    loadAdminPage(connection);
   });
 };
 
-document.getElementById("joinExchange").onclick = () => {
-  start().then(() => {
+document.getElementById("joinExchange").onclick = async () => {
     let exchange = document.getElementById("joinMakeExchangeText").value;
-    connection.invoke("JoinExchangeLobby", exchange).then(loadUserPage);
+    const res = await fetch("http://localhost:5044/join?exchangeCode=" + exchange)
+    const data = await res.text();
+    let jwt = data;
+
+    let [connection, start] = bindConnection(jwt);
+    start().then(() => {
+      loadUserPage(connection);
+    })
+
     refreshExchange(); //
-  });
-};
+  };

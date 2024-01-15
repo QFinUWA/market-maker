@@ -1,5 +1,6 @@
 ﻿namespace MarketMaker.Models;
 
+// TODO: make struct or record?
 public class User
 {
     private string? _name;
