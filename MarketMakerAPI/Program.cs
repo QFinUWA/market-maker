@@ -78,7 +78,13 @@ builder.Services.AddAuthorizationBuilder()
     });
 
 builder.Services.AddSwaggerGen();
-builder.Services.AddCors();
+builder.Services.AddCors(options => {
+   options.AddDefaultPolicy(policy =>
+   {
+       var allowedOrigins = config.GetSection("CORS:AllowedOrigins").Get<List<string>>();
+       policy.WithOrigins(allowedOrigins!.ToArray());
+   }); 
+});
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR(options => { options.EnableDetailedErrors = true; });
 builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddConsole(); });
@@ -97,13 +103,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.UseCors(corsPolicyBuilder =>
-{
-    corsPolicyBuilder.WithOrigins("http://127.0.0.1:5500") //Source
-        .AllowAnyMethod()
-        .AllowCredentials()
-        .AllowAnyHeader();
-});
+app.UseCors();
 
 app.MapHub<MarketHub>("/market");
 

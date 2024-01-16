@@ -1,6 +1,5 @@
 // get the element with id "exchange" and insert a list of items
 
-
 var orders = {};
 var markets = [];
 var participants = [];
@@ -9,8 +8,9 @@ var transactions = [];
 let state = "";
 let exchangeCode = "";
 
-
 // define function
+let serverURL = "https://localhost:7221/";
+// let serverURL = "https://market-maker.azurewebsites.net/";
 
 function refreshExchange() {
   var listorders = [];
@@ -97,11 +97,11 @@ function formatTransaction(transactionEvent) {
 
 function bindConnection(jwt) {
   const connection = new signalR.HubConnectionBuilder()
-    .withUrl("https://localhost:7221/market", {
-      // .withUrl("https://market-maker.azurewebsites.net/market", {
+    .withUrl(
+      serverURL + "market", {
       skipNegotiation: true,
       transport: signalR.HttpTransportType.WebSockets,
-    accessTokenFactory: () => { return jwt } ,
+    accessTokenFactory: () => jwt,
     })
     // .configureLogging(signalR.LogLevel.Debug)
     .build();
@@ -346,7 +346,7 @@ function loadAdminPage(connection) {
 document.getElementById("commands").innerHTML = loadingHtml;
 
 document.getElementById("makeExchange").onclick = async () => {
-  const res = await fetch("http://localhost:5044/create/")
+  const res = await fetch(serverURL + "create")
   const data = await res.text();
   let jwt = data;
   let [connection, start] = bindConnection(jwt);
@@ -357,7 +357,9 @@ document.getElementById("makeExchange").onclick = async () => {
 
 document.getElementById("joinExchange").onclick = async () => {
     let exchange = document.getElementById("joinMakeExchangeText").value;
-    const res = await fetch("http://localhost:5044/join?exchangeCode=" + exchange)
+    if (exchange == "") return;
+
+    const res = await fetch(serverURL + "join?exchangeCode=" + exchange)
     const data = await res.text();
     let jwt = data;
 
