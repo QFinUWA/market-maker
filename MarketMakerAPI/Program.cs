@@ -56,7 +56,6 @@ builder.Services.AddAuthorizationBuilder()
     });
 
 builder.Services.AddSwaggerGen();
-builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR(options => { options.EnableDetailedErrors = true; });
@@ -66,8 +65,11 @@ var app = builder.Build();
 
 app.UseRouting();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
