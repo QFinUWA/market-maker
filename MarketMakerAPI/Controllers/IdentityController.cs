@@ -13,27 +13,30 @@ namespace MarketMaker.Controllers;
 [ApiController]
 public class IdentityController : Controller
 {
-   private const string TokenSecret = "TEMPORARYTEMPORARYTEMPORARYTEMPORARYTEMPORARYTEMPORARY";
+   private readonly string _tokenSecret;
    private static readonly TimeSpan TokenLifetime = TimeSpan.FromDays(1);
-
    private readonly ExchangeGroup _exchanges;
-
-   public IdentityController(ExchangeGroup exchanges)
+   private readonly string _issuer;
+   private readonly string _audience;
+   
+   public IdentityController(ExchangeGroup exchanges, IConfiguration config)
    {
       _exchanges = exchanges;
+      _tokenSecret = config["AnonymousAccess"]!;
+      _issuer = config["JwtSettings:Issuer"]!;
+      _audience = config["JwtSettings:Audience"]!;
    }
-
-   private static string WriteToken(IEnumerable<Claim> claims)
+   private string WriteToken(IEnumerable<Claim> claims)
    {
       JwtSecurityTokenHandler tokenHandler = new();
 
-      byte[] key = Encoding.UTF8.GetBytes(TokenSecret);
+      byte[] key = Encoding.UTF8.GetBytes(_tokenSecret);
       SecurityTokenDescriptor tokenDescriptor = new()
       {
          Subject = new ClaimsIdentity(claims),
          Expires = DateTime.UtcNow.Add(TokenLifetime),
-         Issuer = "market-maker.azurewebsites.net",
-         Audience = "http://127.0.0.1:5500/",
+         Issuer = _issuer,
+         Audience = _audience,
          SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
       };
 

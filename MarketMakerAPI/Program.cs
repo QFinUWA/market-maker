@@ -1,18 +1,40 @@
 using System.Text;
+using Azure.Core;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using MarketMaker.Hubs;
 using MarketMaker.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
-var config = builder.Configuration;
 
+var config = builder.Configuration;
+if (builder.Environment.IsProduction())
+{
+    var keyVaultUrl = config["KeyVault:keyVaultURL"]!;
+    var keyVaultClientId    = config["KeyVault:ClientId"]!;
+    var keyVaultClientSecret= config["KeyVault:ClientSecret"]!;
+    var keyVaultDirectoryId = config["KeyVault:DirectoryId"]!;
+
+    // ClientSecretCredential credential = new(keyVaultDirectoryId, keyVaultClientId, keyVaultClientSecret);
+
+    config.AddAzureKeyVault(keyVaultUrl, keyVaultClientId, keyVaultClientSecret, new DefaultKeyVaultSecretManager());
+    
+    // SecretClient client = new(new Uri(keyVaultUrl), credential);
+    // anonymousKey = client.GetSecret("AnonymousAccess").Value.Value;
+    // var c = config["AnonymousAccess"];
+    // var a = 1 + 1;
+}
 // Add services to the container.
 builder.Services.AddSingleton<ExchangeGroup>();
 builder.Services.AddSingleton<LocalUserDatabase>();
 builder.Services.AddSingleton<IUserService, LocalUserService>();
 builder.Services.AddSingleton<Dictionary<string, CancellationTokenSource>>();
 builder.Services.AddControllers();
+builder.Services.AddSingleton<IConfiguration>(config);
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -24,7 +46,7 @@ builder.Services.AddAuthentication(x =>
     {
         ValidIssuer = config["JwtSettings:Issuer"],
         ValidAudience = config["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JwtSettings:Key"]!)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["AnonymousAccess"]!)),
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
