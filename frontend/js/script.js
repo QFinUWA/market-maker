@@ -10,7 +10,7 @@ let exchangeCode = "";
 
 // define function
 let serverURL = "https://localhost:7221/";
-// let serverURL = "https://market-maker.azurewebsites.net/";
+serverURL = "https://market-maker.azurewebsites.net/";
 
 function refreshExchange() {
   var listorders = [];
@@ -346,7 +346,7 @@ function loadAdminPage(connection) {
 document.getElementById("commands").innerHTML = loadingHtml;
 
 document.getElementById("makeExchange").onclick = async () => {
-  const res = await fetch(serverURL + "create")
+  const res = await fetch(serverURL + "createExchange")
   const data = await res.text();
   let jwt = data;
   let [connection, start] = bindConnection(jwt);
@@ -359,7 +359,7 @@ document.getElementById("joinExchange").onclick = async () => {
     let exchange = document.getElementById("joinMakeExchangeText").value;
     if (exchange == "") return;
 
-    const res = await fetch(serverURL + "join?exchangeCode=" + exchange)
+    const res = await fetch(serverURL + "joinExchange?exchangeCode=" + exchange)
     const data = await res.text();
     let jwt = data;
 

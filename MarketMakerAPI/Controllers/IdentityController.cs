@@ -88,12 +88,15 @@ public class IdentityController(ExchangeGroup exchanges, IConfiguration config, 
    
    [HttpPost]
    [Route("createAccount")]
-   [Authorize(Policy = "authenticatedUser")] // only our single account can access this method for now
+   // [Authorize(Policy = "authenticatedUser")] // only our single account can access this method for now
    public IActionResult CreateUser(CreateUserRequest request)
    {
       var email = request.Email;
 
       if (!IsValidEmail(email)) return BadRequest("Invalid email format.");
+      
+      var existingUser = dbContext.User.FirstOrDefault(user => user.Email == email);
+      if (existingUser is not null) return BadRequest("Email already exists.");
       
       var password = request.Password;
       var passwordHash = PasswordHasher.Hash(password);
