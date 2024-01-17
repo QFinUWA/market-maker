@@ -5,24 +5,18 @@ namespace MarketMaker.Services;
 
 public class ResponseConstructor
 {
-    private readonly ExchangeGroup _exchangeCode;
-    private readonly IUserService _userService;
+    private readonly ExchangeGroup _exchangeGroup;
 
-    public ResponseConstructor(ExchangeGroup exchangeCode, IUserService userService)
+    public ResponseConstructor(ExchangeGroup exchangeGroup)
     {
-        _exchangeCode = exchangeCode;
-        _userService = userService;
+        _exchangeGroup = exchangeGroup;
     }
 
     public LobbyStateResponse LobbyState(string exchangeCode)
     {
-        var exchangeService = _exchangeCode.Exchanges[exchangeCode];
+        var exchangeService = _exchangeGroup.Exchanges[exchangeCode];
 
-        var exchangeParticipants = _userService
-            .GetUsers(exchangeCode)
-            .Where(user => user.Name != null)
-            .Select(user => user.Name!)
-            .ToList();
+        var exchangeParticipants = exchangeService.Users.Values.ToList();
 
         var marketNames = exchangeService.Config.MarketNames
             .Select(e => new List<string?> { e.Key, e.Value })
@@ -39,7 +33,7 @@ public class ResponseConstructor
 
     public ExchangeStateResponse ExchangeState(string exchangeCode)
     {
-        var exchangeService = _exchangeCode.Exchanges[exchangeCode];
+        var exchangeService = _exchangeGroup.Exchanges[exchangeCode];
 
         return new ExchangeStateResponse(
             exchangeService.Orders,
