@@ -88,9 +88,9 @@ public class IdentityController(ExchangeGroup exchanges, IConfiguration config, 
    
    [HttpPost]
    [Route("createAccount")]
-   [Authorize(Policy = "authenticatedUser")] // only our single account can access this method for now
    public IActionResult CreateUser(CreateUserRequest request)
    {
+      return BadRequest("this function is disable (for development)");
       var email = request.Email;
 
       if (!IsValidEmail(email)) return BadRequest("Invalid email format.");
@@ -120,6 +120,7 @@ public class IdentityController(ExchangeGroup exchanges, IConfiguration config, 
 
    [HttpGet]
    [Route("createExchange")]
+   [Authorize(Policy = "authenticatedUser")] // only our single account can access this method for now
    public IActionResult CreateExchange()
    {
       string exchangeCode = exchanges.AddExchange();
