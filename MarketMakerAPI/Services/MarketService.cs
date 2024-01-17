@@ -7,6 +7,7 @@ namespace MarketMaker.Services;
 [Serializable]
 public abstract class ExchangeService
 {
+    // TODO: add queue
     public abstract List<Order> Orders { get; set; }
     public abstract List<Transaction> Transactions { get; set; }
     public ExchangeConfig Config { get; set; } = new();

@@ -2,22 +2,25 @@ using System.Text;
 using Azure.Core;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using MarketMaker.Contracts;
 using MarketMaker.Hubs;
 using MarketMaker.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var config = builder.Configuration;
-if (builder.Environment.IsProduction())
+if (builder.Environment.IsDevelopment())
 {
     var keyVaultUrl = config["KeyVault:keyVaultURL"]!;
     var keyVaultClientId    = config["KeyVault:ClientId"]!;
     var keyVaultClientSecret= config["KeyVault:ClientSecret"]!;
-    var keyVaultDirectoryId = config["KeyVault:DirectoryId"]!;
+    // var keyVaultDirectoryId = config["KeyVault:DirectoryId"]!;
 
     // ClientSecretCredential credential = new(keyVaultDirectoryId, keyVaultClientId, keyVaultClientSecret);
 
@@ -31,9 +34,13 @@ if (builder.Environment.IsProduction())
 // Add services to the container.
 builder.Services.AddSingleton<ExchangeGroup>();
 builder.Services.AddSingleton<LocalUserDatabase>();
-builder.Services.AddSingleton<IUserService, LocalUserService>();
+// builder.Services.AddSingleton<IUserService, LocalUserService>();
 builder.Services.AddSingleton<Dictionary<string, CancellationTokenSource>>();
 builder.Services.AddControllers();
+builder.Services.AddDbContext<UserDbContext>(options =>
+{
+    options.UseSqlServer(config["UserDb"]);
+});
 builder.Services.AddSingleton<IConfiguration>(config);
 builder.Services.AddAuthentication(x =>
 {
@@ -75,14 +82,51 @@ builder.Services.AddAuthorizationBuilder()
         pb.RequireAuthenticatedUser()
             .AddAuthenticationSchemes()
             .RequireClaim("admin", "true");
+    })
+    .AddPolicy("authenticatedUser", pb =>
+    {
+        pb.RequireAuthenticatedUser()
+            .AddAuthenticationSchemes()
+            .RequireClaim("authenticatedUser", "true");
     });
 
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = ParameterLocation.Header,
+
+            },
+            new List<string>()
+        }
+    });
+    // var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    // var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    // c.IncludeXmlComments(xmlPath);
+});
 builder.Services.AddCors(options => {
    options.AddDefaultPolicy(policy =>
    {
-       var allowedOrigins = config.GetSection("CORS:AllowedOrigins").Get<List<string>>();
-       policy.WithOrigins(allowedOrigins!.ToArray());
+       var allowedOrigins = config.GetSection("CORS:AllowedOrigins").Get<string[]>();
+       policy.WithOrigins(allowedOrigins!);
    }); 
 });
 builder.Services.AddHttpContextAccessor();
