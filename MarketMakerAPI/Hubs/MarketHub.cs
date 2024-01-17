@@ -2,10 +2,11 @@
 using MarketMaker.Contracts;
 using MarketMaker.Models;
 using MarketMaker.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MarketMaker.Hubs;
 
-[Microsoft.AspNet.SignalR.Authorize]
+[Authorize]
 public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient>
 {
     private const int EmptyExchangeLifetimeMinutes = 60;
@@ -94,7 +95,6 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         _logger.LogInformation("User Disconnected");
 
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
-        
         
         var exchange = _exchangeServices.Exchanges[exchangeCode];
         exchange.LobbySize--;

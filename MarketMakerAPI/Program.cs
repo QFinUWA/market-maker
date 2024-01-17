@@ -6,6 +6,7 @@ using MarketMaker.Contracts;
 using MarketMaker.Hubs;
 using MarketMaker.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Microsoft.IdentityModel.Tokens;
@@ -20,21 +21,12 @@ if (builder.Environment.IsProduction())
     var keyVaultUrl = config["KeyVault:keyVaultURL"]!;
     var keyVaultClientId    = config["KeyVault:ClientId"]!;
     var keyVaultClientSecret= config["KeyVault:ClientSecret"]!;
-    // var keyVaultDirectoryId = config["KeyVault:DirectoryId"]!;
-
-    // ClientSecretCredential credential = new(keyVaultDirectoryId, keyVaultClientId, keyVaultClientSecret);
 
     config.AddAzureKeyVault(keyVaultUrl, keyVaultClientId, keyVaultClientSecret, new DefaultKeyVaultSecretManager());
-    
-    // SecretClient client = new(new Uri(keyVaultUrl), credential);
-    // anonymousKey = client.GetSecret("AnonymousAccess").Value.Value;
-    // var c = config["AnonymousAccess"];
-    // var a = 1 + 1;
 }
+
 // Add services to the container.
 builder.Services.AddSingleton<ExchangeGroup>();
-builder.Services.AddSingleton<LocalUserDatabase>();
-// builder.Services.AddSingleton<IUserService, LocalUserService>();
 builder.Services.AddSingleton<Dictionary<string, CancellationTokenSource>>();
 builder.Services.AddControllers();
 builder.Services.AddDbContext<UserDbContext>(options =>
@@ -118,15 +110,13 @@ builder.Services.AddSwaggerGen(c =>
             new List<string>()
         }
     });
-    // var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    // var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    // c.IncludeXmlComments(xmlPath);
 });
+
 builder.Services.AddCors(options => {
    options.AddDefaultPolicy(policy =>
    {
        var allowedOrigins = config.GetSection("CORS:AllowedOrigins").Get<string[]>();
-       policy.WithOrigins(allowedOrigins!);
+       policy.WithOrigins(allowedOrigins!).AllowAnyHeader().AllowAnyMethod();
    }); 
 });
 builder.Services.AddHttpContextAccessor();
@@ -143,11 +133,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.UseCors();
 
 app.MapHub<MarketHub>("/market");
 
