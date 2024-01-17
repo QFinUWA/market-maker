@@ -88,7 +88,7 @@ public class IdentityController(ExchangeGroup exchanges, IConfiguration config, 
    
    [HttpPost]
    [Route("createAccount")]
-   // [Authorize(Policy = "authenticatedUser")] // only our single account can access this method for now
+   [Authorize(Policy = "authenticatedUser")] // only our single account can access this method for now
    public IActionResult CreateUser(CreateUserRequest request)
    {
       var email = request.Email;
