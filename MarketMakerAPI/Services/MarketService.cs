@@ -7,14 +7,19 @@ namespace MarketMaker.Services;
 [Serializable]
 public abstract class ExchangeService
 {
+    // TODO: add queue
     public abstract List<Order> Orders { get; set; }
     public abstract List<Transaction> Transactions { get; set; }
     public ExchangeConfig Config { get; set; } = new();
 
+    public Dictionary<string, string> Users { get; } = new();
+
     public ExchangeState State { get; set; } = ExchangeState.Lobby;
 
-    [JsonIgnore] public List<string> Markets => Config.MarketNames.Keys.ToList();
+    public int LobbySize { get; set; } = 0;
 
+    [JsonIgnore] public List<string> Markets => Config.MarketNames.Keys.ToList();
+    
     public string AddMarket()
     {
         var i = Markets.Count;
@@ -25,6 +30,12 @@ public abstract class ExchangeService
         Config.MarketNames[code] = null;
 
         return code;
+    }
+
+    public void AddUser(string userId, string newUser)
+    {
+        if (Users.ContainsKey(newUser)) throw new ArgumentException();
+        Users[userId] = newUser;
     }
 
     public bool UpdateConfig(ConfigUpdateRequest updateRequest)
