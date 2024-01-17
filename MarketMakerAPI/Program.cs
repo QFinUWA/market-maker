@@ -15,7 +15,7 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 var config = builder.Configuration;
-if (builder.Environment.IsDevelopment())
+if (builder.Environment.IsProduction())
 {
     var keyVaultUrl = config["KeyVault:keyVaultURL"]!;
     var keyVaultClientId    = config["KeyVault:ClientId"]!;
