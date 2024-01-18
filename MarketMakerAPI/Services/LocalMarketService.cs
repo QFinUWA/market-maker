@@ -1,11 +1,13 @@
-﻿using MarketMaker.Models;
+﻿using System.Collections.Concurrent;
+using System.Threading.Channels;
+using MarketMaker.Models;
 
 namespace MarketMaker.Services;
 
 public class LocalExchangeService : ExchangeService
 {
     protected readonly Dictionary<string, Market> Market = new();
-
+    
     public override List<Transaction> Transactions
     {
         get
@@ -46,25 +48,34 @@ public class LocalExchangeService : ExchangeService
         }
     }
 
-    public override bool DeleteOrder(Guid id, string user)
+    protected override bool ProcessDeleteOrder(Order deleteOrder)
     {
-        return Market.Values.Any(exchange => exchange.DeleteOrder(id, user));
+        return Market[deleteOrder.Market].DeleteOrder(deleteOrder);
     }
 
-    public override List<Transaction>? NewOrder(Order newOrder)
+    protected override List<Transaction>? ProcessNewOrder(Order newOrder)
     {
-        if (!Markets.Contains(newOrder.Market)) return null;
-
-        Market.TryAdd(newOrder.Market, new Market());
-
-        var transactions = Market[newOrder.Market].NewOrder(newOrder);
-        return transactions;
+        return Market.GetValueOrDefault(newOrder.Market)?.NewOrder(newOrder);
     }
-
-    public override void Clear()
+    
+    protected override void ProcessClear()
     {
-        Markets.Clear();
+        Market.Clear();
         Orders.Clear();
         Transactions.Clear();
+    }
+
+    public override Order? GetOrder(Guid id)
+    {
+        return Market
+            .Values
+            .Select(market => market.GetOrder(id))
+            .OfType<Order>()
+            .SingleOrDefault();
+    }
+
+    protected override void AddMarket(string marketCode)
+    {
+        Market.TryAdd(marketCode, new Market());
     }
 }

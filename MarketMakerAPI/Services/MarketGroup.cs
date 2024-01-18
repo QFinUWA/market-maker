@@ -1,24 +1,40 @@
-﻿namespace MarketMaker.Services;
+﻿using System.Collections.Concurrent;
+
+namespace MarketMaker.Services;
 
 public class ExchangeGroup
 {
     private const int ExchangeCodeLength = 5;
-    public Dictionary<string, LocalExchangeService> Exchanges { get; } = new();
+    private const int CodeGenerationMaxRetries = 100;
+    public ConcurrentDictionary<string, LocalExchangeService> Exchanges { get; } = new();
+    
     public void DeleteExchange(string exchangeCode)
     {
         if (!Exchanges.ContainsKey(exchangeCode)) return;
-        Exchanges.Remove(exchangeCode);
+        Exchanges.TryRemove(exchangeCode, out var removed);
+        
+        if (removed is null) throw new Exception();
     }
 
     public string AddExchange()
     {
-      const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      var stringChars = new char[ExchangeCodeLength];
-      Random random = new();
-      for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[random.Next(chars.Length)];
-      var exchangeCode = new string(stringChars);
-      Exchanges[exchangeCode] = new LocalExchangeService();
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        Random random = new();
+        var stringChars = new char[ExchangeCodeLength];
 
-      return exchangeCode;
-    } 
+        for (int retries = 0; retries < CodeGenerationMaxRetries; retries++)
+        {
+            for (var i = 0; i < stringChars.Length; i++) stringChars[i] = chars[random.Next(chars.Length)];
+            var exchangeCode = new string(stringChars);
+
+            if (Exchanges.ContainsKey(exchangeCode)) continue;
+
+            var wasAdded = Exchanges.TryAdd(exchangeCode, new LocalExchangeService());
+            if (!wasAdded) throw new Exception();
+
+            return exchangeCode;
+        }
+        throw new Exception();
+    }
+
 }

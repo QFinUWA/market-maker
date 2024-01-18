@@ -68,10 +68,10 @@ public class IdentityController(ExchangeGroup exchanges, IConfiguration config, 
    public IActionResult LoginUser(LoginRequest request)
    {
       var email = request.Email;
-
+      // var users = dbContext.User.Select(e => e.Email).ToList();
       var user = dbContext.User.FirstOrDefault(user => user.Email == email);
       if (user is null) return Forbid();
-
+   
       var storedHash = user.PasswordHash;
       if (!PasswordHasher.Verify(storedHash, request.Password))
          return Forbid();

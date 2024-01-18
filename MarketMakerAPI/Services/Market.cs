@@ -14,9 +14,9 @@ public class Market
 
     public IEnumerable<Order> Orders => _orders.Values;
 
-    public Order GetOrder(Guid id)
+    public Order? GetOrder(Guid id)
     {
-        return _orders[id];
+        return _orders.GetValueOrDefault(id);
     }
 
 
@@ -112,13 +112,9 @@ public class Market
         return transactions;
     }
 
-    public bool DeleteOrder(Guid id, string user)
+    public bool DeleteOrder(Order deleteOrder)
     {
-        if (!_orders.ContainsKey(id)) return false;
-
-        if (_orders[id].User != user) return false;
-
-        _orders.Remove(id);
+        _orders.Remove(deleteOrder.Id);
 
         return true;
     }

@@ -7,6 +7,7 @@ var exchangeName = "";
 var transactions = [];
 let state = "";
 let exchangeCode = "";
+var token = "";
 
 // define function
 let serverURL = "https://localhost:7221/";
@@ -345,10 +346,41 @@ function loadAdminPage(connection) {
 }
 document.getElementById("commands").innerHTML = loadingHtml;
 
+document.getElementById("login").onclick = async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const rawResponse = await fetch(serverURL + "login", {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({Email: email, Password: password})
+  });
+  console.log(rawResponse)
+  if (!rawResponse.ok) return;
+  token = await rawResponse.text()
+  token = token.replace("\"", "").replace("\"", "")
+  document.getElementById("login").disabled = true;
+}
+
 document.getElementById("makeExchange").onclick = async () => {
-  const res = await fetch(serverURL + "createExchange")
-  const data = await res.text();
-  let jwt = data;
+  const data = await fetch(serverURL + "createExchange", {
+    method: "GET",
+    headers : {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/json"
+      }
+    }
+  )
+
+  if (!data.ok) {
+    console.log("you must be logged in to create a market")
+    return;
+  }
+  let jwt = data.text();
+
   let [connection, start] = bindConnection(jwt);
   start().then(() => {
     loadAdminPage(connection);
@@ -359,9 +391,9 @@ document.getElementById("joinExchange").onclick = async () => {
     let exchange = document.getElementById("joinMakeExchangeText").value;
     if (exchange == "") return;
 
-    const res = await fetch(serverURL + "joinExchange?exchangeCode=" + exchange)
-    const data = await res.text();
-    let jwt = data;
+    const data = await fetch(serverURL + "joinExchange?exchangeCode=" + exchange);
+    if (!data.ok) return;
+    let jwt = data.text();
 
     let [connection, start] = bindConnection(jwt);
     start().then(() => {

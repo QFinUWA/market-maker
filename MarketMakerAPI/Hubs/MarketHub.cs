@@ -2,10 +2,11 @@
 using MarketMaker.Contracts;
 using MarketMaker.Models;
 using MarketMaker.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MarketMaker.Hubs;
 
-[Microsoft.AspNet.SignalR.Authorize]
+[Authorize]
 public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient>
 {
     private const int EmptyExchangeLifetimeMinutes = 60;
@@ -95,7 +96,6 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
 
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
         
-        
         var exchange = _exchangeServices.Exchanges[exchangeCode];
         exchange.LobbySize--;
         
@@ -103,7 +103,7 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         await CreateCancellationToken(exchangeCode);
     }
     
-    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "admin")]
+    [Authorize(Policy = "admin")]
     public async Task MakeNewMarket()
     {
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
@@ -114,14 +114,14 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
             throw new Exception("Cannot add Market while game in progress");
 
         // add new market
-        var marketCode = exchangeService.AddMarket();
+        var marketCode = exchangeService.NewMarket();
 
         // notify clients
         _logger.LogInformation($"Lobby {exchangeCode} - added market {marketCode}");
         await Clients.Group(exchangeCode).LobbyState(_responseConstructor.LobbyState(exchangeCode));
     }
 
-    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "admin")]
+    [Authorize(Policy = "admin")]
     public async Task LoadExchange(string jsonSerialized)
     {
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
@@ -137,7 +137,7 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         await Clients.Group(exchangeCode).ExchangeState(_responseConstructor.ExchangeState(exchangeCode));
     }
 
-    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "admin")]
+    [Authorize(Policy = "admin")]
     public async Task Serialize()
     {
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
@@ -149,7 +149,7 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         await Clients.Caller.ReceiveMessage(json);
     }
 
-    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "admin")]
+    [Authorize(Policy = "admin")]
     public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
     {
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
@@ -165,7 +165,7 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         await Clients.Group(exchangeCode).LobbyState(_responseConstructor.LobbyState(exchangeCode));
     }
 
-    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "admin")]
+    [Authorize(Policy = "admin")]
     public async Task UpdateExchangeState(string newStateString)
     {
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
@@ -200,11 +200,14 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
 
         exchangeService.State = newState;
 
+        if (newState is ExchangeState.Open) exchangeService.Listen();
+        else exchangeService.StopListening();
+
         _logger.LogInformation($"Lobby {exchangeCode} - state updated to {exchangeService.State.ToString()}");
         await Clients.Group(exchangeCode).StateUpdated(exchangeService.State.ToString());
     }
 
-    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "admin")]
+    [Authorize(Policy = "admin")]
     public async Task CloseExchange(Dictionary<string, int>? closePrices = null)
     {
         var exchangeCode = CookieFactory.GetCookieValue(Context.User!, "exchangeCode");
@@ -217,20 +220,20 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
 
         if (closePrices == null)
         {
-            exchangeService.Clear();
+            await exchangeService.Clear();
             _logger.LogInformation($"Lobby {exchangeCode} - exchange closed");
             await Clients.Group(exchangeCode).StateUpdated(exchangeService.State.ToString());
             return;
         }
 
-        if (!(closePrices.Keys.All(exchangeService.Markets.Contains)
+        if (!(closePrices.Keys.All(exchangeService.Markets.ContainsKey)
               && closePrices.Count == exchangeService.Markets.Count))
             throw new Exception("Incorrect market names");
 
         if (closePrices.Values.Any(price => price < 0))
             throw new Exception("Price must be positive");
 
-        exchangeService.Clear();
+        await exchangeService.Clear();
         _logger.LogInformation($"Lobby {exchangeCode} - exchange closed with price");
         await Clients.Group(exchangeCode).StateUpdated(exchangeService.State.ToString());
         await Clients.Group(exchangeCode).ClosingPrices(closePrices);
@@ -241,9 +244,8 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         if (username.Length == 0) throw new Exception("Username must be at least 1 character long");
         var (userId, exchangeCode) = CookieFactory.GetUserAndGroup(Context.User!);
         var exchange = _exchangeServices.Exchanges[exchangeCode];
-        if (exchange.Users.ContainsKey(username)) throw new ArgumentException($"Username \"{username}\" is taken");
-        
-        exchange.AddUser(userId, username);
+        if (!exchange.AddUser(userId, username)) 
+            throw new Exception($"Name \"{username}\" is taken");
         
         _logger.LogInformation($"Lobby {exchangeCode} - {username} joined as participant");
         await Clients.Group(exchangeCode).NewParticipant(username);
@@ -254,7 +256,7 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         if (price <= 0) throw new Exception("Price must be > 0");
         var (userId, exchangeCode) = CookieFactory.GetUserAndGroup(Context.User!);
         var username = _exchangeServices.Exchanges[exchangeCode].Users[userId];
-        
+
         if (username == null) throw new Exception("You are not a participant");
 
         ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
@@ -268,11 +270,12 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         );
 
         var originalOrder = (Order)newOrder.Clone();
-
-        var transactions = exchangeService.NewOrder(newOrder);
-        if (transactions == null) throw new Exception("Invalid Order");
-
-        _logger.LogInformation($"Lobby {exchangeCode} - order placed");
+        await exchangeService.NewOrder(newOrder);
+        
+        _logger.LogInformation("finding new transactions");
+        var transactions = exchangeService.GetNewTransactions();
+        if (transactions == null) throw new Exception("Order rejected");
+        
         await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(originalOrder));
 
         var orderFilledTask = transactions
@@ -294,9 +297,12 @@ public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient
         ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
 
         if (exchangeService.State != ExchangeState.Open) throw new Exception("Exchange is not open");
-
-        var orderDeleted = exchangeService.DeleteOrder(orderId, username);
-        if (!orderDeleted) throw new Exception("Order deletion rejected");
+        
+        Order? deleteOrder = exchangeService.GetOrder(orderId);
+        if (deleteOrder is null) throw new Exception($"orderId {orderId} does not exist");
+        if (deleteOrder.User != userId) throw new Exception("Unauthorized");
+        
+        await exchangeService.DeleteOrder(deleteOrder);
 
         _logger.LogInformation($"Lobby {exchangeCode} - order deleted");
         await Clients.Group(exchangeCode).DeletedOrder(orderId);
