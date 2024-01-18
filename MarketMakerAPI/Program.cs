@@ -1,13 +1,7 @@
 using System.Text;
-using Azure.Core;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
-using MarketMaker.Contracts;
 using MarketMaker.Hubs;
 using MarketMaker.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;

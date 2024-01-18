@@ -11,7 +11,7 @@ var token = "";
 
 // define function
 let serverURL = "https://localhost:7221/";
-// serverURL = "https://market-maker.azurewebsites.net/";
+serverURL = "https://market-maker.azurewebsites.net/";
 
 function refreshExchange() {
   var listorders = [];
@@ -358,6 +358,7 @@ document.getElementById("login").onclick = async () => {
     },
     body: JSON.stringify({Email: email, Password: password})
   });
+  console.log(rawResponse)
   if (!rawResponse.ok) return;
   token = await rawResponse.text()
   token = token.replace("\"", "").replace("\"", "")
