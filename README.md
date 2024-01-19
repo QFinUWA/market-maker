@@ -1,18 +1,18 @@
 # MarketMaker.io
 
-QFin UWA present MarketMaker.io. This repository is for the backend server-side code for the .NET web app.
+QFin UWA present exchangeMaker.io. This repository is for the backend server-side code for the .NET web app.
 
-The server uses websockets through a SignalR wrapper to deliver realtime market making games. 
+The server uses websockets through a SignalR wrapper to deliver realtime exchange making games. 
 
 There is some basic front-end code in this repo for testing purposes.
 
 ## High-Level Overview
 
 This application provides an API endpoint for websocket communication. The server processes each request 
-asynchronously and will update the appropriate clients when there are updates to the market.
+asynchronously and will update the appropriate clients when there are updates to the exchange.
 
-The user either joins or creates a market and they are placed in the lobby. They are an unnamed spectator until
-they provide a username and join the market. After the admin opens the market they can place and delete orders.
+The user either joins or creates a exchange and they are placed in the lobby. They are an unnamed spectator until
+they provide a username and join the exchange. After the admin opens the exchange they can place and delete orders.
 Any special functionality (like ordering at the most competitive price) can be done by the client-side.
 
 The client-side should use a ``signalR`` library to define callbacks for any functions the server is expecting. For 
@@ -20,7 +20,7 @@ example you could create a callback for the ``DeletedOrder`` function that remov
 The client can similarly invoke functions on the server such as placing a new order or joining the game. The admin has
 a special set of functions that only they are authorized to invoke.
 
-Currently any markets will persist for 1 hour after the lobby is empty and will be deleted. The markets are serializable
+Currently any exchanges will persist for 1 hour after the lobby is empty and will be deleted. The exchanges are serializable
 so they can be saved by the admin as a JSON if desired. There are future plans to upload this to a database.
 
 ## Contracts
@@ -33,41 +33,40 @@ Request Contracts can be passed in from the client-side as a ``javascript`` obje
 
 For example:
 ```js
-var marketConfigRequest = {
-    MarketName: "Shoe Market",
-    PibblerNames: {
+var exchangeConfigRequest = {
+    exchangeName: "Shoe exchange",
+    MarketNames: {
         "A" : "Sneakers",
         "B" : "Laces",
         "C" : "Sandals",
     }
 }
 
-connection.invoke("UpdateConfig", marketConfigRequest);
+connection.invoke("UpdateConfig", exchangeConfigRequest);
 ```
-If a field is excluded it will appear as ``null`` on the server. Note the value for ``PibblerNames`` is a 
+If a field is excluded it will appear as ``null`` on the server. Note the value for ``MarketNames`` is a 
 ``<string, string>`` dictionary, not an object.
 
 #### Config Update (Admin)
 
 ```csharp
 public record ConfigUpdateRequest(
-    string? MarketName,
-    Dictionary<string, string>? PibblerNames
+    string? exchangeName,
+    Dictionary<string, string>? MarketNames
 );
 ```
 
 #### Delete Order (User)
 ```csharp
 public record DeleteOrderRequest(
-   string Pibbler,
    Guid Id
 );
 ```
 
-#### New Order (user) 
+#### New Order (User) 
 ```csharp
 public record NewOrderRequest(
-   string Pibbler,
+   string Market,
    int Price,
    int Quantity
 );
@@ -75,8 +74,8 @@ public record NewOrderRequest(
 
 ### Response Contracts
 
-These are contracts that are sent to the client-side. In ``javascript`` you can expect these to be objects. Similar 
-to the request contracts, other functions not listed use simple datatypes like ``int`` or ``string``.
+These are contracts that are sent to the client. In ``javascript`` you can expect these to be objects. Similar 
+to the request contracts, other functions not listed use a simple datatype like ``int`` or ``string``.
 
 See example client-side code:
 
@@ -97,16 +96,16 @@ public record DeleteOrderResponse(
 #### Lobby State 
 ```csharp
 public record LobbyStateResponse(
-    List<List<string?>> Pibblers,
+    List<List<string?>> Markets,
     List<string> Participants,
     string State,
-    string MarketName,
-    string MarketCode
+    string exchangeName,
+    string exchangeCode
 );
 ```
-#### Market State
+#### Exchange State
 ```csharp
-public record MarketStateResponse(
+public record exchangeStateResponse(
     List<Order> Orders,
     List<Transaction> Transactions
 );
@@ -115,7 +114,7 @@ public record MarketStateResponse(
 ```csharp
 public record NewOrderResponse(
    string User,
-   string Pibbler,
+   string Market,
    int Price,
    int Quantity,
    DateTime TimeStamp,
@@ -129,7 +128,7 @@ public record TransactionResponse(
     Guid BuyerOrderId,
     string SellerUser,
     Guid SellerOrderId,
-    string pibbler,
+    string market,
     int Price,
     int Quantity,
     string Aggressor,
@@ -145,46 +144,42 @@ These are methods that can be invoked by the client by using ``connection.on("[m
 ```csharp
 // Creates a new Lobby
 // Invokes: LobbyState
-public async Task MakeNewMarket()
+public async Task MakeNewexchange()
  
-// Creates a new market from a JSON serialized string 
-// Invokes: LobbyState, MarketState
-public async Task LoadMarket(string jsonSerialized)
+// Creates a new exchange from a JSON serialized string 
+// Invokes: LobbyState, exchangeState
+public async Task Loadexchange(string jsonSerialized)
  
-// Creates a new pibbler on the market
+// Creates a new market on the exchange
 // Invokes: LobbyState
-public async Task MakeNewPibbler()
+public async Task MakeNewMarket()
 
-// Updates the config of the market 
+// Updates the config of the exchange 
 // Invokes: LobbyState
 public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
 
-// Updates the state of the market 
+// Updates the state of the exchange 
 // Invokes: StateUpdated
-public async Task UpdateMarketState(string newStateString)
+public async Task UpdateexchangeState(string newStateString)
 
-// Closes the market at an optional price
+// Closes the exchange at an optional price
 // Invokes: StateUpdated and/or ClosingPrice
-public async Task CloseMarket(Dictionary<string, int>? closePrices= null)
+public async Task CloseExchange(Dictionary<string, int>? closePrices= null)
 
-// Serializes the market into a JSON string
+// Serializes the exchange into a JSON string
 // Invokes: ReceiveMessage
 public async Task Serialize()
 ```
 
 ### User Methods
 ```csharp
-// Joins a new lobby as a spectator
-// Invokes: LobbyState, MarketState
-public async Task JoinMarketLobby(string groupName)
-
-// Joins the market as a participant
+// Joins the exchange as a participant
 // Invokes: NewParticipant
-public async Task JoinMarket(string username) 
+public async Task Joinexchange(string username) 
     
 // Places an order
 // Invokes: NewOrder and TransactionEvent
-public async Task PlaceOrder(string pibbler, int price, int quantity)
+public async Task PlaceOrder(string market, int price, int quantity)
 
 // Deletes an order
 // Invokes: DeletedOrder 
@@ -192,6 +187,7 @@ public async Task DeleteOrder(Guid orderId)
 ```
 ## States
 
+The exchange can be in any of the four states listed below. 
 ```
            [Paused]
              ^      \
@@ -202,26 +198,53 @@ public async Task DeleteOrder(Guid orderId)
 
 
 ### Lobby
-Represents the market as it is being configured and before the game starts.
+Represents the exchange as it is being configured and before the game starts. The exchange can only be configured in this state.
 
 **Allowed Transitions:** Open
 
 ### Open
-Represents the market being open for trading.
+Represents the exchange being open for trading. This is the only state where trades can be made.
 
 **Allowed Transitions:** Paused, Closed 
 
 ### Paused
-Represents the market being temporarily paused from trading by the admin.
+Represents the exchange being temporarily paused from trading by the admin.
 
 **Allowed Transitions:** Open, Closed 
 
 ### Closed
-Represents the market when trading has completed, for example when the market closes at a price.
+Represents the exchange when trading has completed, for example when the exchange closes at a price.
 
 **Allowed Transitions:** Lobby 
 
-## Future Direction
-- Add OAuth for secure sign-in
-- Add a database for storing users and previous games
-- Scale the application for 1000s of users and add a rate limiter.
+
+# API 
+
+Authentication and authorization is implemented using JWT tokens.
+
+To obtain an auth token, use the POST HTTP endpoint ``/login`` with the body: ``{Email: [email], Password: [password]}"``.
+Note, you may have to strip the ``"`` character from the return string.
+
+To create an exchange, use the GET HTTP endpoint ``/createExchange``. You must provide an ``Authorization`` header with the value ``Bearer [JWT Token]``, 
+where the ``JWT Token`` is provided by ``/login``.
+
+To join an exchange, use the GET HTTP endpoint ``/joinExchange?exchangeCode=[exchangeCode]``. The ``Authorization`` header is optional. By providing it, the user will have access to all markets they
+have accessed in the past (as their ``userID`` is stored in each exchange). 
+
+After hitting the creation/join HTTP endpoints, a new ``JWT Token`` will be returned that authorizes access to the 
+signalr hub with the issued credentials (eg, Is the user an admin? What is their userID? What exchange are they accessing?).
+
+In ``javascript`` the connection can then be established as follows:
+
+```js
+const connection = new signalR.HubConnectionBuilder()
+.withUrl(
+  serverURL + "/Exchange", {
+  skipNegotiation: true,
+  transport: signalR.HttpTransportType.WebSockets,
+accessTokenFactory: () => jwtToken,
+})
+.build();
+
+connection.start();
+```

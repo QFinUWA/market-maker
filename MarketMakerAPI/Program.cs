@@ -133,6 +133,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapHub<MarketHub>("/market");
+app.MapHub<ExchangeHub>("/exchange");
 
 app.Run();

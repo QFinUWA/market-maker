@@ -143,8 +143,8 @@ public class IdentityController(ExchangeGroup exchanges, IConfiguration config, 
    public IActionResult JoinExchange([FromQuery] string exchangeCode)
    {
 
-      if (exchangeCode.Length != MarketHub.ExchangeCodeLength || !exchangeCode.All(char.IsLetter))
-         return BadRequest($"Exchange code must be {MarketHub.ExchangeCodeLength} characters long.");
+      if (exchangeCode.Length != ExchangeHub.ExchangeCodeLength || !exchangeCode.All(char.IsLetter))
+         return BadRequest($"Exchange code must be {ExchangeHub.ExchangeCodeLength} characters long.");
 
       var exchangeCodeUpper = exchangeCode.ToUpper();
 

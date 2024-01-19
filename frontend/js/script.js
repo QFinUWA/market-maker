@@ -99,7 +99,7 @@ function formatTransaction(transactionEvent) {
 function bindConnection(jwt) {
   const connection = new signalR.HubConnectionBuilder()
     .withUrl(
-      serverURL + "market", {
+      serverURL + "exchange", {
       skipNegotiation: true,
       transport: signalR.HttpTransportType.WebSockets,
     accessTokenFactory: () => jwt,
@@ -376,7 +376,7 @@ document.getElementById("makeExchange").onclick = async () => {
   )
 
   if (!data.ok) {
-    console.log("you must be logged in to create a market")
+    console.log("you must be logged in to create an exchange")
     return;
   }
   let jwt = data.text();

@@ -22,12 +22,19 @@ public abstract class ExchangeService
     public abstract List<Transaction> Transactions { get; set; }
     public ExchangeConfig Config { get; set; } = new();
     private object _lock = new();
-
+    
     private Channel<IRequest> _orderQueue = Channel.CreateUnbounded<IRequest>();
     private static ConcurrentQueue<List<Transaction>?> _transactionQueue = new();
     private BlockingCollection<List<Transaction>?> _transactions = new(collection: _transactionQueue);
 
     private CancellationTokenSource _cancellationTokenSource = new();
+    public ConcurrentDictionary<string, string> Users { get; set; } = new();
+
+    public ExchangeState State { get; set; } = ExchangeState.Lobby;
+
+    public int LobbySize { get; set; } = 0;
+
+    [JsonIgnore] public Dictionary<string, string?> Markets => Config.MarketNames;
     public async void Listen()
     {
         while (!_cancellationTokenSource.Token.IsCancellationRequested)
@@ -54,13 +61,6 @@ public abstract class ExchangeService
     {
        _cancellationTokenSource.Cancel();
     }
-    public ConcurrentDictionary<string, string> Users { get; } = new();
-
-    public ExchangeState State { get; set; } = ExchangeState.Lobby;
-
-    public int LobbySize { get; set; } = 0;
-
-    [JsonIgnore] public Dictionary<string, string?> Markets => Config.MarketNames;
     
     public string NewMarket()
     {

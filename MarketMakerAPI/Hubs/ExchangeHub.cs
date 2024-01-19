@@ -7,21 +7,21 @@ using Microsoft.AspNetCore.Authorization;
 namespace MarketMaker.Hubs;
 
 [Authorize]
-public sealed class MarketHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient>
+public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClient>
 {
     private const int EmptyExchangeLifetimeMinutes = 60;
     
     private readonly Dictionary<string, CancellationTokenSource> _exchangeCancellationTokens;
     private readonly ExchangeGroup _exchangeServices;
-    private readonly ILogger<MarketHub> _logger;
+    private readonly ILogger<ExchangeHub> _logger;
     private readonly ResponseConstructor _responseConstructor;
 
     public const int ExchangeCodeLength = 5;
 
-    public MarketHub(
+    public ExchangeHub(
         ExchangeGroup exchangeServices,
         Dictionary<string, CancellationTokenSource> cancellationTokens,
-        ILogger<MarketHub> logger
+        ILogger<ExchangeHub> logger
     )
     {
         _exchangeServices = exchangeServices;
