@@ -239,7 +239,7 @@ In ``javascript`` the connection can then be established as follows:
 ```js
 const connection = new signalR.HubConnectionBuilder()
 .withUrl(
-  serverURL + "/Exchange", {
+  serverURL + "/exchange", {
   skipNegotiation: true,
   transport: signalR.HttpTransportType.WebSockets,
 accessTokenFactory: () => jwtToken,
