@@ -1,9 +1,15 @@
 # First version: log in, view all exchanges, update state of exchange, log out
 
+# this patch must be done otherwise signalr breaks requests module
+# https://github.com/TargetProcess/signalr-client-py/issues/37
+import gevent.monkey
+gevent.monkey.patch_all()
+
 from dotenv import load_dotenv
 import os
 import requests
 import json
+import signalr
 
 # load the .env file
 load_dotenv()
@@ -32,3 +38,13 @@ def login():
 
 # TESTS
 assert(login() != None)
+
+# connect to signalr
+with requests.Session() as session:
+    connection = signalr.Connection("https://market-maker.azurewebsites.net/exchange", session)
+    print("hi")
+    with connection:
+        connection.wait(1)
+
+
+    
