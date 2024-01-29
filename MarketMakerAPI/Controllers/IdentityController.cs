@@ -90,7 +90,7 @@ public class IdentityController(ExchangeGroup exchanges, IConfiguration config, 
    [Route("createAccount")]
    public IActionResult CreateUser(CreateUserRequest request)
    {
-      return BadRequest("this function is disable (for development)");
+      // return BadRequest("this function is disable (for development)");
       var email = request.Email;
 
       if (!IsValidEmail(email)) return BadRequest("Invalid email format.");
