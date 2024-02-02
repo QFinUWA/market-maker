@@ -11,7 +11,7 @@ var token = "";
 
 // define function
 let serverURL = "https://localhost:7221/";
-serverURL = "https://market-maker.azurewebsites.net/";
+// serverURL = "https://market-maker.azurewebsites.net/";
 
 function refreshExchange() {
   var listorders = [];
@@ -256,7 +256,12 @@ function loadUserPage(connection) {
 
   document.getElementById("joinWithName").onclick = () => {
     let name = document.getElementById("nameInput").value;
-    connection.invoke("JoinExchange", name);
+    // await promise - if successful disable button
+    let response = connection.invoke("JoinExchange", name);
+    
+    response.then(() => {
+      document.getElementById("joinWithName").disabled = true;
+    });
   };
 
   document.getElementById("joinAsRandom").onclick = () => {

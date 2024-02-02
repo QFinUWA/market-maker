@@ -244,6 +244,9 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         if (username.Length == 0) throw new Exception("Username must be at least 1 character long");
         var (userId, exchangeCode) = CookieFactory.GetUserAndGroup(Context.User!);
         var exchange = _exchangeServices.Exchanges[exchangeCode];
+        
+        if (exchange.Users.ContainsKey(userId)) 
+            throw new Exception("Existing participant cannot join");
         if (!exchange.AddUser(userId, username)) 
             throw new Exception($"Name \"{username}\" is taken");
         
