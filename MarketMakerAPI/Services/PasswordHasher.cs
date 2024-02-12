@@ -2,7 +2,7 @@
 
 namespace MarketMaker.Services;
 
-public class PasswordHasher
+public abstract class PasswordHasher
 {
     private const int SaltSize = 128 / 8;
     private const int KeySize = 256 / 8;

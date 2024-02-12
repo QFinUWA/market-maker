@@ -1,5 +1,6 @@
 ﻿using MarketMaker.Contracts;
 using MarketMaker.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace MarketMaker.Services;
 
@@ -41,30 +42,15 @@ public class ResponseConstructor
         );
     }
 
-    public NewOrderResponse NewOrder(Order newOrder)
+    public NewOrderResponse NewOrder(Order order, List<Transaction> tradedOrders)
     {
-        return new NewOrderResponse(
-            newOrder.User,
-            newOrder.Market,
-            newOrder.Price,
-            newOrder.Quantity,
-            newOrder.TimeStamp,
-            newOrder.Id
-        );
+        var (id, user, price, market, quantity, timeStamp) = order;
+        return new NewOrderResponse(user, market, price, quantity, timeStamp, id, tradedOrders);
     }
 
-    public TransactionResponse Transaction(Transaction transaction)
+    public OrderReceivedResponse OrderReceived(List<Guid> ids, string requestReference)
     {
-        return new TransactionResponse(
-            transaction.BuyerUser,
-            transaction.BuyerOrderId,
-            transaction.SellerUser,
-            transaction.SellerOrderId,
-            transaction.Market,
-            transaction.Price,
-            transaction.Quantity,
-            transaction.Aggressor,
-            transaction.TimeStamp
-        );
+        return new OrderReceivedResponse(ids, requestReference);
     }
+
 }

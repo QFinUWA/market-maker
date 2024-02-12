@@ -21,7 +21,7 @@ function refreshExchange() {
   });
 
   listorders.sort(function (a, b) {
-    return a["price"] - b["price"];
+    return a.price - b.price;
   });
 
   for (var i = 0; i < listorders.length; i++) {
@@ -29,7 +29,6 @@ function refreshExchange() {
   }
 
   ordersList += "</nav></ul>";
-
   document.getElementById("exchange").innerHTML = ordersList;
 
   var transactionsList = "<nav><ul>";
@@ -38,6 +37,8 @@ function refreshExchange() {
   }
   transactionsList += "</nav></ul>";
   document.getElementById("transactions").innerHTML = transactionsList;
+
+  console.log(orders)
 }
 
 function refreshLobby() {
@@ -68,16 +69,16 @@ function formatOrder(order) {
   const formattedWithMilliseconds = `${formattedDateString}.${milliseconds}`;
 
   return (
-    order["market"] +
+    order.market +
     ") " +
     formattedWithMilliseconds +
     ": " +
     " $" +
-    order["price"] +
+    order.price +
     ", quantity " +
-    order["quantity"] +
+    order.quantity +
     " <= " +
-    order["user"]
+    order.user
   );
 }
 
@@ -92,7 +93,7 @@ function formatTransaction(transactionEvent) {
     ? `bought ${market} from`
     : `sold ${market} to`;
   var str = `${users[0]} ${action} ${users[1]}, ${transactionEvent["quantity"]} @ $${transactionEvent["price"]}`;
-
+   
   return str;
 }
 
@@ -165,9 +166,27 @@ function bindConnection(jwt) {
 
   connection.on("NewOrder", (order) => {
     console.log(order)
-    // console.log("new Order")
-    orders[order["id"]] = order;
-
+    if (order["quantity"] != 0 ) {
+      orders[order["id"]] = {
+        id: order["id"],
+        market: order["market"],
+        price: order["price"],
+        quantity: order["quantity"],
+        user: order["user"],
+        timeStamp: order["timeStamp"],
+      };
+    }
+    
+    console.log("buy", order["quantity"])
+    for (transactionEvent of order["transactions"]) {
+      console.log(transactionEvent)
+      let buy = transactionEvent["passiveOrder"] == transactionEvent["sellerOrderId"];
+      transactions.push(formatTransaction(transactionEvent));
+      updateOrRemove(
+        transactionEvent["passiveOrder"],
+        (buy ? 1 : -1 ) * transactionEvent["quantity"]
+      );
+    }
     refreshExchange();
   });
 
@@ -182,24 +201,29 @@ function bindConnection(jwt) {
   });
 
   function updateOrRemove(id, quantity) {
-    orders[id]["quantity"] += quantity;
-    if (orders[id]["quantity"] == 0) {
+    console.log("update or remove", id, quantity);
+    orders[id].quantity += quantity;
+    if (orders[id].quantity == 0) {
       delete orders[id];
     }
   }
 
-  connection.on("TransactionEvent", (transactionEvent) => {
-    transactions.push(formatTransaction(transactionEvent));
+  // connection.on("TransactionEvent", (transactionEvent) => {
+  //   transactions.push(formatTransaction(transactionEvent));
 
-    updateOrRemove(
-      transactionEvent["buyerOrderId"],
-      -transactionEvent["quantity"]
-    );
-    updateOrRemove(
-      transactionEvent["sellerOrderId"],
-      transactionEvent["quantity"]
-    );
-    refreshExchange();
+  //   updateOrRemove(
+  //     transactionEvent["buyerOrderId"],
+  //     -transactionEvent["quantity"]
+  //   );
+  //   updateOrRemove(
+  //     transactionEvent["sellerOrderId"],
+  //     transactionEvent["quantity"]
+  //   );
+  //   refreshExchange();
+  // });
+
+  connection.on("OrderReceived", (orderList) => {
+    console.log(orderList);
   });
 
   connection.on("ClosingPrices", (closingPrices) => {
@@ -280,7 +304,7 @@ function loadUserPage(connection) {
     let quantity = document.getElementById("quantityInput").value;
     // console.log("placed order",  exchange, parseInt(price), parseInt(quantity));
     connection
-      .invoke("PlaceOrder", exchange, parseInt(price), parseInt(quantity))
+      .invoke("PlaceOrder", exchange, parseInt(price), parseInt(quantity), "ref")
       .catch((err) => console.error(err.toString()));
   };
 

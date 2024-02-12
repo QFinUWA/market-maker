@@ -9,7 +9,7 @@ namespace MarketMaker.Services;
 
 public interface IRequest;
 
-public record NewOrderRequest(Order Order) : IRequest;
+public record NewOrderRequest(string User, string Market, int Price, int Quantity) : IRequest;
 
 public record DeleteOrderRequest(Order Order) : IRequest;
 
@@ -24,8 +24,8 @@ public abstract class ExchangeService
     private object _lock = new();
     
     private Channel<IRequest> _orderQueue = Channel.CreateUnbounded<IRequest>();
-    private static ConcurrentQueue<List<Transaction>?> _transactionQueue = new();
-    private BlockingCollection<List<Transaction>?> _transactions = new(collection: _transactionQueue);
+    private static ConcurrentQueue<(Order, List<Transaction>)> _transactionQueue = new();
+    private BlockingCollection<(Order, List<Transaction>)> _transactions = new(collection: _transactionQueue);
 
     private CancellationTokenSource _cancellationTokenSource = new();
     public ConcurrentDictionary<string, string> Users { get; set; } = new();
@@ -39,12 +39,12 @@ public abstract class ExchangeService
     {
         while (!_cancellationTokenSource.Token.IsCancellationRequested)
         {
+            // TODO: unhandled exception when adding market when second time in lobby state
             var message = await _orderQueue.Reader.ReadAsync(_cancellationTokenSource.Token);
             switch (message)
             {
                 case NewOrderRequest newOrderRequest:
-                    var transactions = ProcessNewOrder(newOrderRequest.Order);
-                    _transactions.Add(transactions);
+                    _transactions.Add(ProcessNewOrder(newOrderRequest));
                     
                     break;
                 case DeleteOrderRequest deleteOrderRequest:
@@ -89,9 +89,9 @@ public abstract class ExchangeService
         return true;
     }
 
-    public async Task NewOrder(Order order)
+    public async Task NewOrder(string username, string market, int price, int quantity)
     {
-        await _orderQueue.Writer.WriteAsync(new NewOrderRequest(order));
+        await _orderQueue.Writer.WriteAsync(new NewOrderRequest(username.ToLower(), market, price, quantity));
     }
 
     public async Task DeleteOrder(Order deleteOrder)
@@ -104,13 +104,13 @@ public abstract class ExchangeService
         await _orderQueue.Writer.WriteAsync(new ClearRequest());
     }
 
-    protected abstract List<Transaction>? ProcessNewOrder(Order newOrder);
+    protected abstract (Order, List<Transaction>) ProcessNewOrder(NewOrderRequest newOrder);
     protected abstract bool ProcessDeleteOrder(Order deleteOrder);
     protected abstract void ProcessClear();
     public abstract Order? GetOrder(Guid id);
     protected abstract void AddMarket(string marketCode);
 
-    public List<Transaction>? GetNewTransactions()
+    public (Order, List<Transaction>) GetNewTransactions()
     {
         return _transactions.Take();
     }

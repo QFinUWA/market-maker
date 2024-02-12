@@ -43,7 +43,9 @@ public class LocalExchangeService : ExchangeService
             foreach (var order in value)
             {
                 Market.TryAdd(order.Market, new Market());
-                Market[order.Market].NewOrder(order);
+                Market[order.Market].InsertOrder(order);
+                var side = order.Quantity > 0 ? Market[order.Market].Bid : Market[order.Market].Ask;
+                side[order.Price].Enqueue(order.Id, order.TimeStamp);
             }
         }
     }
@@ -53,9 +55,9 @@ public class LocalExchangeService : ExchangeService
         return Market[deleteOrder.Market].DeleteOrder(deleteOrder);
     }
 
-    protected override List<Transaction>? ProcessNewOrder(Order newOrder)
+    protected override (Order, List<Transaction>) ProcessNewOrder(NewOrderRequest newOrder)
     {
-        return Market.GetValueOrDefault(newOrder.Market)?.NewOrder(newOrder);
+        return Market[newOrder.Market].NewOrder(newOrder);
     }
     
     protected override void ProcessClear()

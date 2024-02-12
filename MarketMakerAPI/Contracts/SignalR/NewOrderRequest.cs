@@ -3,5 +3,6 @@
 public record NewOrderRequest(
     string Market,
     int Price,
-    int Quantity
+    int Quantity,
+    string RequestReference 
 );
