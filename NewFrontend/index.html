@@ -23,10 +23,21 @@
             /**
              * @type {Exchange | undefined} exchange
              */
-            let exchange;
+            let exchange = {
+                markets: {}, // dictionary of market codes to list of transactions
+                participants: [],
+                state: "Lobby",
+                exchangeName: "",
+                exchangeCode: "",
+            };
+
+            setInterval(() => {
+                console.log(exchange);
+            }, 1000)
 
             // TODO: convert to using exchange object
             // TODO: create UI for exchange
+            // TODO: its not connecting to the server for some reason? (changes in the server aren't triggering the client)
 
             const serverURL = "https://market-maker.azurewebsites.net/";
             function bindConnection(jwt) {
@@ -89,12 +100,11 @@
                             (exchangeName == null ? "" : ` (${exchangeName})`)
                         );
                     });
-                    participants = message.participants;
-                    state = message.state;
 
-                    exchangeName = message.exchangeName;
-
-                    exchangeCode = message.exchangeCode;
+                    exchange.participants = message.participants;
+                    exchange.exchangeName = message.exchangeName;
+                    exchange.exchangeCode = message.exchangeCode;
+                    exchange.state = message.state;
 
                     // console.log("exchange config", message);
                     refreshLobby();
@@ -114,7 +124,8 @@
                 });
 
                 connection.on("NewParticipant", (user) => {
-                    console.log(user + " joined the exchange");
+                    console.log(user + " joined the exchange"); // TODO: something for on participant leaving
+                    exchange.participants.push(user);
                     refreshLobby();
                 });
 
