@@ -50,3 +50,21 @@ Joining an exchange is an anonymous action.
 
 
 `${serverURL}/joinExchange?exchangeCode=${exchangeCode}`
+
+### What can a user do once they are in an exchange?
+- View the exchange's information
+- View the exchange's members
+- View the exchange's transactions
+- Place a transaction
+- View their own transactions
+- View their own balance
+- View their own transaction history
+
+The priority is:
+1. View the exchange's information, ability to place a transaction and view the transaction history
+
+## Thoughts
+On join, establish signalR connection to the exchange using the JWT, or redirect to the login page if the JWT is invalid.
+Load the exchange's information, members, and transactions.
+Display the exchange's information, members, and transactions.
+Allow the user to place a transaction and view their transaction history.

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>QFIN Orderbooks</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="lib/signalr/signalr.js"></script>
+    </head>
+    <body
+        class="flex h-screen flex-col items-center justify-center bg-gray-100"
+    >
+        <script>
+            /**
+             * @typedef {Object} Exchange
+             * @property {Array<string>} markets - Array of market strings.
+             * @property {Array<string>} participants - Array of participant strings.
+             * @enum {"Lobby" | "Open" | "Closed" | "Paused"} state - Current state of the exchange.
+             * @property {string} exchangeName - Name of the exchange.
+             * @property {string} exchangeCode - Code of the exchange.
+             */
+
+            /**
+             * @type {Exchange | undefined} exchange
+             */
+            let exchange;
+
+            // TODO: convert to using exchange object
+            // TODO: create UI for exchange
+
+            const serverURL = "https://market-maker.azurewebsites.net/";
+            function bindConnection(jwt) {
+                // Thank you Isaac
+                // Called when creating a exchange or joining an exchange
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl(serverURL + "exchange", {
+                        skipNegotiation: true,
+                        transport: signalR.HttpTransportType.WebSockets,
+                        accessTokenFactory: () => jwt,
+                    })
+                    // .configureLogging(signalR.LogLevel.Debug)
+                    .build();
+
+                async function start() {
+                    try {
+                        await connection.start();
+                        console.log("SignalR Connected.");
+                    } catch (err) {
+                        console.log(err);
+                        // setTimeout(start, 50000000);
+                    }
+                }
+
+                connection.onclose(async () => {
+                    await start();
+                });
+
+                connection.on("ReceiveMessage", (message) => {
+                    console.log("server: " + message);
+                });
+
+                connection.on("ExchangeState", (exchange) => {
+                    console.log("exchangeState", exchange);
+                    // add all orders to orders dictionary
+                    exchange["orders"].forEach((order) => {
+                        orders[order["id"]] = order;
+                    });
+
+                    exchange["transactions"].forEach((transactionEvent) => {
+                        transactions.push(formatTransaction(transactionEvent));
+                    });
+
+                    refreshExchange();
+                });
+
+                connection.on("StateUpdated", (newState) => {
+                    state = newState;
+                    // console.log(newState)
+                    refreshLobby();
+                });
+
+                connection.on("LobbyState", (message) => {
+                    console.log("lobby state", message);
+
+                    markets = message.markets.map((codeName) => {
+                        [code, exchangeName] = codeName;
+                        return (
+                            `${code}` +
+                            (exchangeName == null ? "" : ` (${exchangeName})`)
+                        );
+                    });
+                    participants = message.participants;
+                    state = message.state;
+
+                    exchangeName = message.exchangeName;
+
+                    exchangeCode = message.exchangeCode;
+
+                    // console.log("exchange config", message);
+                    refreshLobby();
+                });
+
+                connection.on("NewOrder", (order) => {
+                    console.log(order);
+                    // console.log("new Order")
+                    orders[order["id"]] = order;
+
+                    refreshExchange();
+                });
+
+                connection.on("DeletedOrder", (orderID) => {
+                    delete orders[orderID];
+                    refreshExchange();
+                });
+
+                connection.on("NewParticipant", (user) => {
+                    console.log(user + " joined the exchange");
+                    refreshLobby();
+                });
+
+                function updateOrRemove(id, quantity) {
+                    orders[id]["quantity"] += quantity;
+                    if (orders[id]["quantity"] == 0) {
+                        delete orders[id];
+                    }
+                }
+
+                connection.on("TransactionEvent", (transactionEvent) => {
+                    transactions.push(formatTransaction(transactionEvent));
+
+                    updateOrRemove(
+                        transactionEvent["buyerOrderId"],
+                        -transactionEvent["quantity"],
+                    );
+                    updateOrRemove(
+                        transactionEvent["sellerOrderId"],
+                        transactionEvent["quantity"],
+                    );
+                    refreshExchange();
+                });
+
+                connection.on("ClosingPrices", (closingPrices) => {
+                    console.log("closing prices", closingPrices);
+                });
+
+                return [connection, start];
+            }
+            // On load, checks if a jwt token is present in cookies
+            // If not, redirect to login page
+            if (document.cookie.indexOf("jwt") == -1) {
+                window.location.href = "login.html";
+            }
+            const jwt = document.cookie
+                .split(";")
+                .find((c) => c.trim().startsWith("jwt="))
+                .split("=")[1];
+
+            // Connect to the SignalR hub
+            const [connection, start] = bindConnection(jwt);
+            start();
+        </script>
+    </body>
+</html>

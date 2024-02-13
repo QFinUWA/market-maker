@@ -80,7 +80,9 @@
                     );
                     const expires = "expires=" + expiryDate.toUTCString();
                     document.cookie = "jwt=" + jwt + ";" + expires + ";path=/";
-                    window.location.href = "/index.html"; // Change "/index.html" to your target URL
+
+                    // goes to the index page - relative path
+                    window.location.href = "./index.html";
                 } catch (error) {
                     console.error("Error joining exchange:", error);
                     document.getElementById("error-text").innerText =
