@@ -1,19 +1,20 @@
 // get the element with id "exchange" and insert a list of items
 
-var orders = {};
+var orders = {}; // Stores all orders as objects
 var markets = [];
 var participants = [];
 var exchangeName = "";
-var transactions = [];
+var transactions = []; // Stores strings of transactions
 let state = "";
 let exchangeCode = "";
 var token = "";
 
 // define function
-let serverURL = "https://localhost:7221/";
-// serverURL = "https://market-maker.azurewebsites.net/";
+// let serverURL = "https://localhost:7221/";
+serverURL = "https://market-maker.azurewebsites.net/";
 
 function refreshExchange() {
+    // Formats HTML from orders list for the frontend
   var listorders = [];
   var ordersList = "<nav><ul>";
   Object.keys(orders).forEach(function (key) {
@@ -41,6 +42,7 @@ function refreshExchange() {
 }
 
 function refreshLobby() {
+  // Generates HTML for the lobby
   document.getElementById("marketNames").innerHTML =
     "Markets: " + markets.join(", ");
   document.getElementById("state").innerHTML = "State: " + state;
@@ -55,6 +57,7 @@ function refreshLobby() {
 }
 
 function formatOrder(order) {
+  // Generates string to be displayed in refreshExchange
   var date = new Date(Date.parse(order["timeStamp"]));
 
   const formattedDateString = date.toLocaleString("en-US", {
@@ -82,6 +85,7 @@ function formatOrder(order) {
 }
 
 function formatTransaction(transactionEvent) {
+  // Generates string to be displayed in refreshExchange
   var buyer = transactionEvent["buyerUser"];
   var seller = transactionEvent["sellerUser"];
   var market = transactionEvent["market"];
@@ -97,6 +101,7 @@ function formatTransaction(transactionEvent) {
 }
 
 function bindConnection(jwt) {
+  // Called when creating a exchange or joining an exchange
   const connection = new signalR.HubConnectionBuilder()
     .withUrl(
       serverURL + "exchange", {
