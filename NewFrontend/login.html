@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>QFIN Orderbooks</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script type="text/javascript" src="config.js"></script>
     </head>
     <body
         class="flex h-screen flex-col items-center justify-center bg-gray-100"
@@ -60,7 +61,7 @@
                     return; // Exit if the input is empty
                 }
 
-                const serverURL = "https://market-maker.azurewebsites.net/";
+                
                 const requestURL =
                     serverURL + "joinExchange?exchangeCode=" + exchangeCode;
 
