@@ -1,16 +1,17 @@
 ﻿using MarketMaker.Models;
-
 namespace MarketMaker.Services;
 
 public class Market
 {
     private readonly Dictionary<Guid, Order> _orders = new();
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Ask = new();
-
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Bid = new();
-    public readonly List<Transaction> Transactions = new();
+    private int? _bestAsk = null;
+    private int? _bestBid = null;
+    
+    public readonly List<Transaction> Transactions = [];
 
-    public readonly Dictionary<string, float> UserProfits = new();
+    // public readonly Dictionary<string, float> UserProfits = new();
 
     public IEnumerable<Order> Orders => _orders.Values;
 
@@ -20,96 +21,112 @@ public class Market
     }
 
 
-    public List<Transaction> NewOrder(Order order)
+    public (Order, List<Transaction>) NewOrder(NewOrderRequest orderRequest)
     {
-        _orders.Add(order.Id, order);
-
-        UserProfits.TryAdd(order.User, 0);
-
-        // TODO: maybe set Order price to the lowestAsk if it is above it etc ...
-
-        var sideIsBid = order.Quantity > 0;
+        var (user, market, requestedPrice, quantity) = orderRequest;
+        var sideIsBid = quantity > 0;
 
         var side = sideIsBid ? Bid : Ask;
         var otherSide = !sideIsBid ? Bid : Ask;
-
-        var price = order.Price;
-
-        side.TryAdd(price, new PriorityQueue<Guid, DateTime>());
-
-        // assuming market was balanced before, only check for new updates
-        // if this is the newest order
-        List<Transaction> transactions = new();
-
-        side[price].Enqueue(order.Id, order.TimeStamp);
-
-        if (side[price].Count > 1 || !otherSide.ContainsKey(price)) return transactions;
+        var sign = sideIsBid ? 1 : -1;
+        int? otherBestPrice = sideIsBid ? _bestAsk : _bestBid;
 
         // keep removing from queue until first order exists
-        while (otherSide[price].Count > 0 && order.Quantity != 0)
-        {
-            var now = DateTime.Now;
-            var otherId = otherSide[price].Peek();
+        var price = otherBestPrice is not null
+            ? Math.Abs(Math.Min(sign * requestedPrice, sign * otherBestPrice.Value))
+            : requestedPrice;
 
-            // dormant deleted orders
-            if (!_orders.ContainsKey(otherId))
+        // while we've made all trades possible
+        Guid newId;
+        
+        var transactions = new List<Transaction>();
+        
+        var order = new Order(Guid.NewGuid(), user, price, market, quantity, DateTime.Now);
+        while ( order.Quantity != 0)
+        {
+            // if we can make trades at this price
+            if (otherSide.TryGetValue(price, out var otherQueue))
             {
-                otherSide[price].Dequeue();
+
+                if ((side!.GetValueOrDefault(price, null)?.Count ?? 0) > 0 || otherQueue.Count > 0)
+                {
+                    // match each trade
+                    newId = Guid.NewGuid();
+                    // transactions.Add(price, new());
+                    while (otherQueue.Count > 0 && order.Quantity != 0)
+                    {
+                        Guid otherId = otherQueue.Peek();
+                        
+                        // dormant deleted orders
+                        if (!_orders.ContainsKey(otherId))
+                        {
+                            otherQueue.Dequeue();
+                            continue;
+                        }
+
+                        var otherOrder = _orders[otherId];
+                        int quantityTraded;
+
+                        if (Math.Sign(order.Quantity + otherOrder.Quantity) != Math.Sign(order.Quantity))
+                        {
+                            quantityTraded = order.Quantity;
+
+                            otherOrder.Quantity += order.Quantity;
+                            // UserProfits[otherOrder.User] += order.Quantity * price;
+                            order.Quantity = 0;
+                            // UserProfits[order.User] += -1 * order.Quantity * price;
+                        }
+                        else
+                        {
+                            quantityTraded = otherOrder.Quantity;
+
+                            order.Quantity += otherOrder.Quantity;
+                            // UserProfits[order.User] += otherOrder.Quantity * price;
+                            otherOrder.Quantity = 0;
+                            // UserProfits[otherOrder.User] += -1 * otherOrder.Quantity * price;
+                        }
+
+                        if (otherOrder.Quantity == 0)
+                        {
+                            otherQueue.Dequeue();
+                            _orders.Remove(otherId);
+                        }
+
+                        var transaction = CreateTransaction(order, otherOrder, sideIsBid, quantityTraded);
+                        transactions.Add(transaction);
+                        
+                    }
+                }
+            }
+            if ((price + sign) * sign <= sign * requestedPrice)
+            {
+                price += sign;
                 continue;
             }
-
-            var otherOrder = _orders[otherId];
-            int quantityTraded;
-
-            if (Math.Sign(order.Quantity + otherOrder.Quantity) != Math.Sign(order.Quantity))
-            {
-                quantityTraded = order.Quantity;
-
-                otherOrder.Quantity += order.Quantity;
-                UserProfits[otherOrder.User] += order.Quantity * price;
-                order.Quantity = 0;
-                UserProfits[order.User] += -1 * order.Quantity * price;
-            }
-            else
-            {
-                quantityTraded = otherOrder.Quantity;
-
-                order.Quantity += otherOrder.Quantity;
-                UserProfits[order.User] += otherOrder.Quantity * price;
-                otherOrder.Quantity = 0;
-                UserProfits[otherOrder.User] += -1 * otherOrder.Quantity * price;
-            }
-
-            if (otherOrder.Quantity == 0)
-            {
-                otherSide[price].Dequeue();
-                _orders.Remove(otherId);
-            }
-
-            var (buyer, seller) = sideIsBid ? (order, otherOrder) : (otherOrder, order);
-
-            transactions.Add(new Transaction(
-                    buyer.User,
-                    buyer.Id,
-                    seller.User,
-                    seller.Id,
-                    order.Market,
-                    order.Price,
-                    Math.Abs(quantityTraded),
-                    order.User,
-                    now
-                )
-            );
+            
+            break;
         }
-
-        if (order.Quantity == 0)
+        
+        
+        // NOTE: the opposite side's best price will be outdated but 
+        //       can never be less competitive so we don't need to update it
+        if (sideIsBid)
         {
-            var removeId = side[price].Dequeue();
-            _orders.Remove(removeId);
+            _bestBid = Math.Max(_bestBid ?? int.MinValue, order.Price);
+        }
+        else
+        {
+            _bestAsk = Math.Min(_bestAsk ?? int.MaxValue, order.Price);
+        }
+        
+        if (order.Quantity != 0)
+        {
+            _orders.Add(order.Id, order);
+            if (!side.ContainsKey(order.Price)) side.TryAdd(order.Price, new PriorityQueue<Guid, DateTime>());
+            side[order.Price].Enqueue(order.Id, order.TimeStamp);
         }
 
-        Transactions.AddRange(transactions);
-        return transactions;
+        return (order, transactions);
     }
 
     public bool DeleteOrder(Order deleteOrder)
@@ -121,7 +138,7 @@ public class Market
 
     public void Close(int price)
     {
-        foreach (var order in _orders.Values) UserProfits[order.User] += (price - order.Price) * order.Quantity;
+        // foreach (var order in _orders.Values) UserProfits[order.User] += (price - order.Price) * order.Quantity;
 
         _orders.Clear();
         Bid.Clear();
@@ -139,5 +156,26 @@ public class Market
             side.TryAdd(order.Price, new PriorityQueue<Guid, DateTime>());
             side[order.Price].Enqueue(order.Id, order.TimeStamp);
         }
+    }
+
+    public void InsertOrder(Order order)
+    {
+        _orders.Add(order.Id, order);
+    }
+
+    private Transaction CreateTransaction(Order aggressive, Order passive, bool buy, int quantity)
+    {
+        var (buyer, seller) = buy ? (aggressive, passive) : (passive, aggressive);
+        return new Transaction(
+            buyer.User,
+            buyer.Id,
+            seller.User,
+            seller.Id,
+            passive.Market,
+            passive.Price,
+            Math.Abs(quantity),
+            passive.Id,
+            aggressive.TimeStamp
+        );
     }
 }
