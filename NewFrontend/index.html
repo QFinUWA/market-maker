@@ -24,7 +24,7 @@
              * @type {Exchange | undefined} exchange
              */
             let exchange = {
-                markets: {}, // dictionary of market codes to dictionary of lists for orders and transactions
+                markets: {}, // dictionary of market codes to list of orders
                 participants: [],
                 state: "Lobby",
                 exchangeName: "",
@@ -70,8 +70,11 @@
                     console.log("server: " + message);
                 });
 
-                connection.on("ExchangeState", (exchange) => {
-                    console.log("exchangeState", exchange);
+                connection.on("ExchangeState", (exchangeResponse) => {
+                    console.log("exchangeState", exchangeResponse);
+                    
+                    // sort through orders and transactions
+
                     // add all orders to orders dictionary
                     //exchange["orders"].forEach((order) => {
                     //    orders[order["id"]] = order;
@@ -86,36 +89,25 @@
 
                 connection.on("StateUpdated", (newState) => {
                     exchange.state = newState;
-                    // console.log(newState)
-                    //refreshLobby();
+                    console.log(exchange);
                 });
 
                 connection.on("LobbyState", (message) => {
-                    console.log("lobby state", message);
-
-                    //markets = message.markets.map((codeName) => {
-                    //    [code, exchangeName] = codeName;
-                    //    return (
-                    //        `${code}` +
-                    //        (exchangeName == null ? "" : ` (${exchangeName})`)
-                    //    );
-                    //});
+                    // for each market, add an empty list to the dictionary
+                    message.markets.forEach((market) => {
+                        exchange.markets[market] = [];
+                    });
 
                     exchange.participants = message.participants;
                     exchange.exchangeName = message.exchangeName;
                     exchange.exchangeCode = message.exchangeCode;
                     exchange.state = message.state;
-
-                    // console.log("exchange config", message);
-                    //refreshLobby();
+                    console.log(exchange);
                 });
 
                 connection.on("NewOrder", (order) => {
-                    console.log(order);
-                    // console.log("new Order")
-                    //orders[order["id"]] = order;
-
-                    //refreshExchange();
+                    exchange.markets[order["market"]].push(order);
+                    console.log(exchange);
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
@@ -124,9 +116,8 @@
                 });
 
                 connection.on("NewParticipant", (user) => {
-                    console.log(user + " joined the exchange"); // TODO: something for on participant leaving
                     exchange.participants.push(user);
-                    //refreshLobby();
+                    console.log(exchange);
                 });
 
                 function updateOrRemove(id, quantity) {
@@ -136,7 +127,8 @@
                     //}
                 }
 
-                connection.on("TransactionEvent", (transactionEvent) => {
+                connection.on("TransactionEvent", (transactionEvent) => { // TODO it seems like this route never runs
+                    console.log(transactionEvent)
                     //transactions.push(formatTransaction(transactionEvent));
 
                     //updateOrRemove(
