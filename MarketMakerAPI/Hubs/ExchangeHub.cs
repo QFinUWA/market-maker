@@ -2,6 +2,7 @@
 using MarketMaker.Contracts;
 using MarketMaker.Models;
 using MarketMaker.Services;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNetCore.Authorization;
 
 namespace MarketMaker.Hubs;
@@ -198,6 +199,8 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
                 return;
         }
 
+        if (exchangeService.Markets.Count == 0) throw new Exception("Exchange must contain at least 1 market");
+
         exchangeService.State = newState;
 
         if (newState is ExchangeState.Open) exchangeService.Listen();
@@ -254,40 +257,27 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         await Clients.Group(exchangeCode).NewParticipant(username);
     }
 
-    public async Task PlaceOrder(string market, int price, int quantity)
+    public async Task PlaceOrder(string market, int price, int quantity, string userReference)
     {
         if (price <= 0) throw new Exception("Price must be > 0");
         var (userId, exchangeCode) = CookieFactory.GetUserAndGroup(Context.User!);
-        var username = _exchangeServices.Exchanges[exchangeCode].Users[userId];
-
-        if (username == null) throw new Exception("You are not a participant");
-
         ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
+        
+        if (!exchangeService.Users.TryGetValue(userId, out var username))
+            throw new Exception("You are not a participant");
+
         if (exchangeService.State != ExchangeState.Open) throw new Exception("Exchange is not open");
+        if (!exchangeService.Markets.ContainsKey(market)) throw new Exception("Invalid market");
 
-        var newOrder = new Order(
-            username,
-            market,
-            price,
-            quantity
-        );
-
-        var originalOrder = (Order)newOrder.Clone();
-        await exchangeService.NewOrder(newOrder);
+        await exchangeService.NewOrder(username, market, price, quantity);
         
         _logger.LogInformation("finding new transactions");
-        var transactions = exchangeService.GetNewTransactions();
-        if (transactions == null) throw new Exception("Order rejected");
-        
-        await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(originalOrder));
+        var (order, transactions) = exchangeService.GetNewTransactions();
 
-        var orderFilledTask = transactions
-            .Select<Transaction, Task>(transaction =>
-                Clients.Group(exchangeCode).TransactionEvent(_responseConstructor.Transaction(transaction)
-                ));
+        await Clients.Caller.OrderReceived(_responseConstructor.OrderReceived(order.Id, userReference));
 
         _logger.LogInformation($"Lobby {exchangeCode} - {transactions.Count} new transaction(s)");
-        await Task.WhenAll(orderFilledTask);
+        await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(order, transactions));
     }
 
     public async Task DeleteOrder(Guid orderId)

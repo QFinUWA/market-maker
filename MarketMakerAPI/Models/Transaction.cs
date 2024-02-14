@@ -1,4 +1,4 @@
-namespace MarketMaker.Models;
+﻿namespace MarketMaker.Models;
 
 public record Transaction(
     string BuyerUser,
@@ -8,6 +8,6 @@ public record Transaction(
     string Market,
     int Price,
     int Quantity,
-    string Aggressor,
-    DateTime TimeStamp
+    Guid PassiveOrder,
+    DateTime TimeStamp 
 );
