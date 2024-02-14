@@ -328,7 +328,7 @@ function loadAdminPage(connection) {
 
   document.getElementById("stateList").onchange = () => {
     let newState = document.getElementById("stateList").value;
-    console.log("new state", newState);
+    // console.log("new state", newState);
     connection.invoke("UpdateExchangeState", newState);
   }
 

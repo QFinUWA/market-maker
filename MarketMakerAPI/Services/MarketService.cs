@@ -37,10 +37,10 @@ public abstract class ExchangeService
     [JsonIgnore] public Dictionary<string, string?> Markets => Config.MarketNames;
     public async void Listen()
     {
+        _cancellationTokenSource = new CancellationTokenSource();
         while (!_cancellationTokenSource.Token.IsCancellationRequested)
         {
-            // TODO: unhandled exception when adding market when second time in lobby state
-            var message = await _orderQueue.Reader.ReadAsync(_cancellationTokenSource.Token);
+            var message = await _orderQueue.Reader.ReadAsync();
             switch (message)
             {
                 case NewOrderRequest newOrderRequest:
@@ -112,6 +112,9 @@ public abstract class ExchangeService
 
     public (Order, List<Transaction>) GetNewTransactions()
     {
-        return _transactions.Take();
+        var (order, transactions) = _transactions.Take();
+        
+        Transactions.AddRange(transactions);
+        return (order, transactions);
     }
 }

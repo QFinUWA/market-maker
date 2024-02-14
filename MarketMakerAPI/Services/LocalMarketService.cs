@@ -1,32 +1,15 @@
 ﻿using System.Collections.Concurrent;
 using System.Threading.Channels;
 using MarketMaker.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace MarketMaker.Services;
 
 public class LocalExchangeService : ExchangeService
 {
     protected readonly Dictionary<string, Market> Market = new();
-    
-    public override List<Transaction> Transactions
-    {
-        get
-        {
-            List<Transaction> transactions = new();
 
-            foreach (var market in Market.Values) transactions.AddRange(market.Transactions);
-
-            return transactions;
-        }
-        set
-        {
-            foreach (var transaction in value)
-            {
-                Market.TryAdd(transaction.Market, new Market());
-                Market[transaction.Market].Transactions.Add(transaction);
-            }
-        }
-    }
+    public override List<Transaction> Transactions { get; set; } = [];
 
     public override List<Order> Orders
     {

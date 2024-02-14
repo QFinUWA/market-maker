@@ -48,9 +48,9 @@ public class ResponseConstructor
         return new NewOrderResponse(user, market, price, quantity, timeStamp, id, tradedOrders);
     }
 
-    public OrderReceivedResponse OrderReceived(List<Guid> ids, string requestReference)
-    {
-        return new OrderReceivedResponse(ids, requestReference);
-    }
+    // public OrderReceivedResponse OrderReceived(List<Guid> ids, string requestReference)
+    // {
+    //     return new OrderReceivedResponse(ids, requestReference);
+    // }
 
 }

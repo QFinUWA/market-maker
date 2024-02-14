@@ -6,11 +6,9 @@ public class Market
     private readonly Dictionary<Guid, Order> _orders = new();
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Ask = new();
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Bid = new();
-    private int? _bestAsk = null;
-    private int? _bestBid = null;
+    private int? _bestAsk;
+    private int? _bestBid;
     
-    public readonly List<Transaction> Transactions = [];
-
     // public readonly Dictionary<string, float> UserProfits = new();
 
     public IEnumerable<Order> Orders => _orders.Values;
