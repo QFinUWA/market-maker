@@ -24,16 +24,16 @@
              * @type {Exchange | undefined} exchange
              */
             let exchange = {
-                markets: {}, // dictionary of market codes to list of transactions
+                markets: {}, // dictionary of market codes to dictionary of lists for orders and transactions
                 participants: [],
                 state: "Lobby",
                 exchangeName: "",
                 exchangeCode: "",
             };
 
-            setInterval(() => {
-                console.log(exchange);
-            }, 1000)
+            //setInterval(() => {
+            //    console.log(exchange);
+            //}, 1000)
 
             // TODO: convert to using exchange object
             // TODO: create UI for exchange
@@ -73,33 +73,33 @@
                 connection.on("ExchangeState", (exchange) => {
                     console.log("exchangeState", exchange);
                     // add all orders to orders dictionary
-                    exchange["orders"].forEach((order) => {
-                        orders[order["id"]] = order;
-                    });
+                    //exchange["orders"].forEach((order) => {
+                    //    orders[order["id"]] = order;
+                    //});
 
-                    exchange["transactions"].forEach((transactionEvent) => {
-                        transactions.push(formatTransaction(transactionEvent));
-                    });
+                    //exchange["transactions"].forEach((transactionEvent) => {
+                    //    transactions.push(formatTransaction(transactionEvent));
+                    //});
 
-                    refreshExchange();
+                    //refreshExchange();
                 });
 
                 connection.on("StateUpdated", (newState) => {
-                    state = newState;
+                    exchange.state = newState;
                     // console.log(newState)
-                    refreshLobby();
+                    //refreshLobby();
                 });
 
                 connection.on("LobbyState", (message) => {
                     console.log("lobby state", message);
 
-                    markets = message.markets.map((codeName) => {
-                        [code, exchangeName] = codeName;
-                        return (
-                            `${code}` +
-                            (exchangeName == null ? "" : ` (${exchangeName})`)
-                        );
-                    });
+                    //markets = message.markets.map((codeName) => {
+                    //    [code, exchangeName] = codeName;
+                    //    return (
+                    //        `${code}` +
+                    //        (exchangeName == null ? "" : ` (${exchangeName})`)
+                    //    );
+                    //});
 
                     exchange.participants = message.participants;
                     exchange.exchangeName = message.exchangeName;
@@ -107,47 +107,47 @@
                     exchange.state = message.state;
 
                     // console.log("exchange config", message);
-                    refreshLobby();
+                    //refreshLobby();
                 });
 
                 connection.on("NewOrder", (order) => {
                     console.log(order);
                     // console.log("new Order")
-                    orders[order["id"]] = order;
+                    //orders[order["id"]] = order;
 
-                    refreshExchange();
+                    //refreshExchange();
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
-                    delete orders[orderID];
-                    refreshExchange();
+                    //delete orders[orderID];
+                    //refreshExchange();
                 });
 
                 connection.on("NewParticipant", (user) => {
                     console.log(user + " joined the exchange"); // TODO: something for on participant leaving
                     exchange.participants.push(user);
-                    refreshLobby();
+                    //refreshLobby();
                 });
 
                 function updateOrRemove(id, quantity) {
-                    orders[id]["quantity"] += quantity;
-                    if (orders[id]["quantity"] == 0) {
-                        delete orders[id];
-                    }
+                    //orders[id]["quantity"] += quantity;
+                    //if (orders[id]["quantity"] == 0) {
+                    //    delete orders[id];
+                    //}
                 }
 
                 connection.on("TransactionEvent", (transactionEvent) => {
-                    transactions.push(formatTransaction(transactionEvent));
+                    //transactions.push(formatTransaction(transactionEvent));
 
-                    updateOrRemove(
-                        transactionEvent["buyerOrderId"],
-                        -transactionEvent["quantity"],
-                    );
-                    updateOrRemove(
-                        transactionEvent["sellerOrderId"],
-                        transactionEvent["quantity"],
-                    );
-                    refreshExchange();
+                    //updateOrRemove(
+                    //    transactionEvent["buyerOrderId"],
+                    //    -transactionEvent["quantity"],
+                    //);
+                    //updateOrRemove(
+                    //    transactionEvent["sellerOrderId"],
+                    //    transactionEvent["quantity"],
+                    //);
+                    //refreshExchange();
                 });
 
                 connection.on("ClosingPrices", (closingPrices) => {
@@ -156,6 +156,15 @@
 
                 return [connection, start];
             }
+
+            // joinExchange needs to be run once on load to set your name and join
+            // just a button to join 
+            function joinExchange(name) {
+                connection.invoke("JoinExchange", name).catch((err) => {
+                    console.error(err.toString());
+                });
+            }
+
             // On load, checks if a jwt token is present in cookies
             // If not, redirect to login page
             if (document.cookie.indexOf("jwt") == -1) {
@@ -168,7 +177,8 @@
 
             // Connect to the SignalR hub
             const [connection, start] = bindConnection(jwt);
-            start();
+            start()
+            
         </script>
     </body>
 </html>
