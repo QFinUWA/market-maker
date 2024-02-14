@@ -274,7 +274,7 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         _logger.LogInformation("finding new transactions");
         var (order, transactions) = exchangeService.GetNewTransactions();
 
-        await Clients.Caller.OrderReceived(order.Id, userReference);
+        await Clients.Caller.OrderReceived(_responseConstructor.OrderReceived(order.Id, userReference));
 
         _logger.LogInformation($"Lobby {exchangeCode} - {transactions.Count} new transaction(s)");
         await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(order, transactions));

@@ -1,6 +1,6 @@
 ﻿namespace MarketMaker.Contracts;
 
 public record OrderReceivedResponse(
-    List<Guid> CreatedOrders, 
+    Guid CreatedOrder, 
     string RequestReference
 );
