@@ -7,22 +7,77 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="lib/signalr/signalr.js"></script>
     </head>
-    <body
-        class="flex h-screen flex-col items-center justify-center bg-gray-100"
-    >
-        <script>
-            /**
-             * @typedef {Object} Exchange
-             * @property {Array<string>} markets - Array of market strings.
-             * @property {Array<string>} participants - Array of participant strings.
-             * @enum {"Lobby" | "Open" | "Closed" | "Paused"} state - Current state of the exchange.
-             * @property {string} exchangeName - Name of the exchange.
-             * @property {string} exchangeCode - Code of the exchange.
-             */
+    <body class="">
+            <nav class="bg-white shadow p-4 flex justify-between items-center">
+                <div class="flex space-x-6">
+                    <h1 id="exchangeName">[Exchange Name]</h1>
+                    <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
+                </div>
+                <div class="">[State]</div>
+            </nav>
 
-            /**
-             * @type {Exchange | undefined} exchange
-             */
+                <div class="container mx-auto p-4">
+                    <div id="tab-navigation" class="flex">
+                    </div>
+                
+                    <div id="tab-content" class="border-t-2">
+                    </div>
+                </div>
+
+        <script>
+
+            function generateTabs(tabNames) {
+                const tabNavigation = document.getElementById('tab-navigation');
+                const tabContent = document.getElementById('tab-content');
+                // Check for unique names
+                const nameSet = new Set();
+                for (const name of tabNames) {
+                    if (nameSet.has(name)) {
+                        console.error(`Duplicate tab name found: ${name}`);
+                        return; // Stop generating tabs if duplicates exist
+                    }
+                    nameSet.add(name);
+                }
+
+                // Clear existing tabs and content
+                tabNavigation.innerHTML = '';
+                tabContent.innerHTML = '';
+
+                // Create tabs and content dynamically
+                tabNames.forEach(name => {
+                    const tabId = name.toLowerCase().replace(/\s+/g, '-'); // Format for IDs
+                    const contentId = `content-${tabId}`;
+
+                    // Create tab element
+                    const tab = document.createElement('div');
+                    tab.id = tabId;
+                    tab.classList.add('tab', 'bg-gray-100', 'hover:bg-gray-200', 'px-4', 'rounded-t-md', 'cursor-pointer');
+                    tab.textContent = name;
+                    tabNavigation.appendChild(tab);
+
+                    // Create content element
+                    const content = document.createElement('div');
+                    content.id = contentId;
+                    content.classList.add('p-4', 'bg-gray-100', 'hidden');
+                    tabContent.appendChild(content);
+
+                    // Click handler for tabs
+                    tab.addEventListener('click', () => {
+                        const allContent = document.querySelectorAll('[id^="content-"]');
+                        allContent.forEach(item => item.classList.add('hidden'));
+                        document.getElementById(contentId).classList.remove('hidden');
+                    });
+                });
+
+                // Show the first tab initially
+                tabNavigation.firstChild.click();
+            }
+
+            // Sample usage (with a duplicate name)
+            const tabNames = ["A","B","C","D"];
+            generateTabs(tabNames); 
+
+
             let exchange = {
                 markets: {}, // dictionary of market codes to dictionary of orders and transactions
                 participants: [],
@@ -30,14 +85,6 @@
                 exchangeName: "",
                 exchangeCode: "",
             };
-
-            //setInterval(() => {
-            //    console.log(exchange);
-            //}, 1000)
-
-            // TODO: convert to using exchange object
-            // TODO: create UI for exchange
-            // TODO: its not connecting to the server for some reason? (changes in the server aren't triggering the client)
 
             const serverURL = "https://market-maker.azurewebsites.net/";
             function bindConnection(jwt) {
