@@ -8,7 +8,7 @@
         <script src="lib/signalr/signalr.js"></script>
     </head>
     <body class="">
-            <nav class="bg-white shadow p-4 flex justify-between items-center">
+            <nav class="bg-white shadow p-4 flex justify-between items-center h-[8vh]">
                 <div class="flex space-x-6">
                     <h1 id="exchangeName">[Exchange Name]</h1>
                     <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
@@ -16,13 +16,13 @@
                 <div id="exchangeState">[State]</div>
             </nav>
 
-                <div class="container mx-auto mt-2">
-                    <div id="tab-navigation" class="flex">
-                    </div>
-                
-                    <div id="tab-content" class="border-t-2">
-                    </div>
+            <div class="container mx-auto h-[92vh]">
+                <div id="tab-navigation" class="flex h-[4%] min-h-[26px]">
                 </div>
+            
+                <div id="tab-content" class="border-t-2 h-[90%]">
+                </div>
+            </div>
 
         <script>
 
@@ -73,7 +73,7 @@
                     // Create content element
                     const content = document.createElement('div');
                     content.id = contentId;
-                    content.classList.add('p-4', 'bg-gray-100', 'hidden');
+                    content.classList.add('p-4', 'bg-gray-100', 'hidden', 'h-full', 'flex');
                     tabContent.appendChild(content);
 
                     // Click handler for tabs
@@ -146,7 +146,7 @@
                     exchange.exchangeName = message.exchangeName;
                     exchange.exchangeCode = message.exchangeCode;
                     exchange.state = message.state;
-                    
+
                     generateTabs(Object.keys(exchange.markets));
                     updateContent();
                     console.log("LobbyState", message, exchange);
