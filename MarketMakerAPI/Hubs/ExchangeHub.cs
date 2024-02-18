@@ -199,6 +199,8 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
                 return;
         }
 
+        if (exchangeService.Markets.Count == 0) throw new Exception("Exchange must contain at least 1 market");
+
         exchangeService.State = newState;
 
         if (newState is ExchangeState.Open) exchangeService.Listen();
@@ -259,21 +261,20 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
     {
         if (price <= 0) throw new Exception("Price must be > 0");
         var (userId, exchangeCode) = CookieFactory.GetUserAndGroup(Context.User!);
-        var username = _exchangeServices.Exchanges[exchangeCode].Users[userId];
-
-        if (username == null) throw new Exception("You are not a participant");
-
         ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
+        
+        if (!exchangeService.Users.TryGetValue(userId, out var username))
+            throw new Exception("You are not a participant");
+
         if (exchangeService.State != ExchangeState.Open) throw new Exception("Exchange is not open");
         if (!exchangeService.Markets.ContainsKey(market)) throw new Exception("Invalid market");
 
-        
         await exchangeService.NewOrder(username, market, price, quantity);
         
         _logger.LogInformation("finding new transactions");
         var (order, transactions) = exchangeService.GetNewTransactions();
 
-        await Clients.Caller.OrderReceived(order.Id, userReference);
+        await Clients.Caller.OrderReceived(_responseConstructor.OrderReceived(order.Id, userReference));
 
         _logger.LogInformation($"Lobby {exchangeCode} - {transactions.Count} new transaction(s)");
         await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(order, transactions));

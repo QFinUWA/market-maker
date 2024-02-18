@@ -12,5 +12,5 @@ public interface IExchangeClient
     Task NewParticipant(string username);
     Task StateUpdated(string newState);
     Task ClosingPrices(Dictionary<string, int> closingPrices);
-    Task OrderReceived(Guid orderId, string userReference);
+    Task OrderReceived(OrderReceivedResponse orderReceived);
 }

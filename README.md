@@ -68,7 +68,8 @@ public record DeleteOrderRequest(
 public record NewOrderRequest(
    string Market,
    int Price,
-   int Quantity
+   int Quantity,
+   string requestReference
 );
 ```
 
@@ -80,37 +81,55 @@ to the request contracts, other functions not listed use a simple datatype like 
 See example client-side code:
 
 ```javascript
-connection.on("NewTransaction", response => {
-    console.log(`${response.buyerUser} bought from ${response.sellerUser}`)
-    console.log(`${response.quantity} units of ${response.quantity}  for ${response.price}`)
+connection.on("NewOrder", response => {
+    console.log(`${response.Market}`)
+    console.log(`${response.Price}`)
+    console.log(`${response.Quantity}`)
     console.log(`${response.timeStamp}`)
 });
 ```
-#### Delete Order
+#### DeleteOrder
 ```csharp
 public record DeleteOrderResponse(
    Guid Id
 );
 ```
 
-#### Lobby State 
+#### LobbyState 
 ```csharp
 public record LobbyStateResponse(
     List<List<string?>> Markets,
     List<string> Participants,
     string State,
-    string exchangeName,
-    string exchangeCode
+    string ExchangeName,
+    string ExchangeCode
 );
 ```
-#### Exchange State
+#### ExchangeState
 ```csharp
 public record exchangeStateResponse(
     List<Order> Orders,
     List<Transaction> Transactions
 );
 ```
-#### New Order 
+#### OrderReceived
+
+When an order is placed by a client, the server will response to only that user with a ``OrderReceivedResponse`` that 
+effectively informs them which order corresponds to their request, of which the user attaches a custom label ``RequestReference``.
+
+```csharp
+public record OrderReceivedResponse(
+    Guid CreatedOrder, 
+    string RequestReference
+);
+```
+
+#### NewOrder 
+
+The market should always be in a balanced state. If a user places an order the server will respond to all users 
+with the new order to be placed in the order-book. If the order traded with any existing orders the quantity will be 
+affected and the list of transactions will be non-zero length.
+
 ```csharp
 public record NewOrderResponse(
    string User,
@@ -119,10 +138,10 @@ public record NewOrderResponse(
    int Quantity,
    DateTime TimeStamp,
    Guid Id
+   List<Transaction> Transactions
 );
-```
-#### Transaction
-```csharp
+
+// Transaction Definition
 public record TransactionResponse(
     string BuyerUser,
     Guid BuyerOrderId,
@@ -160,7 +179,7 @@ public async Task UpdateConfig(ConfigUpdateRequest configUpdate)
 
 // Updates the state of the exchange 
 // Invokes: StateUpdated
-public async Task UpdateexchangeState(string newStateString)
+public async Task UpdateExchangeState(string newStateString)
 
 // Closes the exchange at an optional price
 // Invokes: StateUpdated and/or ClosingPrice
@@ -178,8 +197,8 @@ public async Task Serialize()
 public async Task Joinexchange(string username) 
     
 // Places an order
-// Invokes: NewOrder and TransactionEvent
-public async Task PlaceOrder(string market, int price, int quantity)
+// Invokes: NewOrder
+public async Task PlaceOrder(string market, int price, int quantity, string requestReference)
 
 // Deletes an order
 // Invokes: DeletedOrder 
