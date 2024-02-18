@@ -7,8 +7,8 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="lib/signalr/signalr.js"></script>
     </head>
-    <body class="">
-            <nav class="bg-white shadow p-4 flex justify-between items-center h-[8vh]">
+    <body class="bg-gray-300 w-full">
+            <nav class="bg-white shadow p-4 flex justify-between items-center h-[6vh]">
                 <div class="flex space-x-6">
                     <h1 id="exchangeName">[Exchange Name]</h1>
                     <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
@@ -16,11 +16,11 @@
                 <div id="exchangeState">[State]</div>
             </nav>
 
-            <div class="container mx-auto h-[92vh]">
+            <div class="mx-auto w-[96vw] mt-[1vh] h-[80vh] shadow-lg">
                 <div id="tab-navigation" class="flex h-[4%] min-h-[26px]">
                 </div>
             
-                <div id="tab-content" class="border-t-2 h-[90%]">
+                <div id="tab-content" class=" h-[96%] w-full">
                 </div>
             </div>
 
@@ -50,30 +50,33 @@
             function generateTabs(tabNames) {
                 const tabNavigation = document.getElementById('tab-navigation');
                 const tabContent = document.getElementById('tab-content');
+
+                const activeTabColor = "bg-gray-200";
+                const inactiveTabColor = "bg-gray-100";
                 // Clear existing tabs and content
                 tabNavigation.innerHTML = '';
                 tabContent.innerHTML = '';
                 
                 marketToTabID = tabNames.reduce((acc, name, index) => {
-                    acc[name] = `content-${index + 1}`; // create a dictionary of market names to tab content IDs
+                    acc[name] = `content-${index}`; // create a dictionary of market names to tab content IDs
                     return acc;
                 }, {});
                 // Create tabs and content dynamically
                 tabNames.forEach((name, index) => {
-                    const tabId = `tab-${index + 1}`;
-                    const contentId = `content-${index + 1}`;
+                    const tabId = `tab-${index}`;
+                    const contentId = `content-${index}`;
 
                     // Create tab element
                     const tab = document.createElement('div');
                     tab.id = tabId;
-                    tab.classList.add('tab', 'bg-gray-100', 'hover:bg-gray-200', 'px-4', 'rounded-t-md', 'cursor-pointer');
+                    tab.classList.add('tab', inactiveTabColor, 'hover:'+activeTabColor, 'px-4', 'rounded-t-md', 'cursor-pointer');
                     tab.textContent = name;
                     tabNavigation.appendChild(tab);
 
                     // Create content element
                     const content = document.createElement('div');
                     content.id = contentId;
-                    content.classList.add('p-4', 'bg-gray-100', 'hidden', 'h-full', 'flex');
+                    content.classList.add('p-4', 'bg-gray-200', 'hidden', 'h-full', 'flex', 'rounded-br-lg', 'rounded-bl-lg', 'rounded-tr-lg');
                     tabContent.appendChild(content);
 
                     // Click handler for tabs
@@ -81,6 +84,12 @@
                         const allContent = document.querySelectorAll('[id^="content-"]');
                         allContent.forEach(item => item.classList.add('hidden'));
                         document.getElementById(contentId).classList.remove('hidden');
+                        const allTabs = document.querySelectorAll('[id^="tab-"]');
+                        allTabs.forEach(item => item.classList.remove(activeTabColor));
+                        allTabs.forEach(item => item.classList.add(inactiveTabColor));
+                        document.getElementById(tabId).classList.remove(inactiveTabColor);
+                        document.getElementById(tabId).classList.add(activeTabColor);
+
                     });
                 });
 
