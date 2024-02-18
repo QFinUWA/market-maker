@@ -79,10 +79,6 @@
                 tabNavigation.firstChild.click();
             }
 
-            // Sample usage
-            const tabNames = ["A", "B", "C"];
-            generateTabs(tabNames); 
-
 
 
             function bindConnection(jwt) {
@@ -135,6 +131,8 @@
                     message.markets.forEach((market) => {
                         exchange.markets[market[0]] = {"orders": [], "transactions": []}; // each market is a list for some reason
                     });
+
+                    generateTabs(Object.keys(exchange.markets));
 
                     exchange.participants = message.participants;
                     exchange.exchangeName = message.exchangeName;
