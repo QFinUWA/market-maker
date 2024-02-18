@@ -16,7 +16,7 @@
                 <div class="">[State]</div>
             </nav>
 
-                <div class="container mx-auto p-4">
+                <div class="container mx-auto mt-2">
                     <div id="tab-navigation" class="flex">
                     </div>
                 
@@ -26,27 +26,33 @@
 
         <script>
 
+            let exchange = {
+                markets: {}, // dictionary of market codes to dictionary of orders and transactions
+                participants: [],
+                state: "Lobby",
+                exchangeName: "",
+                exchangeCode: "",
+            };
+
+            const serverURL = "https://market-maker.azurewebsites.net/";
+        
+            marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
+
             function generateTabs(tabNames) {
                 const tabNavigation = document.getElementById('tab-navigation');
                 const tabContent = document.getElementById('tab-content');
-                // Check for unique names
-                const nameSet = new Set();
-                for (const name of tabNames) {
-                    if (nameSet.has(name)) {
-                        console.error(`Duplicate tab name found: ${name}`);
-                        return; // Stop generating tabs if duplicates exist
-                    }
-                    nameSet.add(name);
-                }
-
                 // Clear existing tabs and content
                 tabNavigation.innerHTML = '';
                 tabContent.innerHTML = '';
-
+                
+                marketToTabID = tabNames.reduce((acc, name, index) => {
+                    acc[name] = `content-${index + 1}`; // create a dictionary of market names to tab content IDs
+                    return acc;
+                }, {});
                 // Create tabs and content dynamically
-                tabNames.forEach(name => {
-                    const tabId = name.toLowerCase().replace(/\s+/g, '-'); // Format for IDs
-                    const contentId = `content-${tabId}`;
+                tabNames.forEach((name, index) => {
+                    const tabId = `tab-${index + 1}`;
+                    const contentId = `content-${index + 1}`;
 
                     // Create tab element
                     const tab = document.createElement('div');
@@ -73,20 +79,12 @@
                 tabNavigation.firstChild.click();
             }
 
-            // Sample usage (with a duplicate name)
-            const tabNames = ["A","B","C","D"];
+            // Sample usage
+            const tabNames = ["A", "B", "C"];
             generateTabs(tabNames); 
 
 
-            let exchange = {
-                markets: {}, // dictionary of market codes to dictionary of orders and transactions
-                participants: [],
-                state: "Lobby",
-                exchangeName: "",
-                exchangeCode: "",
-            };
 
-            const serverURL = "https://market-maker.azurewebsites.net/";
             function bindConnection(jwt) {
                 // Thank you Isaac
                 // Called when creating a exchange or joining an exchange
