@@ -24,7 +24,7 @@
              * @type {Exchange | undefined} exchange
              */
             let exchange = {
-                markets: {}, // dictionary of market codes to list of orders
+                markets: {}, // dictionary of market codes to dictionary of orders and transactions
                 participants: [],
                 state: "Lobby",
                 exchangeName: "",
@@ -71,53 +71,47 @@
                 });
 
                 connection.on("ExchangeState", (exchangeResponse) => {
-                    console.log("exchangeState", exchangeResponse);
-                    
-                    // sort through orders and transactions
-
-                    // add all orders to orders dictionary
-                    //exchange["orders"].forEach((order) => {
-                    //    orders[order["id"]] = order;
-                    //});
-
-                    //exchange["transactions"].forEach((transactionEvent) => {
-                    //    transactions.push(formatTransaction(transactionEvent));
-                    //});
-
-                    //refreshExchange();
+                    exchangeResponse.orders.forEach((order) => {
+                        exchange.markets[order.market].orders.push(order);
+                    });
+                    exchangeResponse.transactions.forEach((transaction) => {
+                        exchange.markets[transaction.market].transactions.push(transaction);
+                    });
+                    console.log("ExchangeState", exchangeResponse, exchange);
                 });
 
                 connection.on("StateUpdated", (newState) => {
                     exchange.state = newState;
-                    console.log(exchange);
+                    console.log("StateUpdated", exchange);
                 });
 
                 connection.on("LobbyState", (message) => {
                     // for each market, add an empty list to the dictionary
                     message.markets.forEach((market) => {
-                        exchange.markets[market] = [];
+                        exchange.markets[market[0]] = {"orders": [], "transactions": []}; // each market is a list for some reason
                     });
 
                     exchange.participants = message.participants;
                     exchange.exchangeName = message.exchangeName;
                     exchange.exchangeCode = message.exchangeCode;
                     exchange.state = message.state;
-                    console.log(exchange);
+                    console.log("LobbyState", message, exchange);
                 });
 
                 connection.on("NewOrder", (order) => {
-                    exchange.markets[order["market"]].push(order);
-                    console.log(exchange);
+                    exchange.markets[order.market].orders.push(order);
+                    console.log("NewOrder", order, exchange);
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
+                    console.log("DeletedOrder", orderID);
                     //delete orders[orderID];
                     //refreshExchange();
                 });
 
                 connection.on("NewParticipant", (user) => {
                     exchange.participants.push(user);
-                    console.log(exchange);
+                    console.log("NewParticipant", user, exchange);
                 });
 
                 function updateOrRemove(id, quantity) {
@@ -127,8 +121,8 @@
                     //}
                 }
 
-                connection.on("TransactionEvent", (transactionEvent) => { // TODO it seems like this route never runs
-                    console.log(transactionEvent)
+                connection.on("OrderReceived", (orderList) => { // TODO it seems like this route never runs
+                    console.log("OrderReceived", orderList);
                     //transactions.push(formatTransaction(transactionEvent));
 
                     //updateOrRemove(
@@ -143,7 +137,7 @@
                 });
 
                 connection.on("ClosingPrices", (closingPrices) => {
-                    console.log("closing prices", closingPrices);
+                    console.log("ClosingPrices", closingPrices);
                 });
 
                 return [connection, start];
