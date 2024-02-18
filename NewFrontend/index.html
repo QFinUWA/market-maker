@@ -13,7 +13,7 @@
                     <h1 id="exchangeName">[Exchange Name]</h1>
                     <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
                 </div>
-                <div class="">[State]</div>
+                <div id="exchangeState">[State]</div>
             </nav>
 
                 <div class="container mx-auto mt-2">
@@ -38,6 +38,15 @@
         
             marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
 
+
+            // updates all the content on the page
+            function updateContent() {
+                document.getElementById("exchangeName").textContent = exchange.exchangeName;
+                document.getElementById("exchangeCode").textContent = exchange.exchangeCode;
+                document.getElementById("exchangeState").textContent = exchange.state;
+            }
+
+            // generates the tabs for each market (should run every time markets change)
             function generateTabs(tabNames) {
                 const tabNavigation = document.getElementById('tab-navigation');
                 const tabContent = document.getElementById('tab-content');
@@ -77,6 +86,7 @@
 
                 // Show the first tab initially
                 tabNavigation.firstChild.click();
+
             }
 
 
@@ -132,12 +142,13 @@
                         exchange.markets[market[0]] = {"orders": [], "transactions": []}; // each market is a list for some reason
                     });
 
-                    generateTabs(Object.keys(exchange.markets));
-
                     exchange.participants = message.participants;
                     exchange.exchangeName = message.exchangeName;
                     exchange.exchangeCode = message.exchangeCode;
                     exchange.state = message.state;
+                    
+                    generateTabs(Object.keys(exchange.markets));
+                    updateContent();
                     console.log("LobbyState", message, exchange);
                 });
 
