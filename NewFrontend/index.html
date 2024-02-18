@@ -77,6 +77,27 @@
                     const content = document.createElement('div');
                     content.id = contentId;
                     content.classList.add('p-4', 'bg-gray-200', 'hidden', 'h-full', 'flex', 'rounded-br-lg', 'rounded-bl-lg', 'rounded-tr-lg');
+
+                    const leftSide = document.createElement('div');
+                    leftSide.classList.add('w-1/2', 'h-full', 'flex', 'flex-col');
+
+                    // split leftside into two halves - top and bottom for ask and bid orders
+                    const topHalf = document.createElement('div');
+                    topHalf.classList.add('h-1/2');
+                    topHalf.id = `ask-orders-${index}`;
+                    const bottomHalf = document.createElement('div');
+                    bottomHalf.classList.add('h-1/2');
+                    bottomHalf.id = `bid-orders-${index}`;
+
+                    leftSide.appendChild(topHalf);
+                    leftSide.appendChild(bottomHalf);
+
+                    const rightSide = document.createElement('div');
+                    rightSide.classList.add('w-1/2', 'h-full');
+
+                    content.appendChild(leftSide);
+                    content.appendChild(rightSide);
+
                     tabContent.appendChild(content);
 
                     // Click handler for tabs
