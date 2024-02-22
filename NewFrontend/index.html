@@ -21,8 +21,10 @@
                 </div>
             
                 <div id="tab-content" class=" h-[96%] w-full">
+                
                 </div>
             </div>
+
 
         <script>
 
@@ -44,6 +46,32 @@
                 document.getElementById("exchangeName").textContent = exchange.exchangeName;
                 document.getElementById("exchangeCode").textContent = exchange.exchangeCode;
                 document.getElementById("exchangeState").textContent = exchange.state;
+                // console.log(exchange.markets);
+                let index = 0;
+                Object.keys(exchange.markets).forEach((marketKey) => {
+                    // console.log(marketKey);
+                    Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
+                        // console.log(transactionKey);
+                        let transaction = exchange.markets[marketKey].transactions[transactionKey];
+                        let table = document.getElementById(`transactions-${index}`);
+                        let row = table.insertRow();
+                        let cell = row.insertCell();
+                        
+                        cell.textContent = transaction.price;
+                        cell = row.insertCell();
+                        cell.textContent = transaction.quantity;
+                        cell = row.insertCell();
+                        cell.textContent = transaction.buyerUser;
+                        cell = row.insertCell();
+                        cell.textContent = transaction.sellerUser;
+                        cell = row.insertCell();
+                        cell.textContent = transaction.buyerUser;
+                        cell = row.insertCell();
+                        cell.textContent = transaction.sellerUser;
+                        
+                    });
+                    index ++;
+                });
             }
 
             // generates the tabs for each market (should run every time markets change)
@@ -94,6 +122,15 @@
 
                     const rightSide = document.createElement('div');
                     rightSide.classList.add('w-1/2', 'h-full');
+
+                    const transactionTable = document.createElement('table');
+                    transactionTable.id = `transactions-${index}`;
+                    let header = transactionTable.insertRow();
+                    for (let col of ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"]){
+                        let cell = header.insertCell();
+                        cell.textContent = col;
+                    }
+                    rightSide.appendChild(transactionTable);
 
                     content.appendChild(leftSide);
                     content.appendChild(rightSide);
@@ -159,6 +196,7 @@
                         exchange.markets[transaction.market].transactions.push(transaction);
                     });
                     console.log("ExchangeState", exchangeResponse, exchange);
+                    updateContent();
                 });
 
                 connection.on("StateUpdated", (newState) => {
