@@ -53,12 +53,13 @@
                     // console.log(marketKey);
                     let table = document.getElementById(`transactions-${marketToTabID[marketKey]}`);
                     table.innerHTML = ''; // erase existing content
+                    table.classList.add("overflow-y-auto", "h-full");
                     let header = table.insertRow();
                     for (let col of ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"]) {
                         let cell = header.insertCell();
                         cell.textContent = col;
                     }
-
+                    header.classList.add("border-b-2", "border-gray-500", "[&>*]:px-1");
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
