@@ -255,9 +255,20 @@
                 });
 
                 connection.on("NewOrder", (order) => {
-                    exchange.markets[order.market].orders.push(order);
+                    if (order.quantity != 0) {
+                        exchange.markets[order.market].orders.push(order);
+                    }
                     for (const transaction of order.transactions) {
                         exchange.markets[order.market].transactions.push(transaction);
+
+                        let isBuy = transaction.passiveOrder == transaction.sellerOrderID;
+                        let passiveOrder = exchange.markets[order.market].orders.find((o) => o.id == transaction.passiveOrder);
+                        passiveOrder.quantity += transaction.quantity * (isBuy ? 1 : -1);
+                        if (passiveOrder.quantity == 0) {
+                            exchange.markets[order.market].orders = exchange.markets[order.market].orders.filter((o) => o.id != passiveOrder.id);
+                            console.log("Removed order", passiveOrder);
+                            console.log("Orders", exchange.markets[order.market].orders);
+                        }
                     }
                     console.log("NewOrder", order, exchange);
                     updateContent();
