@@ -40,7 +40,6 @@
         
             marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
 
-
             // updates all the content on the page
             function updateContent() {
                 document.getElementById("exchangeName").textContent = exchange.exchangeName;
@@ -54,17 +53,30 @@
                     let table = document.getElementById(`transactions-${marketToTabID[marketKey]}`);
                     table.innerHTML = ''; // erase existing content
                     table.classList.add("w-full");
-                    let header = table.insertRow();
+                    let thead = table.createTHead();
+                    thead.classList.add("sticky", "top-0");
+                    let header = thead.insertRow();
+                    
                     for (let col of ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"]) {
                         let cell = header.insertCell();
+                        cell.outerHTML = `<th>${col}</th>`;
                         cell.textContent = col;
                     }
-                    header.classList.add("border-b-2", "border-gray-500", "[&>*]:px-2");
+                    let border = thead.insertRow();
+                    border.classList.add();
+                    cell = document.createElement("th");
+                    cell.colSpan = 6;
+                    cell.classList.add("h-[2px]", "bg-gray-500");
+                    border.appendChild(cell);
+
+                    tbody = table.createTBody();
+
+                    header.classList.add("[&>*]:px-2", "bg-gray-200");
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
                         
-                        let row = table.insertRow();
+                        let row = tbody.insertRow();
                         let cell = row.insertCell();
                         
                         cell.textContent = transaction.price;
