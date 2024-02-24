@@ -266,8 +266,6 @@
                         passiveOrder.quantity += transaction.quantity * (isBuy ? 1 : -1);
                         if (passiveOrder.quantity == 0) {
                             exchange.markets[order.market].orders = exchange.markets[order.market].orders.filter((o) => o.id != passiveOrder.id);
-                            console.log("Removed order", passiveOrder);
-                            console.log("Orders", exchange.markets[order.market].orders);
                         }
                     }
                     console.log("NewOrder", order, exchange);
