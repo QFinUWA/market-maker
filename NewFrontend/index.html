@@ -49,10 +49,9 @@
                 // console.log(exchange.markets);
 
                 // update transactions
-                let index = 0;
                 Object.keys(exchange.markets).forEach((marketKey) => {
                     // console.log(marketKey);
-                    let table = document.getElementById(`transactions-${index}`);
+                    let table = document.getElementById(`transactions-${marketToTabID[marketKey]}`);
                     table.innerHTML = ''; // erase existing content
                     let header = table.insertRow();
                     for (let col of ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"]) {
@@ -80,7 +79,7 @@
                         cell.textContent = transaction.sellerUser;
                         
                     });
-                    index ++;
+
                 });
             }
 
@@ -96,7 +95,7 @@
                 tabContent.innerHTML = '';
                 
                 marketToTabID = tabNames.reduce((acc, name, index) => {
-                    acc[name] = `content-${index}`; // create a dictionary of market names to tab content IDs
+                    acc[name] = index; // create a dictionary of market names to tab content IDs
                     return acc;
                 }, {});
                 // Create tabs and content dynamically
@@ -119,16 +118,10 @@
                     const leftSide = document.createElement('div');
                     leftSide.classList.add('w-1/2', 'h-full', 'flex', 'flex-col');
 
-                    // split leftside into two halves - top and bottom for ask and bid orders
-                    const topHalf = document.createElement('div');
-                    topHalf.classList.add('h-1/2');
-                    topHalf.id = `ask-orders-${index}`;
-                    const bottomHalf = document.createElement('div');
-                    bottomHalf.classList.add('h-1/2');
-                    bottomHalf.id = `bid-orders-${index}`;
+                    const orderTable = document.createElement('table');
+                    orderTable.id = `orders-${index}`;
 
-                    leftSide.appendChild(topHalf);
-                    leftSide.appendChild(bottomHalf);
+                    leftSide.appendChild(orderTable);
 
                     const rightSide = document.createElement('div');
                     rightSide.classList.add('w-1/2', 'h-full');
