@@ -46,7 +46,7 @@
                 filter_ranges[col] = ["", ""];
             }
             
-            function init_transaction_table(){
+            function initTransactionTable(){
                 document.getElementById("exchangeName").textContent = exchange.exchangeName;
                 document.getElementById("exchangeCode").textContent = exchange.exchangeCode;
                 document.getElementById("exchangeState").textContent = exchange.state;
@@ -331,8 +331,7 @@
                         exchange.markets[transaction.market].transactions.push(transaction);
                     });
                     console.log("ExchangeState", exchangeResponse, exchange);
-                    // updateContent();
-                    init_transaction_table();
+                    initTransactionTable();
                 });
 
                 connection.on("StateUpdated", (newState) => {
@@ -354,8 +353,7 @@
                     exchange.state = message.state;
 
                     generateTabs(Object.keys(exchange.markets));
-                    // updateContent();
-                    init_transaction_table();
+                    // initTransactionTable();
                     console.log("LobbyState", message, exchange);
                 });
 
