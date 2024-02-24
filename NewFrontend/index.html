@@ -47,13 +47,23 @@
                 document.getElementById("exchangeCode").textContent = exchange.exchangeCode;
                 document.getElementById("exchangeState").textContent = exchange.state;
                 // console.log(exchange.markets);
+
+                // update transactions
                 let index = 0;
                 Object.keys(exchange.markets).forEach((marketKey) => {
                     // console.log(marketKey);
+                    let table = document.getElementById(`transactions-${index}`);
+                    table.innerHTML = ''; // erase existing content
+                    let header = table.insertRow();
+                    for (let col of ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"]) {
+                        let cell = header.insertCell();
+                        cell.textContent = col;
+                    }
+
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
-                        let table = document.getElementById(`transactions-${index}`);
+                        
                         let row = table.insertRow();
                         let cell = row.insertCell();
                         
@@ -125,11 +135,7 @@
 
                     const transactionTable = document.createElement('table');
                     transactionTable.id = `transactions-${index}`;
-                    let header = transactionTable.insertRow();
-                    for (let col of ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"]){
-                        let cell = header.insertCell();
-                        cell.textContent = col;
-                    }
+
                     rightSide.appendChild(transactionTable);
 
                     content.appendChild(leftSide);
