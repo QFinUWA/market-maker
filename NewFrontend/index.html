@@ -228,7 +228,11 @@
 
                 connection.on("NewOrder", (order) => {
                     exchange.markets[order.market].orders.push(order);
+                    for (const transaction of order.transactions) {
+                        exchange.markets[order.market].transactions.push(transaction);
+                    }
                     console.log("NewOrder", order, exchange);
+                    updateContent();
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
