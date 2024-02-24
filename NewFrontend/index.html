@@ -59,7 +59,7 @@
                         let cell = header.insertCell();
                         cell.textContent = col;
                     }
-                    header.classList.add("border-b-2", "border-gray-500", "[&>*]:px-1");
+                    header.classList.add("border-b-2", "border-gray-500", "[&>*]:px-2");
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
@@ -79,6 +79,7 @@
                         cell = row.insertCell();
                         cell.textContent = transaction.sellerUser;
                         
+                        row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
                     });
 
                 });
