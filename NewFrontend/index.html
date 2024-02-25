@@ -384,9 +384,10 @@
                     for (const transaction of order.transactions) {
                         exchange.markets[order.market].transactions.push(transaction);
 
-                        let isBuy = transaction.passiveOrder == transaction.sellerOrderID;
                         let passiveOrder = exchange.markets[order.market].orders.find((o) => o.id == transaction.passiveOrder);
-                        passiveOrder.quantity += transaction.quantity * (isBuy ? 1 : -1);
+                        console.log("passiveOrder", passiveOrder);
+                        console.log("transaction", transaction);
+                        passiveOrder.quantity += transaction.quantity * (passiveOrder.quantity < 0 ? 1 : -1);
                         if (passiveOrder.quantity == 0) {
                             exchange.markets[order.market].orders = exchange.markets[order.market].orders.filter((o) => o.id != passiveOrder.id);
                         }
