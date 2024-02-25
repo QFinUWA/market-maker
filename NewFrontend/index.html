@@ -7,22 +7,27 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="lib/signalr/signalr.js"></script>
     </head>
-    <body
-        class="flex h-screen flex-col items-center justify-center bg-gray-100"
-    >
-        <script>
-            /**
-             * @typedef {Object} Exchange
-             * @property {Array<string>} markets - Array of market strings.
-             * @property {Array<string>} participants - Array of participant strings.
-             * @enum {"Lobby" | "Open" | "Closed" | "Paused"} state - Current state of the exchange.
-             * @property {string} exchangeName - Name of the exchange.
-             * @property {string} exchangeCode - Code of the exchange.
-             */
+    <body class="bg-gray-300 w-full">
+            <nav class="bg-white shadow p-4 flex justify-between items-center h-[6vh]">
+                <div class="flex space-x-6">
+                    <h1 id="exchangeName">[Exchange Name]</h1>
+                    <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
+                </div>
+                <div id="exchangeState">[State]</div>
+            </nav>
 
-            /**
-             * @type {Exchange | undefined} exchange
-             */
+            <div class="mx-auto w-[96vw] mt-[1vh] h-[80vh] shadow-lg">
+                <div id="tab-navigation" class="flex h-[4%] min-h-[26px]">
+                </div>
+            
+                <div id="tab-content" class=" h-[96%] w-full">
+                
+                </div>
+            </div>
+
+
+        <script>
+
             let exchange = {
                 markets: {}, // dictionary of market codes to dictionary of orders and transactions
                 participants: [],
@@ -31,15 +36,283 @@
                 exchangeCode: "",
             };
 
-            //setInterval(() => {
-            //    console.log(exchange);
-            //}, 1000)
-
-            // TODO: convert to using exchange object
-            // TODO: create UI for exchange
-            // TODO: its not connecting to the server for some reason? (changes in the server aren't triggering the client)
-
             const serverURL = "https://market-maker.azurewebsites.net/";
+        
+            marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
+
+            let transaction_cols = ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"];
+            let filter_ranges = {};
+            for(let col of transaction_cols){
+                filter_ranges[col] = ["", ""];
+            }
+            
+            function initTransactionTable(){
+                document.getElementById("exchangeName").textContent = exchange.exchangeName;
+                document.getElementById("exchangeCode").textContent = exchange.exchangeCode;
+                document.getElementById("exchangeState").textContent = exchange.state;
+                // console.log(exchange.markets);
+
+                // update transactions
+                Object.keys(exchange.markets).forEach((marketKey) => {
+                    // console.log(marketKey);
+                    let table = document.getElementById(`transactions-${marketToTabID[marketKey]}`);
+                    table.innerHTML = ''; // erase existing content
+                    table.classList.add("w-full");
+                    let thead = table.createTHead();
+                    thead.classList.add("sticky", "top-0");
+                    let header = thead.insertRow();
+                    
+                    for (let col of transaction_cols) {
+                        let cell = header.insertCell();
+                        cell.outerHTML = `<th>${col}</th>`;
+                        cell.textContent = col;
+                    }
+                    header.classList.add("[&>*]:px-2", "bg-gray-200");
+
+                    let border = thead.insertRow();
+                    border.classList.add();
+                    cell = document.createElement("th");
+                    cell.colSpan = 6;
+                    cell.classList.add("h-[2px]", "bg-gray-500");
+                    border.appendChild(cell);
+
+                    tbody = table.createTBody();
+
+                    let filters = tbody.insertRow();
+                    for (let col of transaction_cols) {
+                        let cell = filters.insertCell();    
+                        
+                        let select = document.createElement("select");
+                        options = ["", "="];
+                        if (col == "Price" || col == "Quantity"){
+                            options.push("≥");
+                            options.push("≤");
+                        }
+                        for (let option of options){
+                            let opt = document.createElement("option");
+                            opt.value = option;
+                            opt.text = option;
+                            select.appendChild(opt);
+                        }
+                        select.style.width = "35px";
+                        select.style.display = "inline-block";
+                        // select.classList.add("filter-select");
+                        select.id = `filter-select-${col}`;
+                        select.addEventListener("change", function(event){
+                            filter_ranges[col][0] = event.target.value;
+                            updateContent();
+                        });
+
+                        let input = document.createElement("input");
+                        if(col == "Price" || col == "Quantity"){
+                            input.type = "number";
+                        }else{
+                            input.type = "text";
+                        }
+                        input.placeholder = col; 
+                        input.style.width = "calc(100% - 35px)";
+                        input.style.display = "inline-block";
+                        // input.classList.add("filter-input");
+                        input.id = `filter-input-${col}`;
+                        input.addEventListener("input", function(event){
+                            if(col == "Price" || col == "Quantity"){
+                                filter_ranges[col][1] = Math.round(parseFloat(event.target.value));
+                            }else{
+                                filter_ranges[col][1] = event.target.value;
+                            }
+                            updateContent();
+                        });
+
+                        cell.appendChild(select);
+                        cell.appendChild(input);
+                    }
+                    updateContent();
+                });
+            }
+
+            // updates all the content on the page
+            function updateContent() {
+
+                // // update transactions
+                Object.keys(exchange.markets).forEach((marketKey) => {
+                    let table = document.getElementById(`transactions-${marketToTabID[marketKey]}`);
+                    if(table.getElementsByTagName("tbody").length > 0){
+                        tbody = table.tBodies[0];
+                        for (let i = tbody.rows.length - 1; i > 0; i--) {
+                            tbody.deleteRow(i);
+                        }
+                    }
+                
+                    Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
+                        // console.log(transactionKey);
+                        let transaction = exchange.markets[marketKey].transactions[transactionKey];
+                        let passive = transaction.sellerUser;
+                        let aggressive = transaction.buyerUser;
+                        if(transaction.passiveOrder == transaction.buyerOrderId){
+                            passive = transaction.buyerUser;
+                            aggressive = transaction.sellerUser;
+                        }
+                        transaction_dict = {
+                            "Price": transaction.price,
+                            "Quantity": transaction.quantity,
+                            "Buyer": transaction.buyerUser,
+                            "Seller": transaction.sellerUser,
+                            "Aggressive": aggressive,
+                            "Passive": passive
+                        }
+                        
+                        
+                        let reject = false;
+                        let row = document.createElement("tr");
+                        Object.keys(transaction_dict).forEach((col) => {
+                            if(filter_ranges[col][0] != "" && filter_ranges[col][1] != ""){
+                                if(filter_ranges[col][0] == "=" && transaction_dict[col] != filter_ranges[col][1]){
+                                    reject = true;
+                                }
+                                if(filter_ranges[col][0] == "≥" && transaction_dict[col] < filter_ranges[col][1]){
+                                    reject = true;
+                                }
+                                if(filter_ranges[col][0] == "≤" && transaction_dict[col] > filter_ranges[col][1]){
+                                    reject = true;
+                                }
+                            }
+                            let cell = row.insertCell();
+                            cell.textContent = transaction_dict[col];
+                        });
+                        if(!reject){
+                            tbody.appendChild(row);
+                        }
+                        row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
+                    });
+
+                });
+
+                // update orders
+                Object.keys(exchange.markets).forEach((marketKey) => {
+                    // console.log(marketKey);
+                    let table = document.getElementById(`orders-${marketToTabID[marketKey]}`);
+                    table.innerHTML = ''; // erase existing content
+                    table.classList.add("w-full");
+                    let thead = table.createTHead();
+                    thead.classList.add("sticky", "top-0");
+                    let header = thead.insertRow();
+                    for (let col of ["Bidder", "Quantity", "Price", "Quantity", "Asker"]) {
+                        let cell = header.insertCell();
+                        cell.outerHTML = `<th>${col}</th>`;
+                        cell.textContent = col;
+                    }
+                    header.classList.add("[&>*]:px-2", "bg-gray-200");
+
+                    let border = thead.insertRow();
+                    border.classList.add();
+                    cell = document.createElement("th");
+                    cell.colSpan = 6;
+                    cell.classList.add("h-[2px]", "bg-gray-500");
+                    border.appendChild(cell);
+
+                    tbody = table.createTBody();
+
+                    // add the orders
+
+                    let minPrice = Math.min(...exchange.markets[marketKey].orders.map((o) => o.price));
+                    let maxPrice = Math.max(...exchange.markets[marketKey].orders.map((o) => o.price));
+
+                    for (let price = maxPrice; price >= minPrice; price--) {
+                        let ordersAtPrice = exchange.markets[marketKey].orders.filter((o) => o.price == price);
+                        for (let order of ordersAtPrice) {
+                            let row = tbody.insertRow();
+                            let cell = row.insertCell();
+                            cell.textContent = order.quantity > 0 ? order.user : "";
+                            cell = row.insertCell();
+                            cell.textContent = order.quantity > 0 ? order.quantity : "";
+                            cell = row.insertCell();
+                            cell.textContent = order.price;
+                            cell = row.insertCell();
+                            cell.textContent = order.quantity < 0 ? - order.quantity  : "";
+                            cell = row.insertCell();
+                            cell.textContent = order.quantity < 0 ? order.user : "";
+                            row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
+                        }
+                    }
+
+                });
+            }
+            
+
+            // generates the tabs for each market (should run every time markets change)
+            function generateTabs(tabNames) {
+                const tabNavigation = document.getElementById('tab-navigation');
+                const tabContent = document.getElementById('tab-content');
+
+                const activeTabColor = "bg-gray-200";
+                const inactiveTabColor = "bg-gray-100";
+                // Clear existing tabs and content
+                tabNavigation.innerHTML = '';
+                tabContent.innerHTML = '';
+                
+                marketToTabID = tabNames.reduce((acc, name, index) => {
+                    acc[name] = index; // create a dictionary of market names to tab content IDs
+                    return acc;
+                }, {});
+                // Create tabs and content dynamically
+                tabNames.forEach((name, index) => {
+                    const tabId = `tab-${index}`;
+                    const contentId = `content-${index}`;
+
+                    // Create tab element
+                    const tab = document.createElement('div');
+                    tab.id = tabId;
+                    tab.classList.add('tab', inactiveTabColor, 'hover:'+activeTabColor, 'px-4', 'rounded-t-md', 'cursor-pointer');
+                    tab.textContent = name;
+                    tabNavigation.appendChild(tab);
+
+                    // Create content element
+                    const content = document.createElement('div');
+                    content.id = contentId;
+                    content.classList.add('p-4', 'bg-gray-200', 'hidden', 'h-full', 'flex', 'rounded-br-lg', 'rounded-bl-lg', 'rounded-tr-lg');
+
+                    const leftSide = document.createElement('div');
+                    leftSide.classList.add('w-1/2', 'h-full', 'pl-2', "pr-4", "overflow-y-auto");
+
+                    const orderTable = document.createElement('table');
+                    orderTable.id = `orders-${index}`;
+
+                    leftSide.appendChild(orderTable);
+
+                    const rightSide = document.createElement('div');
+                    rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4", "overflow-y-auto");
+
+                    const transactionTable = document.createElement('table');
+                    transactionTable.id = `transactions-${index}`;
+
+                    rightSide.appendChild(transactionTable);
+
+                    content.appendChild(leftSide);
+                    content.appendChild(rightSide);
+
+                    tabContent.appendChild(content);
+
+                    // Click handler for tabs
+                    tab.addEventListener('click', () => {
+                        const allContent = document.querySelectorAll('[id^="content-"]');
+                        allContent.forEach(item => item.classList.add('hidden'));
+                        document.getElementById(contentId).classList.remove('hidden');
+                        const allTabs = document.querySelectorAll('[id^="tab-"]');
+                        allTabs.forEach(item => item.classList.remove(activeTabColor));
+                        allTabs.forEach(item => item.classList.add(inactiveTabColor));
+                        document.getElementById(tabId).classList.remove(inactiveTabColor);
+                        document.getElementById(tabId).classList.add(activeTabColor);
+
+                    });
+                });
+
+                // Show the first tab initially
+                tabNavigation.firstChild.click();
+
+            }
+
+
+
             function bindConnection(jwt) {
                 // Thank you Isaac
                 // Called when creating a exchange or joining an exchange
@@ -78,6 +351,7 @@
                         exchange.markets[transaction.market].transactions.push(transaction);
                     });
                     console.log("ExchangeState", exchangeResponse, exchange);
+                    initTransactionTable();
                 });
 
                 connection.on("StateUpdated", (newState) => {
@@ -88,19 +362,38 @@
                 connection.on("LobbyState", (message) => {
                     // for each market, add an empty list to the dictionary
                     message.markets.forEach((market) => {
-                        exchange.markets[market[0]] = {"orders": [], "transactions": []}; // each market is a list for some reason
+                        if (!(market[0] in exchange.markets))  {
+                            exchange.markets[market[0]] = {"orders": [], "transactions": []}; // each market is a list for some reason
+                        }
                     });
 
                     exchange.participants = message.participants;
                     exchange.exchangeName = message.exchangeName;
                     exchange.exchangeCode = message.exchangeCode;
                     exchange.state = message.state;
+
+                    generateTabs(Object.keys(exchange.markets));
+                    // initTransactionTable();
                     console.log("LobbyState", message, exchange);
                 });
 
                 connection.on("NewOrder", (order) => {
-                    exchange.markets[order.market].orders.push(order);
+                    if (order.quantity != 0) {
+                        exchange.markets[order.market].orders.push(order);
+                    }
+                    for (const transaction of order.transactions) {
+                        exchange.markets[order.market].transactions.push(transaction);
+
+                        let passiveOrder = exchange.markets[order.market].orders.find((o) => o.id == transaction.passiveOrder);
+                        console.log("passiveOrder", passiveOrder);
+                        console.log("transaction", transaction);
+                        passiveOrder.quantity += transaction.quantity * (passiveOrder.quantity < 0 ? 1 : -1);
+                        if (passiveOrder.quantity == 0) {
+                            exchange.markets[order.market].orders = exchange.markets[order.market].orders.filter((o) => o.id != passiveOrder.id);
+                        }
+                    }
                     console.log("NewOrder", order, exchange);
+                    updateContent();
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
