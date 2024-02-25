@@ -63,6 +63,14 @@ Joining an exchange is an anonymous action.
 The priority is:
 1. View the exchange's information, ability to place a transaction and view the transaction history
 
+## Orders
+
+Keep a list of all orders. 
+Have a separate list of all transactions. 
+Transactions create a new order with quantity 0 if there is none left over. 
+Figuring out which orders to show can be calculated based on the orders and transactions list. 
+Ideally want to keep as much information as possible (not deleting out of orders list if it was filled) for reporting purposes at the end. 
+
 ## Thoughts
 On join, establish signalR connection to the exchange using the JWT, or redirect to the login page if the JWT is invalid.
 Load the exchange's information, members, and transactions.

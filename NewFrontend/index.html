@@ -23,10 +23,21 @@
             /**
              * @type {Exchange | undefined} exchange
              */
-            let exchange;
+            let exchange = {
+                markets: {}, // dictionary of market codes to dictionary of orders and transactions
+                participants: [],
+                state: "Lobby",
+                exchangeName: "",
+                exchangeCode: "",
+            };
+
+            //setInterval(() => {
+            //    console.log(exchange);
+            //}, 1000)
 
             // TODO: convert to using exchange object
             // TODO: create UI for exchange
+            // TODO: its not connecting to the server for some reason? (changes in the server aren't triggering the client)
 
             const serverURL = "https://market-maker.azurewebsites.net/";
             function bindConnection(jwt) {
@@ -59,92 +70,87 @@
                     console.log("server: " + message);
                 });
 
-                connection.on("ExchangeState", (exchange) => {
-                    console.log("exchangeState", exchange);
-                    // add all orders to orders dictionary
-                    exchange["orders"].forEach((order) => {
-                        orders[order["id"]] = order;
+                connection.on("ExchangeState", (exchangeResponse) => {
+                    exchangeResponse.orders.forEach((order) => {
+                        exchange.markets[order.market].orders.push(order);
                     });
-
-                    exchange["transactions"].forEach((transactionEvent) => {
-                        transactions.push(formatTransaction(transactionEvent));
+                    exchangeResponse.transactions.forEach((transaction) => {
+                        exchange.markets[transaction.market].transactions.push(transaction);
                     });
-
-                    refreshExchange();
+                    console.log("ExchangeState", exchangeResponse, exchange);
                 });
 
                 connection.on("StateUpdated", (newState) => {
-                    state = newState;
-                    // console.log(newState)
-                    refreshLobby();
+                    exchange.state = newState;
+                    console.log("StateUpdated", exchange);
                 });
 
                 connection.on("LobbyState", (message) => {
-                    console.log("lobby state", message);
-
-                    markets = message.markets.map((codeName) => {
-                        [code, exchangeName] = codeName;
-                        return (
-                            `${code}` +
-                            (exchangeName == null ? "" : ` (${exchangeName})`)
-                        );
+                    // for each market, add an empty list to the dictionary
+                    message.markets.forEach((market) => {
+                        exchange.markets[market[0]] = {"orders": [], "transactions": []}; // each market is a list for some reason
                     });
-                    participants = message.participants;
-                    state = message.state;
 
-                    exchangeName = message.exchangeName;
-
-                    exchangeCode = message.exchangeCode;
-
-                    // console.log("exchange config", message);
-                    refreshLobby();
+                    exchange.participants = message.participants;
+                    exchange.exchangeName = message.exchangeName;
+                    exchange.exchangeCode = message.exchangeCode;
+                    exchange.state = message.state;
+                    console.log("LobbyState", message, exchange);
                 });
 
                 connection.on("NewOrder", (order) => {
-                    console.log(order);
-                    // console.log("new Order")
-                    orders[order["id"]] = order;
-
-                    refreshExchange();
+                    exchange.markets[order.market].orders.push(order);
+                    console.log("NewOrder", order, exchange);
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
-                    delete orders[orderID];
-                    refreshExchange();
+                    console.log("DeletedOrder", orderID);
+                    //delete orders[orderID];
+                    //refreshExchange();
                 });
 
                 connection.on("NewParticipant", (user) => {
-                    console.log(user + " joined the exchange");
-                    refreshLobby();
+                    exchange.participants.push(user);
+                    console.log("NewParticipant", user, exchange);
                 });
 
                 function updateOrRemove(id, quantity) {
-                    orders[id]["quantity"] += quantity;
-                    if (orders[id]["quantity"] == 0) {
-                        delete orders[id];
-                    }
+                    //orders[id]["quantity"] += quantity;
+                    //if (orders[id]["quantity"] == 0) {
+                    //    delete orders[id];
+                    //}
                 }
 
-                connection.on("TransactionEvent", (transactionEvent) => {
-                    transactions.push(formatTransaction(transactionEvent));
+                connection.on("OrderReceived", (orderList) => { // TODO it seems like this route never runs
+                    console.log("OrderReceived", orderList);
+                    //transactions.push(formatTransaction(transactionEvent));
 
-                    updateOrRemove(
-                        transactionEvent["buyerOrderId"],
-                        -transactionEvent["quantity"],
-                    );
-                    updateOrRemove(
-                        transactionEvent["sellerOrderId"],
-                        transactionEvent["quantity"],
-                    );
-                    refreshExchange();
+                    //updateOrRemove(
+                    //    transactionEvent["buyerOrderId"],
+                    //    -transactionEvent["quantity"],
+                    //);
+                    //updateOrRemove(
+                    //    transactionEvent["sellerOrderId"],
+                    //    transactionEvent["quantity"],
+                    //);
+                    //refreshExchange();
                 });
 
                 connection.on("ClosingPrices", (closingPrices) => {
-                    console.log("closing prices", closingPrices);
+                    console.log("ClosingPrices", closingPrices);
                 });
 
                 return [connection, start];
             }
+
+            // joinExchange needs to be run once on load to set your name and join
+            // just a button to join 
+            function joinExchange(name) {
+                connection.invoke("JoinExchange", name).catch((err) => {
+                    console.error(err.toString());
+                });
+            }
+
             // On load, checks if a jwt token is present in cookies
             // If not, redirect to login page
             if (document.cookie.indexOf("jwt") == -1) {
@@ -157,7 +163,8 @@
 
             // Connect to the SignalR hub
             const [connection, start] = bindConnection(jwt);
-            start();
+            start()
+            
         </script>
     </body>
 </html>
