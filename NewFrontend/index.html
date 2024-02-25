@@ -40,8 +40,13 @@
         
             marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
 
-            // updates all the content on the page
-            function updateContent() {
+            let transaction_cols = ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"];
+            let filter_ranges = {};
+            for(let col of transaction_cols){
+                filter_ranges[col] = ["", ""];
+            }
+            
+            function initTransactionTable(){
                 document.getElementById("exchangeName").textContent = exchange.exchangeName;
                 document.getElementById("exchangeCode").textContent = exchange.exchangeCode;
                 document.getElementById("exchangeState").textContent = exchange.state;
@@ -57,7 +62,7 @@
                     thead.classList.add("sticky", "top-0");
                     let header = thead.insertRow();
                     
-                    for (let col of ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"]) {
+                    for (let col of transaction_cols) {
                         let cell = header.insertCell();
                         cell.outerHTML = `<th>${col}</th>`;
                         cell.textContent = col;
@@ -72,25 +77,111 @@
                     tbody = table.createTBody();
 
                     header.classList.add("[&>*]:px-2", "bg-gray-200");
+
+                    let filters = tbody.insertRow();
+                    for (let col of transaction_cols) {
+                        let cell = filters.insertCell();    
+                        
+                        let select = document.createElement("select");
+                        options = ["", "="];
+                        if (col == "Price" || col == "Quantity"){
+                            options.push("≥");
+                            options.push("≤");
+                        }
+                        for (let option of options){
+                            let opt = document.createElement("option");
+                            opt.value = option;
+                            opt.text = option;
+                            select.appendChild(opt);
+                        }
+                        select.style.width = "35px";
+                        select.style.display = "inline-block";
+                        // select.classList.add("filter-select");
+                        select.id = `filter-select-${col}`;
+                        select.addEventListener("change", function(event){
+                            filter_ranges[col][0] = event.target.value;
+                            updateContent();
+                        });
+
+                        let input = document.createElement("input");
+                        if(col == "Price" || col == "Quantity"){
+                            input.type = "number";
+                        }else{
+                            input.type = "text";
+                        }
+                        input.placeholder = col; 
+                        input.style.width = "calc(100% - 35px)";
+                        input.style.display = "inline-block";
+                        // input.classList.add("filter-input");
+                        input.id = `filter-input-${col}`;
+                        input.addEventListener("input", function(event){
+                            if(col == "Price" || col == "Quantity"){
+                                filter_ranges[col][1] = Math.round(parseFloat(event.target.value));
+                            }else{
+                                filter_ranges[col][1] = event.target.value;
+                            }
+                            updateContent();
+                        });
+
+                        cell.appendChild(select);
+                        cell.appendChild(input);
+                    }
+                    updateContent();
+                });
+            }
+
+            // updates all the content on the page
+            function updateContent() {
+
+                // // update transactions
+                Object.keys(exchange.markets).forEach((marketKey) => {
+                    let table = document.getElementById(`transactions-${marketToTabID[marketKey]}`);
+                    if(table.getElementsByTagName("tbody").length > 0){
+                        tbody = table.tBodies[0];
+                        for (let i = tbody.rows.length - 1; i > 0; i--) {
+                            tbody.deleteRow(i);
+                        }
+                    }
+                
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
+                        let passive = transaction.sellerUser;
+                        let aggressive = transaction.buyerUser;
+                        if(transaction.passiveOrder == transaction.buyerOrderId){
+                            passive = transaction.buyerUser;
+                            aggressive = transaction.sellerUser;
+                        }
+                        transaction_dict = {
+                            "Price": transaction.price,
+                            "Quantity": transaction.quantity,
+                            "Buyer": transaction.buyerUser,
+                            "Seller": transaction.sellerUser,
+                            "Aggressive": aggressive,
+                            "Passive": passive
+                        }
                         
-                        let row = tbody.insertRow();
-                        let cell = row.insertCell();
                         
-                        cell.textContent = transaction.price;
-                        cell = row.insertCell();
-                        cell.textContent = transaction.quantity;
-                        cell = row.insertCell();
-                        cell.textContent = transaction.buyerUser;
-                        cell = row.insertCell();
-                        cell.textContent = transaction.sellerUser;
-                        cell = row.insertCell();
-                        cell.textContent = transaction.buyerUser;
-                        cell = row.insertCell();
-                        cell.textContent = transaction.sellerUser;
-                        
+                        let reject = false;
+                        let row = document.createElement("tr");
+                        Object.keys(transaction_dict).forEach((col) => {
+                            if(filter_ranges[col][0] != "" && filter_ranges[col][1] != ""){
+                                if(filter_ranges[col][0] == "=" && transaction_dict[col] != filter_ranges[col][1]){
+                                    reject = true;
+                                }
+                                if(filter_ranges[col][0] == "≥" && transaction_dict[col] < filter_ranges[col][1]){
+                                    reject = true;
+                                }
+                                if(filter_ranges[col][0] == "≤" && transaction_dict[col] > filter_ranges[col][1]){
+                                    reject = true;
+                                }
+                            }
+                            let cell = row.insertCell();
+                            cell.textContent = transaction_dict[col];
+                        });
+                        if(!reject){
+                            tbody.appendChild(row);
+                        }
                         row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
                     });
 
@@ -240,7 +331,7 @@
                         exchange.markets[transaction.market].transactions.push(transaction);
                     });
                     console.log("ExchangeState", exchangeResponse, exchange);
-                    updateContent();
+                    initTransactionTable();
                 });
 
                 connection.on("StateUpdated", (newState) => {
@@ -262,7 +353,7 @@
                     exchange.state = message.state;
 
                     generateTabs(Object.keys(exchange.markets));
-                    updateContent();
+                    // initTransactionTable();
                     console.log("LobbyState", message, exchange);
                 });
 
