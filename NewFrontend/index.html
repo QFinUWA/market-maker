@@ -67,6 +67,8 @@
                         cell.outerHTML = `<th>${col}</th>`;
                         cell.textContent = col;
                     }
+                    header.classList.add("[&>*]:px-2", "bg-gray-200");
+
                     let border = thead.insertRow();
                     border.classList.add();
                     cell = document.createElement("th");
@@ -75,8 +77,6 @@
                     border.appendChild(cell);
 
                     tbody = table.createTBody();
-
-                    header.classList.add("[&>*]:px-2", "bg-gray-200");
 
                     let filters = tbody.insertRow();
                     for (let col of transaction_cols) {
@@ -193,17 +193,30 @@
                     let table = document.getElementById(`orders-${marketToTabID[marketKey]}`);
                     table.innerHTML = ''; // erase existing content
                     table.classList.add("w-full");
-                    let header = table.insertRow();
-                    for (let col of ["Price", "Quantity", "User"]) {
+                    let thead = table.createTHead();
+                    thead.classList.add("sticky", "top-0");
+                    let header = thead.insertRow();
+                    for (let col of ["User", "Quantity", "Price", "Quantity", "User"]) {
                         let cell = header.insertCell();
+                        cell.outerHTML = `<th>${col}</th>`;
                         cell.textContent = col;
                     }
-                    header.classList.add("border-b-2", "border-gray-500", "[&>*]:px-2");
+                    header.classList.add("[&>*]:px-2", "bg-gray-200");
+
+                    let border = thead.insertRow();
+                    border.classList.add();
+                    cell = document.createElement("th");
+                    cell.colSpan = 6;
+                    cell.classList.add("h-[2px]", "bg-gray-500");
+                    border.appendChild(cell);
+
+                    tbody = table.createTBody();
+
                     Object.keys(exchange.markets[marketKey].orders).forEach((orderKey) => {
                         // console.log(orderKey);
                         let order = exchange.markets[marketKey].orders[orderKey];
                         
-                        let row = table.insertRow();
+                        let row = tbody.insertRow();
                         let cell = row.insertCell();
                         
                         cell.textContent = order.price;
