@@ -196,7 +196,7 @@
                     let thead = table.createTHead();
                     thead.classList.add("sticky", "top-0");
                     let header = thead.insertRow();
-                    for (let col of ["User", "Quantity", "Price", "Quantity", "User"]) {
+                    for (let col of ["Bidder", "Quantity", "Price", "Quantity", "Asker"]) {
                         let cell = header.insertCell();
                         cell.outerHTML = `<th>${col}</th>`;
                         cell.textContent = col;
@@ -212,21 +212,28 @@
 
                     tbody = table.createTBody();
 
-                    Object.keys(exchange.markets[marketKey].orders).forEach((orderKey) => {
-                        // console.log(orderKey);
-                        let order = exchange.markets[marketKey].orders[orderKey];
-                        
-                        let row = tbody.insertRow();
-                        let cell = row.insertCell();
-                        
-                        cell.textContent = order.price;
-                        cell = row.insertCell();
-                        cell.textContent = order.quantity;
-                        cell = row.insertCell();
-                        cell.textContent = order.user;
-                        
-                        row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
-                    });
+                    // add the orders
+
+                    let minPrice = Math.min(...exchange.markets[marketKey].orders.map((o) => o.price));
+                    let maxPrice = Math.max(...exchange.markets[marketKey].orders.map((o) => o.price));
+
+                    for (let price = maxPrice; price >= minPrice; price--) {
+                        let ordersAtPrice = exchange.markets[marketKey].orders.filter((o) => o.price == price);
+                        for (let order of ordersAtPrice) {
+                            let row = tbody.insertRow();
+                            let cell = row.insertCell();
+                            cell.textContent = order.quantity > 0 ? order.user : "";
+                            cell = row.insertCell();
+                            cell.textContent = order.quantity > 0 ? order.quantity : "";
+                            cell = row.insertCell();
+                            cell.textContent = order.price;
+                            cell = row.insertCell();
+                            cell.textContent = order.quantity < 0 ? - order.quantity  : "";
+                            cell = row.insertCell();
+                            cell.textContent = order.quantity < 0 ? order.user : "";
+                            row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
+                        }
+                    }
 
                 });
             }
