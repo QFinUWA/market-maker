@@ -85,6 +85,9 @@
                         let price = document.getElementById(`bidPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`bidQuantityInput-${marketToTabID[marketKey]}`).value;
                         console.log(`Send bid of ${price} @ ${quantity}`);
+                        connection
+                            .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
+                            .catch((err) => console.error(err.toString()));
                     });
 
                     askDiv = document.createElement("div");
@@ -115,6 +118,9 @@
                         let price = document.getElementById(`askPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`askQuantityInput-${marketToTabID[marketKey]}`).value;
                         console.log(`Send ask of ${price} @ ${quantity}`);
+                        connection
+                            .invoke("PlaceOrder", marketKey, parseInt(price), -parseInt(quantity), "ref")
+                            .catch((err) => console.error(err.toString()));
                     });
 
                     bidDiv.appendChild(bidPriceInput);
