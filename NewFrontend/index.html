@@ -13,7 +13,10 @@
                     <h1 id="exchangeName">[Exchange Name]</h1>
                     <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
                 </div>
-                <div id="exchangeState">[State]</div>
+                <div class="flex space-x-6">
+                    <h1 id="playerName">[Name]</h1>
+                    <h1 id="exchangeState">[State]</h1>
+                </div>
             </nav>
 
             <div class="mx-auto w-[96vw] mt-[1vh] h-[80vh] shadow-lg">
@@ -528,6 +531,7 @@
                 });
             }
 
+            console.log(document.cookie);
             // On load, checks if a jwt token is present in cookies
             // If not, redirect to login page
             if (document.cookie.indexOf("jwt") == -1) {
@@ -537,6 +541,12 @@
                 .split(";")
                 .find((c) => c.trim().startsWith("jwt="))
                 .split("=")[1];
+            const name = document.cookie
+                .split(";")
+                .find((c) => c.trim().startsWith("name="))
+                .split("=")[1];
+
+            document.getElementById("playerName").textContent = name;
 
             // Connect to the SignalR hub
             const [connection, start] = bindConnection(jwt);
