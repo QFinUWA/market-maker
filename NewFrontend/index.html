@@ -45,6 +45,86 @@
             for(let col of transaction_cols){
                 filter_ranges[col] = ["", ""];
             }
+
+            function initOrderInput(){
+                Object.keys(exchange.markets).forEach((marketKey) => {
+                    let d = document.getElementById(`orderInput-${marketToTabID[marketKey]}`);
+                    d.innerHTML='';
+                    d.classList.add("w-full");
+                    d.style.height = "100px";
+                    d.style.display = "flex";
+
+                    bidDiv = document.createElement("div");
+                    bidDiv.style.height = "100%";
+                    bidDiv.style.width = "25%";
+                    bidDiv.style.border = "1px solid black";
+
+                    bidPriceInput = document.createElement("input");
+                    bidPriceInput.type = "number";
+                    bidPriceInput.placeholder = "Price";
+                    bidPriceInput.id = `bidPriceInput-${marketToTabID[marketKey]}`;
+                    bidPriceInput.style.height = "50%";
+                    bidPriceInput.style.width = "50%";
+
+                    bidQuantityInput = document.createElement("input");
+                    bidQuantityInput.type = "number";
+                    bidQuantityInput.placeholder = "Quantity";
+                    bidQuantityInput.id = `bidQuantityInput-${marketToTabID[marketKey]}`;
+                    bidQuantityInput.style.height = "50%";
+                    bidQuantityInput.style.width = "50%";
+
+                    bidButton = document.createElement("button");
+                    bidButton.innerHTML = "Send Bid";
+                    bidButton.id = `bidButton-${marketToTabID[marketKey]}`;
+                    bidButton.style.height = "50%";
+                    bidButton.style.width = "100%";
+                    bidButton.addEventListener("click", function(event){
+                        let price = document.getElementById(`bidPriceInput-${marketToTabID[marketKey]}`).value;
+                        let quantity = document.getElementById(`bidQuantityInput-${marketToTabID[marketKey]}`).value;
+                        console.log(`Send bid of ${price} @ ${quantity}`);
+                    });
+
+                    askDiv = document.createElement("div");
+                    askDiv.style.height = "100%";
+                    askDiv.style.width = "25%";
+                    askDiv.style.border = "1px solid black";
+
+                    askPriceInput = document.createElement("input");
+                    askPriceInput.type = "number";
+                    askPriceInput.placeholder = "Price";
+                    askPriceInput.id = `askPriceInput-${marketToTabID[marketKey]}`;
+                    askPriceInput.style.height = "50%";
+                    askPriceInput.style.width = "50%";
+
+                    askQuantityInput = document.createElement("input");
+                    askQuantityInput.type = "number";
+                    askQuantityInput.placeholder = "Quantity";
+                    askQuantityInput.id = `askQuantityInput-${marketToTabID[marketKey]}`;
+                    askQuantityInput.style.height = "50%";
+                    askQuantityInput.style.width = "50%";
+
+                    askButton = document.createElement("button");
+                    askButton.innerHTML = "Send Ask";
+                    askButton.id = `askButton-${marketToTabID[marketKey]}`;
+                    askButton.style.height = "50%";
+                    askButton.style.width = "100%";
+                    askButton.addEventListener("click", function(event){
+                        let price = document.getElementById(`askPriceInput-${marketToTabID[marketKey]}`).value;
+                        let quantity = document.getElementById(`askQuantityInput-${marketToTabID[marketKey]}`).value;
+                        console.log(`Send ask of ${price} @ ${quantity}`);
+                    });
+
+                    bidDiv.appendChild(bidPriceInput);
+                    bidDiv.appendChild(bidQuantityInput);
+                    bidDiv.appendChild(bidButton);
+                    askDiv.appendChild(askPriceInput);
+                    askDiv.appendChild(askQuantityInput);
+                    askDiv.appendChild(askButton);
+                    d.appendChild(bidDiv);
+                    d.appendChild(askDiv);
+
+                });
+            }
             
             function initTransactionTable(){
                 document.getElementById("exchangeName").textContent = exchange.exchangeName;
@@ -282,9 +362,13 @@
                     const rightSide = document.createElement('div');
                     rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4", "overflow-y-auto");
 
+                    const orderInput = document.createElement('div');
+                    orderInput.id = `orderInput-${index}`;
+
                     const transactionTable = document.createElement('table');
                     transactionTable.id = `transactions-${index}`;
 
+                    rightSide.appendChild(orderInput);
                     rightSide.appendChild(transactionTable);
 
                     content.appendChild(leftSide);
@@ -308,7 +392,8 @@
 
                 // Show the first tab initially
                 tabNavigation.firstChild.click();
-
+                initOrderInput();
+                initTransactionTable();
             }
 
 
@@ -373,7 +458,6 @@
                     exchange.state = message.state;
 
                     generateTabs(Object.keys(exchange.markets));
-                    // initTransactionTable();
                     console.log("LobbyState", message, exchange);
                 });
 
