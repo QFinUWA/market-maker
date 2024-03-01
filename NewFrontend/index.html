@@ -8,15 +8,18 @@
         <script src="lib/signalr/signalr.js"></script>
     </head>
     <body class="bg-gray-300 w-full">
-            <nav class="bg-white shadow p-4 flex justify-between items-center h-[6vh]">
+            <nav class="bg-white shadow px-4 flex justify-between items-center h-[6vh]">
                 <div class="flex space-x-6">
                     <h1 id="exchangeName">[Exchange Name]</h1>
                     <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
                 </div>
-                <div id="exchangeState">[State]</div>
+                <div class="flex space-x-6">
+                    <h1 id="playerName">[Name]</h1>
+                    <h1 id="exchangeState">[State]</h1>
+                </div>
             </nav>
 
-            <div class="mx-auto w-[96vw] mt-[1vh] h-[80vh] shadow-lg">
+            <div class="mx-auto w-[96vw] mt-[1vh] h-[90vh] shadow-lg">
                 <div id="tab-navigation" class="flex h-[4%] min-h-[26px]">
                 </div>
             
@@ -41,9 +44,91 @@
             marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
 
             let transaction_cols = ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"];
-            let filter_ranges = {};
+            let filter_ranges = {"Selector": ""};
             for(let col of transaction_cols){
                 filter_ranges[col] = ["", ""];
+            }
+
+            function initOrderInput(){
+                Object.keys(exchange.markets).forEach((marketKey) => {
+                    let d = document.getElementById(`orderInput-${marketToTabID[marketKey]}`);
+                    d.innerHTML='';
+                    d.classList.add("w-2/3", "min-h-[50%]", "flex", "gap-[2%]");
+
+                    bidDiv = document.createElement("div");
+                    bidDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
+
+                    bidPriceInput = document.createElement("input");
+                    bidPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
+                    bidPriceInput.type = "number";
+                    bidPriceInput.placeholder = "Price";
+                    bidPriceInput.id = `bidPriceInput-${marketToTabID[marketKey]}`;
+
+                    bidQuantityInput = document.createElement("input");
+                    bidQuantityInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
+                    bidQuantityInput.type = "number";
+                    bidQuantityInput.placeholder = "Quantity";
+                    bidQuantityInput.id = `bidQuantityInput-${marketToTabID[marketKey]}`;
+                    
+                    bidButtonDiv = document.createElement("div");
+                    bidButtonDiv.classList.add("h-[50%]", "w-[100%]", "flex", "justify-center", "items-center");
+
+                    bidButton = document.createElement("button");
+                    bidButton.classList.add("h-[70%]", "w-[70%]", "text-center", "text-sm", "font-medium", "bg-green-600", "hover:bg-green-700", "text-white", "rounded-md");
+                    bidButton.innerHTML = "Send Bid";
+                    bidButton.id = `bidButton-${marketToTabID[marketKey]}`;
+                    bidButton.addEventListener("click", function(event){
+                        let price = document.getElementById(`bidPriceInput-${marketToTabID[marketKey]}`).value;
+                        let quantity = document.getElementById(`bidQuantityInput-${marketToTabID[marketKey]}`).value;
+                        console.log(`Send bid of ${price} @ ${quantity}`);
+                        connection
+                            .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
+                            .catch((err) => console.error(err.toString()));
+                    });
+
+                    askDiv = document.createElement("div");
+                    askDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
+
+                    askPriceInput = document.createElement("input");
+                    askPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
+                    askPriceInput.type = "number";
+                    askPriceInput.placeholder = "Price";
+                    askPriceInput.id = `askPriceInput-${marketToTabID[marketKey]}`;
+
+                    askQuantityInput = document.createElement("input");
+                    askQuantityInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
+                    askQuantityInput.type = "number";
+                    askQuantityInput.placeholder = "Quantity";
+                    askQuantityInput.id = `askQuantityInput-${marketToTabID[marketKey]}`;
+
+                    askButtonDiv = document.createElement("div");
+                    askButtonDiv.classList.add("h-[50%]", "w-[100%]", "flex", "justify-center", "items-center");
+
+                    askButton = document.createElement("button");
+                    askButton.classList.add("h-[70%]", "w-[70%]", "text-center", "text-sm", "font-medium", "bg-red-600", "hover:bg-red-800", "text-white", "rounded-md");
+                    askButton.innerHTML = "Send Ask";
+                    askButton.id = `askButton-${marketToTabID[marketKey]}`;
+                    askButton.addEventListener("click", function(event){
+                        let price = document.getElementById(`askPriceInput-${marketToTabID[marketKey]}`).value;
+                        let quantity = document.getElementById(`askQuantityInput-${marketToTabID[marketKey]}`).value;
+                        console.log(`Send ask of ${price} @ ${quantity}`);
+                        connection
+                            .invoke("PlaceOrder", marketKey, parseInt(price), -parseInt(quantity), "ref")
+                            .catch((err) => console.error(err.toString()));
+                    });
+
+                    bidDiv.appendChild(bidPriceInput);
+                    bidDiv.appendChild(bidQuantityInput);
+                    bidDiv.appendChild(bidButtonDiv);
+                    bidButtonDiv.appendChild(bidButton);
+                    askDiv.appendChild(askPriceInput);
+                    askDiv.appendChild(askQuantityInput);
+                    askDiv.appendChild(askButtonDiv);
+                    askButtonDiv.appendChild(askButton);
+                    d.appendChild(bidDiv);
+                    d.appendChild(askDiv);
+
+                });
             }
             
             function initTransactionTable(){
@@ -78,22 +163,27 @@
 
                     tbody = table.createTBody();
 
-                    let filters = tbody.insertRow();
+                    let filters = thead.insertRow();
+                    filters.classList.add("bg-gray-200");
                     for (let col of transaction_cols) {
                         let cell = filters.insertCell();    
                         
                         let select = document.createElement("select");
-                        options = ["", "="];
+                        options = [];
                         if (col == "Price" || col == "Quantity"){
+                            options.push("");
+                            options.push("=");
                             options.push("≥");
                             options.push("≤");
+                            for (let option of options) {
+                                let opt = document.createElement("option");
+                                opt.value = option;
+                                opt.text = option;
+                                select.appendChild(opt);
+                            }
+                            cell.appendChild(select);
                         }
-                        for (let option of options){
-                            let opt = document.createElement("option");
-                            opt.value = option;
-                            opt.text = option;
-                            select.appendChild(opt);
-                        }
+                        
                         select.style.width = "35px";
                         select.style.display = "inline-block";
                         // select.classList.add("filter-select");
@@ -106,24 +196,26 @@
                         let input = document.createElement("input");
                         if(col == "Price" || col == "Quantity"){
                             input.type = "number";
+                            input.classList.add("w-[calc(100%-35px)]", "text-center");
+
                         }else{
                             input.type = "text";
+                            input.classList.add("w-full", "text-center");
                         }
                         input.placeholder = col; 
-                        input.style.width = "calc(100% - 35px)";
-                        input.style.display = "inline-block";
+                        
                         // input.classList.add("filter-input");
                         input.id = `filter-input-${col}`;
                         input.addEventListener("input", function(event){
                             if(col == "Price" || col == "Quantity"){
                                 filter_ranges[col][1] = Math.round(parseFloat(event.target.value));
                             }else{
+                                filter_ranges[col][0] = "="
                                 filter_ranges[col][1] = event.target.value;
                             }
                             updateContent();
                         });
 
-                        cell.appendChild(select);
                         cell.appendChild(input);
                     }
                     updateContent();
@@ -138,11 +230,11 @@
                     let table = document.getElementById(`transactions-${marketToTabID[marketKey]}`);
                     if(table.getElementsByTagName("tbody").length > 0){
                         tbody = table.tBodies[0];
-                        for (let i = tbody.rows.length - 1; i > 0; i--) {
+                        for (let i = tbody.rows.length - 1; i >= 0; i--) {
                             tbody.deleteRow(i);
                         }
                     }
-                
+                    
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
@@ -166,7 +258,7 @@
                         let row = document.createElement("tr");
                         Object.keys(transaction_dict).forEach((col) => {
                             if(filter_ranges[col][0] != "" && filter_ranges[col][1] != ""){
-                                if(filter_ranges[col][0] == "=" && transaction_dict[col] != filter_ranges[col][1]){
+                                if(filter_ranges[col][0] == "=" && !transaction_dict[col].toString().includes(filter_ranges[col][1])){
                                     reject = true;
                                 }
                                 if(filter_ranges[col][0] == "≥" && transaction_dict[col] < filter_ranges[col][1]){
@@ -176,13 +268,36 @@
                                     reject = true;
                                 }
                             }
+                            
+
                             let cell = row.insertCell();
+                            if (["Buyer", "Seller", "Aggressive", "Passive"].includes(col)){
+                                cell.addEventListener("click", function(event){
+                                    if (filter_ranges["Selector"] == event.target.textContent){
+                                        filter_ranges["Selector"] = "";
+                                    } else {
+                                        filter_ranges["Selector"] = event.target.textContent;
+                                    }
+                                    console.log(filter_ranges);
+                                    updateContent();
+                                });
+                                cell.classList.add("cursor-pointer", "hover:bg-gray-300");
+                                if (transaction_dict[col] == filter_ranges["Selector"]){
+                                    cell.classList.add("bg-gray-300");
+                                }
+                            }
                             cell.textContent = transaction_dict[col];
                         });
+                        // check for every of the 4 columns if none have the selector value then reject is true
+                        if(filter_ranges["Selector"] != ""){
+                            if(["Buyer", "Seller", "Aggressive", "Passive"].every((col) => transaction_dict[col] != filter_ranges["Selector"]) ){
+                                reject = true;
+                            }
+                        }
                         if(!reject){
                             tbody.appendChild(row);
                         }
-                        row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
+                        row.classList.add("border-b", "border-gray-400", "[&>*]:px-2");
                     });
 
                 });
@@ -280,12 +395,25 @@
                     leftSide.appendChild(orderTable);
 
                     const rightSide = document.createElement('div');
-                    rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4", "overflow-y-auto");
+                    rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4");
+
+                    const topRightSide = document.createElement('div');
+                    topRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
+
+                    const bottomRightSide = document.createElement('div');
+                    bottomRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
+
+                    const orderInput = document.createElement('div');
+                    orderInput.id = `orderInput-${index}`;
 
                     const transactionTable = document.createElement('table');
                     transactionTable.id = `transactions-${index}`;
 
-                    rightSide.appendChild(transactionTable);
+                    topRightSide.appendChild(orderInput);
+                    bottomRightSide.appendChild(transactionTable);
+
+                    rightSide.appendChild(topRightSide);
+                    rightSide.appendChild(bottomRightSide);
 
                     content.appendChild(leftSide);
                     content.appendChild(rightSide);
@@ -308,7 +436,8 @@
 
                 // Show the first tab initially
                 tabNavigation.firstChild.click();
-
+                initOrderInput();
+                initTransactionTable();
             }
 
 
@@ -373,7 +502,6 @@
                     exchange.state = message.state;
 
                     generateTabs(Object.keys(exchange.markets));
-                    // initTransactionTable();
                     console.log("LobbyState", message, exchange);
                 });
 
@@ -444,6 +572,7 @@
                 });
             }
 
+            console.log(document.cookie);
             // On load, checks if a jwt token is present in cookies
             // If not, redirect to login page
             if (document.cookie.indexOf("jwt") == -1) {
@@ -453,6 +582,12 @@
                 .split(";")
                 .find((c) => c.trim().startsWith("jwt="))
                 .split("=")[1];
+            const name = document.cookie
+                .split(";")
+                .find((c) => c.trim().startsWith("name="))
+                .split("=")[1];
+
+            document.getElementById("playerName").textContent = name;
 
             // Connect to the SignalR hub
             const [connection, start] = bindConnection(jwt);
