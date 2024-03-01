@@ -349,15 +349,22 @@
                             row.classList.add("border-b", "border-gray-400", "[&>*]:px-2", "hover:bg-gray-300");
                             // on double click instantly trade with this order
                             row.addEventListener("dblclick", function(event){
-                                let price = order.price;
-                                let quantity = -order.quantity;
-                                let market = marketKey;
-                                let user = document.getElementById("playerName").textContent;
-                                console.log(`Send trade of ${price} @ ${quantity}`);
-                                connection
-                                    .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
-                                    .catch((err) => console.error(err.toString()));
+                                // check if I am the person who made order
+                                if (document.getElementById("playerName").textContent != order.user){
+                                    let price = order.price;
+                                    let quantity = -order.quantity;
+                                    let market = marketKey;
+                                    console.log(`Send trade of ${price} @ ${quantity}`);
                                     connection
+                                        .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
+                                        .catch((err) => console.error(err.toString()));
+                                        connection
+                                } else {
+                                    // cancel order
+                                    connection
+                                        .invoke("DeleteOrder", order.id)
+                                        .catch((err) => console.error(err.toString()));
+                                }
                             });
                         }
                     }
@@ -537,9 +544,13 @@
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
-                    console.log("DeletedOrder", orderID);
                     //delete orders[orderID];
-                    //refreshExchange();
+                    exchange.markets = exchange.markets.map((market) => {
+                        market.orders = market.orders.filter((o) => o.id != orderID);
+                        return market;
+                    });
+                    console.log("DeletedOrder", orderID, exchange);
+                    updateContent();
                 });
 
                 connection.on("NewParticipant", (user) => {
