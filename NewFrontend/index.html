@@ -8,7 +8,7 @@
         <script src="lib/signalr/signalr.js"></script>
     </head>
     <body class="bg-gray-300 w-full">
-            <nav class="bg-white shadow p-4 flex justify-between items-center h-[6vh]">
+            <nav class="bg-white shadow px-4 flex justify-between items-center h-[6vh]">
                 <div class="flex space-x-6">
                     <h1 id="exchangeName">[Exchange Name]</h1>
                     <h1 id="exchangeCode" class="text-slate-500" >[Exchange Code]</h1>
@@ -19,7 +19,7 @@
                 </div>
             </nav>
 
-            <div class="mx-auto w-[96vw] mt-[1vh] h-[80vh] shadow-lg">
+            <div class="mx-auto w-[96vw] mt-[1vh] h-[90vh] shadow-lg">
                 <div id="tab-navigation" class="flex h-[4%] min-h-[26px]">
                 </div>
             
@@ -53,34 +53,30 @@
                 Object.keys(exchange.markets).forEach((marketKey) => {
                     let d = document.getElementById(`orderInput-${marketToTabID[marketKey]}`);
                     d.innerHTML='';
-                    d.classList.add("w-full");
-                    d.style.height = "100px";
-                    d.style.display = "flex";
+                    d.classList.add("w-2/3", "min-h-[50%]", "flex", "gap-[2%]");
 
                     bidDiv = document.createElement("div");
-                    bidDiv.style.height = "100%";
-                    bidDiv.style.width = "25%";
-                    bidDiv.style.border = "1px solid black";
+                    bidDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
 
                     bidPriceInput = document.createElement("input");
+                    bidPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
                     bidPriceInput.type = "number";
                     bidPriceInput.placeholder = "Price";
                     bidPriceInput.id = `bidPriceInput-${marketToTabID[marketKey]}`;
-                    bidPriceInput.style.height = "50%";
-                    bidPriceInput.style.width = "50%";
 
                     bidQuantityInput = document.createElement("input");
+                    bidQuantityInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
                     bidQuantityInput.type = "number";
                     bidQuantityInput.placeholder = "Quantity";
                     bidQuantityInput.id = `bidQuantityInput-${marketToTabID[marketKey]}`;
-                    bidQuantityInput.style.height = "50%";
-                    bidQuantityInput.style.width = "50%";
+                    
+                    bidButtonDiv = document.createElement("div");
+                    bidButtonDiv.classList.add("h-[50%]", "w-[100%]", "flex", "justify-center", "items-center");
 
                     bidButton = document.createElement("button");
+                    bidButton.classList.add("h-[70%]", "w-[70%]", "text-center", "text-sm", "font-medium", "bg-green-600", "hover:bg-green-700", "text-white", "rounded-md");
                     bidButton.innerHTML = "Send Bid";
                     bidButton.id = `bidButton-${marketToTabID[marketKey]}`;
-                    bidButton.style.height = "50%";
-                    bidButton.style.width = "100%";
                     bidButton.addEventListener("click", function(event){
                         let price = document.getElementById(`bidPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`bidQuantityInput-${marketToTabID[marketKey]}`).value;
@@ -91,29 +87,27 @@
                     });
 
                     askDiv = document.createElement("div");
-                    askDiv.style.height = "100%";
-                    askDiv.style.width = "25%";
-                    askDiv.style.border = "1px solid black";
+                    askDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
 
                     askPriceInput = document.createElement("input");
+                    askPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
                     askPriceInput.type = "number";
                     askPriceInput.placeholder = "Price";
                     askPriceInput.id = `askPriceInput-${marketToTabID[marketKey]}`;
-                    askPriceInput.style.height = "50%";
-                    askPriceInput.style.width = "50%";
 
                     askQuantityInput = document.createElement("input");
+                    askQuantityInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
                     askQuantityInput.type = "number";
                     askQuantityInput.placeholder = "Quantity";
                     askQuantityInput.id = `askQuantityInput-${marketToTabID[marketKey]}`;
-                    askQuantityInput.style.height = "50%";
-                    askQuantityInput.style.width = "50%";
+
+                    askButtonDiv = document.createElement("div");
+                    askButtonDiv.classList.add("h-[50%]", "w-[100%]", "flex", "justify-center", "items-center");
 
                     askButton = document.createElement("button");
+                    askButton.classList.add("h-[70%]", "w-[70%]", "text-center", "text-sm", "font-medium", "bg-red-600", "hover:bg-red-800", "text-white", "rounded-md");
                     askButton.innerHTML = "Send Ask";
                     askButton.id = `askButton-${marketToTabID[marketKey]}`;
-                    askButton.style.height = "50%";
-                    askButton.style.width = "100%";
                     askButton.addEventListener("click", function(event){
                         let price = document.getElementById(`askPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`askQuantityInput-${marketToTabID[marketKey]}`).value;
@@ -125,10 +119,12 @@
 
                     bidDiv.appendChild(bidPriceInput);
                     bidDiv.appendChild(bidQuantityInput);
-                    bidDiv.appendChild(bidButton);
+                    bidDiv.appendChild(bidButtonDiv);
+                    bidButtonDiv.appendChild(bidButton);
                     askDiv.appendChild(askPriceInput);
                     askDiv.appendChild(askQuantityInput);
-                    askDiv.appendChild(askButton);
+                    askDiv.appendChild(askButtonDiv);
+                    askButtonDiv.appendChild(askButton);
                     d.appendChild(bidDiv);
                     d.appendChild(askDiv);
 
@@ -369,7 +365,13 @@
                     leftSide.appendChild(orderTable);
 
                     const rightSide = document.createElement('div');
-                    rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4", "overflow-y-auto");
+                    rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4");
+
+                    const topRightSide = document.createElement('div');
+                    topRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
+
+                    const bottomRightSide = document.createElement('div');
+                    bottomRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
 
                     const orderInput = document.createElement('div');
                     orderInput.id = `orderInput-${index}`;
@@ -377,8 +379,11 @@
                     const transactionTable = document.createElement('table');
                     transactionTable.id = `transactions-${index}`;
 
-                    rightSide.appendChild(orderInput);
-                    rightSide.appendChild(transactionTable);
+                    topRightSide.appendChild(orderInput);
+                    bottomRightSide.appendChild(transactionTable);
+
+                    rightSide.appendChild(topRightSide);
+                    rightSide.appendChild(bottomRightSide);
 
                     content.appendChild(leftSide);
                     content.appendChild(rightSide);
