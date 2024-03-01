@@ -44,7 +44,7 @@
             marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
 
             let transaction_cols = ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"];
-            let filter_ranges = {};
+            let filter_ranges = {"Selector": ""};
             for(let col of transaction_cols){
                 filter_ranges[col] = ["", ""];
             }
@@ -268,13 +268,36 @@
                                     reject = true;
                                 }
                             }
+                            
+
                             let cell = row.insertCell();
+                            if (["Buyer", "Seller", "Aggressive", "Passive"].includes(col)){
+                                cell.addEventListener("click", function(event){
+                                    if (filter_ranges["Selector"] == event.target.textContent){
+                                        filter_ranges["Selector"] = "";
+                                    } else {
+                                        filter_ranges["Selector"] = event.target.textContent;
+                                    }
+                                    console.log(filter_ranges);
+                                    updateContent();
+                                });
+                                cell.classList.add("cursor-pointer", "hover:bg-gray-300");
+                                if (transaction_dict[col] == filter_ranges["Selector"]){
+                                    cell.classList.add("bg-gray-300");
+                                }
+                            }
                             cell.textContent = transaction_dict[col];
                         });
+                        // check for every of the 4 columns if none have the selector value then reject is true
+                        if(filter_ranges["Selector"] != ""){
+                            if(["Buyer", "Seller", "Aggressive", "Passive"].every((col) => transaction_dict[col] != filter_ranges["Selector"]) ){
+                                reject = true;
+                            }
+                        }
                         if(!reject){
                             tbody.appendChild(row);
                         }
-                        row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
+                        row.classList.add("border-b", "border-gray-400", "[&>*]:px-2");
                     });
 
                 });
