@@ -53,7 +53,17 @@
                 Object.keys(exchange.markets).forEach((marketKey) => {
                     let d = document.getElementById(`orderInput-${marketToTabID[marketKey]}`);
                     d.innerHTML='';
-                    d.classList.add("w-2/3", "min-h-[50%]", "flex", "gap-[2%]");
+                    d.classList.add("w-2/3", "min-h-[50%]", "flex", "gap-[2%]", "border", "border-black");
+
+                    quickInput = document.createElement("input");
+                    quickInput.classList.add("h-[100px]", "w-[100%]", "border", "border-black", "text-center");
+                    quickInput.placeholder = "Quick Input";
+                    quickInput.addEventListener("keydown", function(event){
+                        if(event.key === "Enter"){
+                            console.log(this.value); // TODO: Make it actually send orders based on what is here
+                            this.value = "";
+                        }
+                    });
 
                     bidDiv = document.createElement("div");
                     bidDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
@@ -125,6 +135,7 @@
                     askDiv.appendChild(askQuantityInput);
                     askDiv.appendChild(askButtonDiv);
                     askButtonDiv.appendChild(askButton);
+                    d.appendChild(quickInput);
                     d.appendChild(bidDiv);
                     d.appendChild(askDiv);
 
