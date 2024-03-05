@@ -2,7 +2,6 @@
 using MarketMaker.Contracts;
 using MarketMaker.Models;
 using MarketMaker.Services;
-using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNetCore.Authorization;
 
 namespace MarketMaker.Hubs;
@@ -199,8 +198,6 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
                 return;
         }
 
-        if (exchangeService.Markets.Count == 0) throw new Exception("Exchange must contain at least 1 market");
-
         exchangeService.State = newState;
 
         if (newState is ExchangeState.Open) exchangeService.Listen();
@@ -257,27 +254,40 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         await Clients.Group(exchangeCode).NewParticipant(username);
     }
 
-    public async Task PlaceOrder(string market, int price, int quantity, string userReference)
+    public async Task PlaceOrder(string market, int price, int quantity)
     {
         if (price <= 0) throw new Exception("Price must be > 0");
         var (userId, exchangeCode) = CookieFactory.GetUserAndGroup(Context.User!);
+        var username = _exchangeServices.Exchanges[exchangeCode].Users[userId];
+
+        if (username == null) throw new Exception("You are not a participant");
+
         ExchangeService exchangeService = _exchangeServices.Exchanges[exchangeCode];
-        
-        if (!exchangeService.Users.TryGetValue(userId, out var username))
-            throw new Exception("You are not a participant");
-
         if (exchangeService.State != ExchangeState.Open) throw new Exception("Exchange is not open");
-        if (!exchangeService.Markets.ContainsKey(market)) throw new Exception("Invalid market");
 
-        await exchangeService.NewOrder(username, market, price, quantity);
+        var newOrder = new Order(
+            username,
+            market,
+            price,
+            quantity
+        );
+
+        var originalOrder = (Order)newOrder.Clone();
+        await exchangeService.NewOrder(newOrder);
         
         _logger.LogInformation("finding new transactions");
-        var (order, transactions) = exchangeService.GetNewTransactions();
+        var transactions = exchangeService.GetNewTransactions();
+        if (transactions == null) throw new Exception("Order rejected");
+        
+        await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(originalOrder));
 
-        await Clients.Caller.OrderReceived(_responseConstructor.OrderReceived(order.Id, userReference));
+        var orderFilledTask = transactions
+            .Select<Transaction, Task>(transaction =>
+                Clients.Group(exchangeCode).TransactionEvent(_responseConstructor.Transaction(transaction)
+                ));
 
         _logger.LogInformation($"Lobby {exchangeCode} - {transactions.Count} new transaction(s)");
-        await Clients.Group(exchangeCode).NewOrder(_responseConstructor.NewOrder(order, transactions));
+        await Task.WhenAll(orderFilledTask);
     }
 
     public async Task DeleteOrder(Guid orderId)
@@ -293,7 +303,7 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         
         Order? deleteOrder = exchangeService.GetOrder(orderId);
         if (deleteOrder is null) throw new Exception($"orderId {orderId} does not exist");
-        if (deleteOrder.User != userId) throw new Exception("Unauthorized");
+        if (deleteOrder.User != username) throw new Exception("Unauthorized");
         
         await exchangeService.DeleteOrder(deleteOrder);
 
