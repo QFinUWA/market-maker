@@ -124,7 +124,7 @@
                             );
                             const expires = "expires=" + expiryDate.toUTCString();
                             document.cookie = "jwt=" + jwt + ";" + expires + ";path=/";
-                            document.cookie = "name=" + document.getElementById("name").value + ";" + expires + ";path=/";
+                            document.cookie = "name=" + document.getElementById("name").value.toLowerCase() + ";" + expires + ";path=/";
 
                             window.location.href = "./index.html";
                         }).catch(error => {

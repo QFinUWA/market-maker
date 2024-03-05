@@ -204,6 +204,61 @@
 
                 });
             }
+
+            function initProductView(){
+                Object.keys(exchange.markets).forEach((marketKey) => {
+
+                    let d = document.getElementById(`productView-${marketToTabID[marketKey]}`);
+                    d.innerHTML='';
+                    d.classList.add("w-1/3", "min-h-[50%]", "gap-[2%]", "border", "border-black");
+                    let position_text = document.createElement("p");
+                    position_text.classList.add("w-[100%]", "text-center");
+                    position_text.innerHTML = "POSITION";
+                    let position = document.createElement("p");
+                    position.classList.add("w-[100%]", "text-center");
+                    position.innerHTML = 0;
+                    position.id = `position-${marketToTabID[marketKey]}`;
+                    let buys_text = document.createElement("p");
+                    buys_text.classList.add("w-[100%]", "text-center");
+                    buys_text.innerHTML = "BUYS";
+                    let buys = document.createElement("p");
+                    buys.classList.add("w-[100%]", "text-center");
+                    buys.innerHTML = 0;
+                    buys.id = `buys-${marketToTabID[marketKey]}`;
+                    let sells_text = document.createElement("p");
+                    sells_text.classList.add("w-[100%]", "text-center");
+                    sells_text.innerHTML = "SELLS";
+                    let sells = document.createElement("p");
+                    sells.classList.add("w-[100%]", "text-center");
+                    sells.innerHTML = 0;
+                    sells.id = `sells-${marketToTabID[marketKey]}`;
+                    let cash_text = document.createElement("p");
+                    cash_text.classList.add("w-[100%]", "text-center");
+                    cash_text.innerHTML = "CASH";
+                    let cash = document.createElement("p");
+                    cash.classList.add("w-[100%]", "text-center");
+                    cash.innerHTML = 0;
+                    cash.id = `cash-${marketToTabID[marketKey]}`;
+                    let settlement_text = document.createElement("p");
+                    settlement_text.classList.add("w-[100%]", "text-center");
+                    settlement_text.innerHTML = "SETTLEMENT";
+                    let settlement = document.createElement("p");
+                    settlement.classList.add("w-[100%]", "text-center");
+                    settlement.innerHTML = "????";
+                    settlement.id = `settlement-${marketToTabID[marketKey]}`;
+                    
+                    d.appendChild(position_text);
+                    d.appendChild(position);
+                    d.appendChild(buys_text);
+                    d.appendChild(buys);
+                    d.appendChild(sells_text);
+                    d.appendChild(sells);
+                    d.appendChild(cash_text);
+                    d.appendChild(cash);
+                    d.appendChild(settlement_text);
+                    d.appendChild(settlement);
+                });
+            }
             
             function initTransactionTable(){
                 document.getElementById("exchangeName").textContent = exchange.exchangeName;
@@ -308,10 +363,30 @@
                             tbody.deleteRow(i);
                         }
                     }
-                    
+
+                    let buy_count = 0;
+                    let sell_count = 0;
+                    let cash_count = 0;
+                    let name = document.getElementById("playerName").textContent;
+
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
+
+                        if(transaction.buyerUser == name){
+                            buy_count += 1;
+                            cash_count -= transaction.price;
+                        }
+                        if(transaction.sellerUser == name){
+                            sell_count += 1;
+                            cash_count += transaction.price;
+                        }
+
+                        document.getElementById(`position-${marketToTabID[marketKey]}`).innerHTML = buy_count - sell_count;
+                        document.getElementById(`buys-${marketToTabID[marketKey]}`).innerHTML = buy_count;
+                        document.getElementById(`sells-${marketToTabID[marketKey]}`).innerHTML = sell_count;
+                        document.getElementById(`cash-${marketToTabID[marketKey]}`).innerHTML = cash_count;
+
                         let passive = transaction.sellerUser;
                         let aggressive = transaction.buyerUser;
                         if(transaction.passiveOrder == transaction.buyerOrderId){
@@ -491,7 +566,7 @@
                     rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4");
 
                     const topRightSide = document.createElement('div');
-                    topRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
+                    topRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto", "flex");
 
                     const bottomRightSide = document.createElement('div');
                     bottomRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
@@ -499,10 +574,14 @@
                     const orderInput = document.createElement('div');
                     orderInput.id = `orderInput-${index}`;
 
+                    const productView = document.createElement('div');
+                    productView.id = `productView-${index}`;
+
                     const transactionTable = document.createElement('table');
                     transactionTable.id = `transactions-${index}`;
 
                     topRightSide.appendChild(orderInput);
+                    topRightSide.appendChild(productView);
                     bottomRightSide.appendChild(transactionTable);
 
                     rightSide.appendChild(topRightSide);
@@ -530,6 +609,7 @@
                 // Show the first tab initially
                 tabNavigation.firstChild.click();
                 initOrderInput();
+                initProductView();
                 initTransactionTable();
             }
 
@@ -573,6 +653,7 @@
                         exchange.markets[transaction.market].transactions.push(transaction);
                     });
                     console.log("ExchangeState", exchangeResponse, exchange);
+                    initProductView();
                     initTransactionTable();
                 });
 
