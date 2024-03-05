@@ -56,11 +56,25 @@
                     d.classList.add("w-2/3", "min-h-[50%]", "flex", "gap-[2%]", "border", "border-black");
 
                     quickInput = document.createElement("input");
-                    quickInput.classList.add("h-[100px]", "w-[100%]", "border", "border-black", "text-center");
+                    quickInput.classList.add("h-[100px]", "w-[100%]", "border", "border-black", "text-center", "text-lg");
                     quickInput.placeholder = "Quick Input";
                     quickInput.addEventListener("keydown", function(event){
                         if(event.key === "Enter"){
-                            console.log(this.value); // TODO: Make it actually send orders based on what is here
+                            if(this.value.length >= 2){
+                                let action = this.value[0];
+                                let price = this.value.substring(1);
+                                if(!isNaN(parseInt(price))){
+                                    if(action == "b"){
+                                        connection
+                                            .invoke("PlaceOrder", marketKey, parseInt(price), 1, "ref")
+                                            .catch((err) => console.error(err.toString()));
+                                    }else if(action == "a"){
+                                        connection
+                                            .invoke("PlaceOrder", marketKey, parseInt(price), -1, "ref")
+                                            .catch((err) => console.error(err.toString()));
+                                    }
+                                }
+                            }   
                             this.value = "";
                         }
                     });
@@ -90,10 +104,12 @@
                     bidButton.addEventListener("click", function(event){
                         let price = document.getElementById(`bidPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`bidQuantityInput-${marketToTabID[marketKey]}`).value;
-                        console.log(`Send bid of ${price} @ ${quantity}`);
-                        connection
-                            .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
-                            .catch((err) => console.error(err.toString()));
+                        if (parseInt(quantity) > 0){
+                            console.log(`Send bid of ${price} @ ${quantity}`);
+                            connection
+                                .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
+                                .catch((err) => console.error(err.toString()));
+                        }
                     });
 
                     askDiv = document.createElement("div");
@@ -121,10 +137,54 @@
                     askButton.addEventListener("click", function(event){
                         let price = document.getElementById(`askPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`askQuantityInput-${marketToTabID[marketKey]}`).value;
+                        if(parseInt(quantity) > 0){
                         console.log(`Send ask of ${price} @ ${quantity}`);
-                        connection
+                            connection
                             .invoke("PlaceOrder", marketKey, parseInt(price), -parseInt(quantity), "ref")
                             .catch((err) => console.error(err.toString()));
+                        }
+                    });
+
+                    cancelBids = document.createElement("button");
+                    cancelBids.classList.add("h-[20px]", "w-[49%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelBids.innerHTML = "Cancel Bids";
+                    cancelBids.addEventListener("click", function(event){
+                        let name = document.getElementById("playerName").textContent;
+                        let myBids = exchange.markets[marketKey].orders.filter((o) => o.user == name && o.quantity > 0)
+                        for(let myBid in myBids){
+                            connection
+                                .invoke("DeleteOrder", myBid.id)
+                                .catch((err) => console.error(err.toString()));
+                        }
+                        console.log("Cancel Bids");
+                    });
+
+                    cancelAsks = document.createElement("button");
+                    cancelAsks.classList.add("h-[20px]", "w-[49%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelAsks.innerHTML = "Cancel Asks";
+                    cancelAsks.addEventListener("click", function(event){
+                        let name = document.getElementById("playerName").textContent;
+                        let myAsks = exchange.markets[marketKey].orders.filter((o) => o.user == name && o.quantity < 0)
+                        for(let myAsk in myAsks){
+                            connection
+                                .invoke("DeleteOrder", myAsk.id)
+                                .catch((err) => console.error(err.toString()));
+                        }
+                        console.log("Cancel Asks");
+                    });
+
+                    cancelAll = document.createElement("button");
+                    cancelAll.classList.add("h-[20px]", "w-[100%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelAll.innerHTML = "Cancel All";
+                    cancelAll.addEventListener("click", function(event){
+                        let name = document.getElementById("playerName").textContent;
+                        let myOrders = exchange.markets[marketKey].orders.filter((o) => o.user == name)
+                        for(let myOrder in myOrders){
+                            connection
+                                .invoke("DeleteOrder", myOrder.id)
+                                .catch((err) => console.error(err.toString()));
+                        }
+                        console.log("Cancel All");
                     });
 
                     bidDiv.appendChild(bidPriceInput);
@@ -138,6 +198,9 @@
                     d.appendChild(quickInput);
                     d.appendChild(bidDiv);
                     d.appendChild(askDiv);
+                    d.appendChild(cancelBids);
+                    d.appendChild(cancelAsks);
+                    d.appendChild(cancelAll);
 
                 });
             }
