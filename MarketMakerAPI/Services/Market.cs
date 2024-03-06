@@ -26,6 +26,9 @@ public class Market
         var (user, market, requestedPrice, quantity) = orderRequest;
         var sideIsBid = quantity > 0;
 
+        if (_nAsks == 0) _bestAsk = null;
+        if (_nBids == 0) _bestBid = null;
+
         var side = sideIsBid ? Bid : Ask;
         var otherSide = !sideIsBid ? Bid : Ask;
         var sign = sideIsBid ? 1 : -1;
