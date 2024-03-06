@@ -7,7 +7,9 @@ public class Market
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Ask = new();
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Bid = new();
     private int? _bestAsk;
+    private int _nAsks = 0;
     private int? _bestBid;
+    private int _nBids = 0;
     
     // public readonly Dictionary<string, float> UserProfits = new();
 
@@ -88,6 +90,12 @@ public class Market
                         {
                             otherQueue.Dequeue();
                             _orders.Remove(otherId);
+                            if (sideIsBid) {
+                                _nAsks--;
+                            }
+                            else {
+                                _nBids--;
+                            }
                         }
 
                         var transaction = CreateTransaction(order, otherOrder, sideIsBid, quantityTraded);
@@ -105,23 +113,32 @@ public class Market
             break;
         }
         
+        if (order.Quantity != 0)
+        {
+            _orders.Add(order.Id, order);
+            if (sideIsBid)
+            {
+                _nAsks++;
+            }
+            else
+            {
+                _nBids++;
+            }
+            if (!side.ContainsKey(order.Price)) side.TryAdd(order.Price, new PriorityQueue<Guid, DateTime>());
+            side[order.Price].Enqueue(order.Id, order.TimeStamp);
+        }
         
         // NOTE: the opposite side's best price will be outdated but 
         //       can never be less competitive so we don't need to update it
         if (sideIsBid)
         {
             _bestBid = Math.Max(_bestBid ?? int.MinValue, order.Price);
+            if (_nAsks == 0) _bestAsk = null;
         }
         else
         {
             _bestAsk = Math.Min(_bestAsk ?? int.MaxValue, order.Price);
-        }
-        
-        if (order.Quantity != 0)
-        {
-            _orders.Add(order.Id, order);
-            if (!side.ContainsKey(order.Price)) side.TryAdd(order.Price, new PriorityQueue<Guid, DateTime>());
-            side[order.Price].Enqueue(order.Id, order.TimeStamp);
+            if (_nBids == 0) _bestBid = null;
         }
 
         return (order, transactions);
@@ -130,7 +147,14 @@ public class Market
     public bool DeleteOrder(Order deleteOrder)
     {
         _orders.Remove(deleteOrder.Id);
-
+        if (deleteOrder.Quantity > 0)
+        {
+            _nBids--;
+        }
+        else
+        {
+            _nAsks--;
+        }
         return true;
     }
 
@@ -159,6 +183,14 @@ public class Market
     public void InsertOrder(Order order)
     {
         _orders.Add(order.Id, order);
+        if (order.Quantity > 0)
+        {
+            _nBids++;
+        }
+        else
+        {
+            _nAsks++;
+        }
     }
 
     private Transaction CreateTransaction(Order aggressive, Order passive, bool buy, int quantity)
