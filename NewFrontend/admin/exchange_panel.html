@@ -1,0 +1,330 @@
+<!-- 
+    Page to interact with the exchange
+    0. Add a new market - game must be in "lobby" state
+    1. Change the exchange state - "lobby", "open", "paused", "closed"
+    2. Update Exchange config - exchange name and market names - game must be in "lobby" state
+    3. Close the exchange - send in final prices and close the exchange - cannot be in "lobby" state
+    4. Serialise and load JSON config # low priority
+ -->
+
+
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Exchange Panel</title>
+     <script src="https://cdn.tailwindcss.com"></script>
+     <script type="text/javascript" src="../config.js"></script>
+     <script type="text/javascript" src="../lib/signalr/signalr.js"></script>
+ </head>
+ <body class="bg-gray-100">
+     <main class="container mx-auto p-4">
+         <div class="mb-4">
+             <label for="exchangeState" class="block mb-2 text-lg font-bold text-gray-700">Exchange State:</label>
+             <select id="exchangeState" class="block w-full p-3 mb-4 bg-white border border-gray-300 rounded-lg">
+                 <option value="Lobby" selected>Lobby</option>
+             </select>
+         </div>
+         
+         <section id="lobby-page">
+            <!-- Table to display markets -->
+            <div class="mb-4">
+                <!-- input for the market name -->
+                <label for="exchangeName" class="block mb-2 text-lg font-bold text-gray-700">Exchange Name:</label>
+                <input id="exchangeName" type="text" class="block w-full p-3 mb-4 bg-white border border-gray-300 rounded-lg">
+                <table id="lobby-table" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Market ID
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Market Name
+                            </th>
+
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- Rows will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        
+            <!-- Button to add a new market -->
+            <button id="addMarketBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Add a new market
+            </button>
+            
+            <!-- Submit button to update market (assumed to be part of a form or handled by JavaScript) -->
+            <button id="updateMarketBtn" class="mt-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Update Market
+            </button>
+        </section>
+        
+
+        <section id="market-page">
+            <!-- Exchange name which is not an input--> 
+            <h1 class="text-2xl font-bold text-gray-700 mb-4">Exchange Name: <span id="exchangeNameSpan"></span></h1>
+            <p class="text-gray-700 mb-4">Note: Close price is whole numbers only</p>
+            <table id="market-table" class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Market ID
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Market Name
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Close Price
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Rows will be added here dynamically -->
+                </tbody>
+            </table>
+
+            <!-- Submit button to close the exchange -->
+            <button id="closeExchangeBtn" class="mt-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Close Exchange
+            </button>
+        </section>
+
+        <section id="closed-page">
+
+        </section>
+     </main>
+ 
+     <script type="text/javascript">
+        let exchange = {
+            markets: {},
+            participants: [],
+            state: "Lobby",
+            exchangeName: "",
+            exchangeCode: "",
+        };
+
+        function setSelectOptions(options) {
+            const exchangeStateSelect = document.getElementById('exchangeState');
+            const currentExchangeState = exchangeStateSelect.value;
+            exchangeStateSelect.innerHTML = '';
+
+            options.forEach(optionValue => {
+                const option = document.createElement('option');
+                option.value = optionValue;
+                option.textContent = optionValue.charAt(0).toUpperCase() + optionValue.slice(1); // Capitalize the first letter
+                exchangeStateSelect.appendChild(option);
+            });
+        }
+
+        function updateStateOptions(currentState) {
+            const states = {
+                'Lobby': ['Lobby','Open'],
+                'Open': ['Open', 'Paused'],
+                'Paused': ['Paused', 'Open'],
+                'Closed': ['Closed', 'Lobby']
+            };
+
+            if (states[currentState]) {
+                setSelectOptions(states[currentState]);
+            } else {
+                console.error('Invalid state:', currentState);
+            }
+        }
+
+        function updateUI(exchange) {
+            
+            const lobbyPage = document.getElementById('lobby-page');
+            updateStateOptions(exchange.state);
+            // fills the table with the markets
+            const lobbyTable = document.getElementById('lobby-table');
+            const lobbyTableBody = lobbyTable.querySelector('tbody');
+            lobbyTableBody.innerHTML = '';
+
+            for (const market of exchange.markets) {
+                const row = document.createElement('tr');
+                const id = market[0];
+                const name = market[1];
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="text" class="text-sm text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:border-blue-500" value="${name}">
+                    </td>
+                `;
+                lobbyTableBody.appendChild(row);
+            }
+
+            // update name
+            const exchangeNameInput = document.getElementById('exchangeName');
+            exchangeNameInput.value = exchange.exchangeName;
+
+            // exchangeNameSpan
+            const exchangeNameSpan = document.getElementById('exchangeNameSpan');
+            exchangeNameSpan.textContent = exchange.exchangeName;
+
+            const marketPage = document.getElementById('market-page');
+            const marketTable = document.getElementById('market-table');
+            const marketTableBody = marketTable.querySelector('tbody');
+
+            // Update market-table - the last row is an input with a decimal number
+            for (const market of exchange.markets) {
+                const row = document.createElement('tr');
+                const id = market[0];
+                const name = market[1];
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="number" class="text-sm text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:border-blue-500">
+                    </td>
+                `;
+                marketTableBody.appendChild(row);
+            }
+
+            switch (exchange.state) {
+                case 'Lobby':
+                    lobbyPage.style.display = 'block';
+                    marketPage.style.display = 'none';
+                    closedPage.style.display = 'none';
+                    break;
+                case 'Open':
+                    lobbyPage.style.display = 'none';
+                    marketPage.style.display = 'block';
+                    closedPage.style.display = 'none';
+                    break;
+                case 'Paused':
+                    lobbyPage.style.display = 'none';
+                    marketPage.style.display = 'block';
+                    closedPage.style.display = 'none';
+                    break;
+                case 'Closed':
+                    lobbyPage.style.display = 'none';
+                    marketPage.style.display = 'none';
+                    closedPage.style.display = 'block';
+                    break;
+                default:
+                    console.error('Invalid state:', exchange.state);
+            }
+        }
+
+        function bindConnection(jwt) {
+                // Thank you Isaac
+                // Called when creating a exchange or joining an exchange
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl(serverURL + "exchange", {
+                        skipNegotiation: true,
+                        transport: signalR.HttpTransportType.WebSockets,
+                        accessTokenFactory: () => jwt,
+                    })
+                    // .configureLogging(signalR.LogLevel.Debug)
+                    .build();
+
+                async function start() {
+                    try {
+                        await connection.start();
+                        console.log("SignalR Connected.");
+                    } catch (err) {
+                        console.log(err);
+                        // setTimeout(start, 50000000);
+                    }
+                }
+
+                connection.onclose(async () => {
+                    await start();
+                });
+
+                connection.on("StateUpdated", (newState) => {
+                    exchange.state = newState;
+                    console.log("StateUpdated", exchange);
+                    updateUI(exchange);
+                });
+
+                connection.on("LobbyState", (message) => {
+                    // for each market, add an empty list to the dictionary
+                    exchange.markets = message.markets
+                    exchange.participants = message.participants;
+                    exchange.exchangeName = message.exchangeName;
+                    exchange.exchangeCode = message.exchangeCode;
+                    exchange.state = message.state;
+                    updateUI(exchange);
+
+                    console.log("LobbyState", exchange);
+                });
+
+                return [connection, start];
+            }
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const exchangeStateSelect = document.getElementById('exchangeState');
+            const currentExchangeState = exchangeStateSelect.value;
+
+            const addMarketBtn = document.getElementById('addMarketBtn');
+            const updateMarketBtn = document.getElementById('updateMarketBtn');
+            const closeExchangeBtn = document.getElementById('closeExchangeBtn');
+
+            // Initialize the select options based on the current state
+            updateStateOptions(currentExchangeState);
+            exchangeStateSelect.addEventListener('change', (e) => {
+                const newState = e.target.value;
+                connection.invoke("UpdateExchangeState", newState);
+            });
+
+            addMarketBtn.addEventListener('click', () => {
+                connection.invoke("MakeNewMarket");
+            });
+
+            closeExchangeBtn.addEventListener('click', () => {
+                const closingPrice = {};
+                const marketTable = document.getElementById('market-table');
+                const marketTableBody = marketTable.querySelector('tbody');
+                for (const row of marketTableBody.children) {
+                    const id = row.children[0].children[0].textContent;
+                    const closePrice = row.children[2].children[0].value;
+                    closingPrice[id] = parseFloat(closePrice);
+                }
+                console.log(closingPrice);
+                connection.invoke("CloseExchange", closingPrice);
+            });
+
+            updateMarketBtn.addEventListener('click', () => {
+                const exchangeName = document.getElementById('exchangeName').value;
+                // gets the market names from the table
+                const marketNames = {};
+                const lobbyTable = document.getElementById('lobby-table');
+                const lobbyTableBody = lobbyTable.querySelector('tbody');
+                for (const row of lobbyTableBody.children) {
+                    const id = row.children[0].children[0].textContent;
+                    const name = row.children[1].children[0].value;
+                    marketNames[id] = name;
+                }
+                config = {
+                    ExchangeCode: exchangeName,
+                    marketNames
+                };
+                connection.invoke("UpdateConfig", config);
+            });
+
+            // get jwt from session storage
+            const jwt = sessionStorage.getItem('jwt');
+            if (!jwt) {
+                console.error('No JWT found');
+                window.location.href = "make_exchange.html";
+            }
+            const [connection, start] = bindConnection(jwt);
+            start()
+        });
+     </script>
+ </body>
+ </html>
+ 
