@@ -1,0 +1,128 @@
+<!-- 
+    Email + Password, Login + Account Creation
+    Saves a `auth_token` to to sessionStorage
+    Redirects to make_exchange.html
+ -->
+
+ <!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>QFIN Orderbooks</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script type="text/javascript" src="../config.js"></script>
+    </head>
+    <body>
+        <main class="flex h-screen flex-col items-center justify-center bg-gray-100">
+            <div class="w-96 rounded-lg bg-white p-8 shadow-md">
+                <form class="flex flex-col space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Your Email Here" class="w-full rounded-lg border-2 border-gray-200 p-3 focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Your Password Here" class="w-full rounded-lg border-2 border-gray-200 p-3 focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div class="flex flex-row justify-between w-full space-x-2">
+                        <button type="submit" id="loginButton" class="flex-grow rounded-lg bg-blue-500 py-2 text-white transition duration-200 hover:bg-blue-700">
+                            Login
+                        </button>
+                        <button type="submit" id="signupButton" class="flex-grow rounded-lg bg-blue-500 py-2 text-white transition duration-200 hover:bg-blue-700">
+                            Sign up
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+        <script>
+            const form = document.querySelector('form');
+            const loginButton = document.querySelector('#loginButton');
+            const signupButton = document.querySelector('#signupButton');
+
+            loginButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                console.log("login button clicked")
+                const email = document.querySelector('#email').value;
+                const password = document.querySelector('#password').value;
+
+                const rawResponse = await fetch(serverURL + "login", {
+                method: 'POST',
+                headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({Email: email, Password: password})
+                });
+                if (!rawResponse.ok) {
+                    alert("Invalid email or password")
+                    console.log(rawResponse)
+                    return;
+                }
+                token = await rawResponse.text()
+                token = token.replace("\"", "").replace("\"", "")
+                sessionStorage.setItem('auth_token', token);
+                window.location.href = "make_exchange.html";
+            });
+
+            signupButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                console.log("signup button clicked");
+
+                const email = document.querySelector('#email').value;
+                const password = document.querySelector('#password').value;
+
+                // Perform the POST request to the createAccount endpoint
+                try {
+                    const signupResponse = await fetch(serverURL + "createAccount", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({Email: email, Password: password})
+                    });
+
+                    if (!signupResponse.ok) {
+                        // If the server responded with an error, alert the user
+                        alert("Failed to create account. Please try again.");
+                        console.error("Signup error", await signupResponse.text());
+                        return;
+                    }
+
+                    // If account creation was successful, automatically log the user in
+                    const loginResponse = await fetch(serverURL + "login", {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({Email: email, Password: password})
+                    });
+
+                    if (!loginResponse.ok) {
+                        alert("Login failed after signup. Please try logging in manually.");
+                        console.log(loginResponse);
+                        return;
+                    }
+
+                    const token = await loginResponse.text();
+                    sessionStorage.setItem('auth_token', token.replace(/"/g, ""));
+                    window.location.href = "make_exchange.html";
+                } catch (error) {
+                    // Handle any errors that occurred during the fetch
+                    console.error("Fetch error", error);
+                    alert("An error occurred during the signup or login process.");
+                }
+            });
+
+        </script>
+    </body>
+</html>
+
+<!-- <button>
+    Login
+</button>
+<button>
+    Sign up
+</button> -->

@@ -1,0 +1,60 @@
+<!-- 
+    Allows to make an exchange
+    `auth_token` in sessionStorage is required to make an exchange
+    redirects to `login.html` if `auth_token` is not found
+    
+    once exchange is made, redirects to `exchange_panel.html`, with `jwt` in sessionStorage
+ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make Exchange</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="../config.js"></script>
+</head>
+<body class="bg-gray-100">
+    <main class="flex h-screen items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-md w-96">
+            <h1 class="text-xl font-bold mb-4">Make an Exchange</h1>
+            <button id="makeExchangeBtn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-700 transition duration-200">
+                Make Exchange
+            </button>
+        </div>
+    </main>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const authToken = sessionStorage.getItem('auth_token');
+            if (!authToken) {
+                window.location.href = "login.html";
+            }
+
+            const makeExchangeBtn = document.getElementById('makeExchangeBtn');
+            makeExchangeBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('https://market-maker.azurewebsites.net/createExchange', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to make an exchange. Please try again.');
+                    }
+
+                    const jwt = await response.text(); // assuming the response is just the JWT for simplicity
+                    sessionStorage.setItem('jwt', jwt);
+                    window.location.href = "exchange_panel.html";
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert(error.message);
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
