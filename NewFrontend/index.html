@@ -53,10 +53,10 @@
                 Object.keys(exchange.markets).forEach((marketKey) => {
                     let d = document.getElementById(`orderInput-${marketToTabID[marketKey]}`);
                     d.innerHTML='';
-                    d.classList.add("w-2/3", "min-h-[50%]", "flex", "gap-[2%]", "border", "border-black");
+                    d.classList.add("w-2/3", "min-h-[50%]", "gap-[2%]", "border", "border-black");
 
                     quickInput = document.createElement("input");
-                    quickInput.classList.add("h-[100px]", "w-[100%]", "border", "border-black", "text-center", "text-lg");
+                    quickInput.classList.add("h-[33%]", "w-[100%]", "border", "border-black", "text-center", "text-lg");
                     quickInput.placeholder = "Quick Input";
                     quickInput.addEventListener("keydown", function(event){
                         if(event.key === "Enter"){
@@ -79,8 +79,11 @@
                         }
                     });
 
+                    inputDiv = document.createElement("div");
+                    inputDiv.classList.add("h-[33%]", "flex");
+
                     bidDiv = document.createElement("div");
-                    bidDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
+                    bidDiv.classList.add("h-[100%]", "w-[50%]", "border", "border-black");
 
                     bidPriceInput = document.createElement("input");
                     bidPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
@@ -113,7 +116,7 @@
                     });
 
                     askDiv = document.createElement("div");
-                    askDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
+                    askDiv.classList.add("h-[100%]", "w-[50%]", "border", "border-black");
 
                     askPriceInput = document.createElement("input");
                     askPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
@@ -146,7 +149,7 @@
                     });
 
                     cancelBids = document.createElement("button");
-                    cancelBids.classList.add("h-[20px]", "w-[49%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelBids.classList.add("h-[17%]", "w-[50%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
                     cancelBids.innerHTML = "Cancel Bids";
                     cancelBids.addEventListener("click", function(event){
                         let name = document.getElementById("playerName").textContent;
@@ -160,7 +163,7 @@
                     });
 
                     cancelAsks = document.createElement("button");
-                    cancelAsks.classList.add("h-[20px]", "w-[49%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelAsks.classList.add("h-[17%]", "w-[50%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
                     cancelAsks.innerHTML = "Cancel Asks";
                     cancelAsks.addEventListener("click", function(event){
                         let name = document.getElementById("playerName").textContent;
@@ -174,7 +177,7 @@
                     });
 
                     cancelAll = document.createElement("button");
-                    cancelAll.classList.add("h-[20px]", "w-[100%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelAll.classList.add("h-[17%]", "w-[100%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
                     cancelAll.innerHTML = "Cancel All";
                     cancelAll.addEventListener("click", function(event){
                         let name = document.getElementById("playerName").textContent;
@@ -195,9 +198,10 @@
                     askDiv.appendChild(askQuantityInput);
                     askDiv.appendChild(askButtonDiv);
                     askButtonDiv.appendChild(askButton);
+                    inputDiv.appendChild(bidDiv);
+                    inputDiv.appendChild(askDiv)
                     d.appendChild(quickInput);
-                    d.appendChild(bidDiv);
-                    d.appendChild(askDiv);
+                    d.appendChild(inputDiv);
                     d.appendChild(cancelBids);
                     d.appendChild(cancelAsks);
                     d.appendChild(cancelAll);
@@ -211,13 +215,21 @@
                     let d = document.getElementById(`productView-${marketToTabID[marketKey]}`);
                     d.innerHTML='';
                     d.classList.add("w-1/3", "min-h-[50%]", "gap-[2%]", "border", "border-black");
+                    let positionDiv = document.createElement("div");
+                    positionDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
                     let position_text = document.createElement("p");
-                    position_text.classList.add("w-[100%]", "text-center");
+                    // position_text.classList.add("h-[10%]", "w-[100%]", "text-center", "border", "border-black", "flex", "items-center", "justify-center");
                     position_text.innerHTML = "POSITION";
                     let position = document.createElement("p");
-                    position.classList.add("w-[100%]", "text-center");
+                    // position.classList.add("h-[10%]", "w-[100%]", "text-center");
                     position.innerHTML = 0;
                     position.id = `position-${marketToTabID[marketKey]}`;
+
+                    let bnsDiv = document.createElement("div");
+                    bnsDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "items-center", "justify-center");
+
+                    let buysDiv = document.createElement("div");
+                    buysDiv.classList.add("h-[100%]", "w-[50%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
                     let buys_text = document.createElement("p");
                     buys_text.classList.add("w-[100%]", "text-center");
                     buys_text.innerHTML = "BUYS";
@@ -225,6 +237,9 @@
                     buys.classList.add("w-[100%]", "text-center");
                     buys.innerHTML = 0;
                     buys.id = `buys-${marketToTabID[marketKey]}`;
+
+                    let sellsDiv = document.createElement("div");
+                    sellsDiv.classList.add("h-[100%]", "w-[50%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
                     let sells_text = document.createElement("p");
                     sells_text.classList.add("w-[100%]", "text-center");
                     sells_text.innerHTML = "SELLS";
@@ -232,6 +247,9 @@
                     sells.classList.add("w-[100%]", "text-center");
                     sells.innerHTML = 0;
                     sells.id = `sells-${marketToTabID[marketKey]}`;
+
+                    let cashDiv = document.createElement("div");
+                    cashDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
                     let cash_text = document.createElement("p");
                     cash_text.classList.add("w-[100%]", "text-center");
                     cash_text.innerHTML = "CASH";
@@ -239,6 +257,9 @@
                     cash.classList.add("w-[100%]", "text-center");
                     cash.innerHTML = 0;
                     cash.id = `cash-${marketToTabID[marketKey]}`;
+
+                    let settlementDiv = document.createElement("div");
+                    settlementDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
                     let settlement_text = document.createElement("p");
                     settlement_text.classList.add("w-[100%]", "text-center");
                     settlement_text.innerHTML = "SETTLEMENT";
@@ -247,16 +268,22 @@
                     settlement.innerHTML = "????";
                     settlement.id = `settlement-${marketToTabID[marketKey]}`;
                     
-                    d.appendChild(position_text);
-                    d.appendChild(position);
-                    d.appendChild(buys_text);
-                    d.appendChild(buys);
-                    d.appendChild(sells_text);
-                    d.appendChild(sells);
-                    d.appendChild(cash_text);
-                    d.appendChild(cash);
-                    d.appendChild(settlement_text);
-                    d.appendChild(settlement);
+                    positionDiv.appendChild(position_text);
+                    positionDiv.appendChild(position);
+                    d.appendChild(positionDiv);
+                    buysDiv.appendChild(buys_text);
+                    buysDiv.appendChild(buys);
+                    sellsDiv.appendChild(sells_text);
+                    sellsDiv.appendChild(sells);
+                    bnsDiv.appendChild(buysDiv);
+                    bnsDiv.appendChild(sellsDiv);
+                    d.appendChild(bnsDiv);
+                    cashDiv.appendChild(cash_text);
+                    cashDiv.appendChild(cash);
+                    d.appendChild(cashDiv);
+                    settlementDiv.appendChild(settlement_text);
+                    settlementDiv.appendChild(settlement);
+                    d.appendChild(settlementDiv);
                 });
             }
             
