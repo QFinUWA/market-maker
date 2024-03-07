@@ -56,10 +56,37 @@
                 Object.keys(exchange.markets).forEach((marketKey) => {
                     let d = document.getElementById(`orderInput-${marketToTabID[marketKey]}`);
                     d.innerHTML='';
-                    d.classList.add("w-2/3", "min-h-[50%]", "flex", "gap-[2%]");
+                    d.classList.add("w-2/3", "min-h-[50%]", "gap-[2%]", "border", "border-black");
+
+                    quickInput = document.createElement("input");
+                    quickInput.classList.add("h-[33%]", "w-[100%]", "border", "border-black", "text-center", "text-lg");
+                    quickInput.placeholder = "Quick Input";
+                    quickInput.addEventListener("keydown", function(event){
+                        if(event.key === "Enter"){
+                            if(this.value.length >= 2){
+                                let action = this.value[0];
+                                let price = this.value.substring(1);
+                                if(!isNaN(parseInt(price))){
+                                    if(action == "b"){
+                                        connection
+                                            .invoke("PlaceOrder", marketKey, parseInt(price), 1, "ref")
+                                            .catch((err) => console.error(err.toString()));
+                                    }else if(action == "a"){
+                                        connection
+                                            .invoke("PlaceOrder", marketKey, parseInt(price), -1, "ref")
+                                            .catch((err) => console.error(err.toString()));
+                                    }
+                                }
+                            }   
+                            this.value = "";
+                        }
+                    });
+
+                    inputDiv = document.createElement("div");
+                    inputDiv.classList.add("h-[33%]", "flex");
 
                     bidDiv = document.createElement("div");
-                    bidDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
+                    bidDiv.classList.add("h-[100%]", "w-[50%]", "border", "border-black");
 
                     bidPriceInput = document.createElement("input");
                     bidPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
@@ -83,14 +110,16 @@
                     bidButton.addEventListener("click", function(event){
                         let price = document.getElementById(`bidPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`bidQuantityInput-${marketToTabID[marketKey]}`).value;
-                        console.log(`Send bid of ${price} @ ${quantity}`);
-                        connection
-                            .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
-                            .catch((err) => console.error(err.toString()));
+                        if (parseInt(quantity) > 0){
+                            console.log(`Send bid of ${price} @ ${quantity}`);
+                            connection
+                                .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
+                                .catch((err) => console.error(err.toString()));
+                        }
                     });
 
                     askDiv = document.createElement("div");
-                    askDiv.classList.add("h-[100px]", "w-[49%]", "border", "border-black");
+                    askDiv.classList.add("h-[100%]", "w-[50%]", "border", "border-black");
 
                     askPriceInput = document.createElement("input");
                     askPriceInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
@@ -114,10 +143,54 @@
                     askButton.addEventListener("click", function(event){
                         let price = document.getElementById(`askPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`askQuantityInput-${marketToTabID[marketKey]}`).value;
+                        if(parseInt(quantity) > 0){
                         console.log(`Send ask of ${price} @ ${quantity}`);
-                        connection
+                            connection
                             .invoke("PlaceOrder", marketKey, parseInt(price), -parseInt(quantity), "ref")
                             .catch((err) => console.error(err.toString()));
+                        }
+                    });
+
+                    cancelBids = document.createElement("button");
+                    cancelBids.classList.add("h-[17%]", "w-[50%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelBids.innerHTML = "Cancel Bids";
+                    cancelBids.addEventListener("click", function(event){
+                        let name = document.getElementById("playerName").textContent;
+                        let myBids = exchange.markets[marketKey].orders.filter((o) => o.user == name && o.quantity > 0)
+                        for(let myBid in myBids){
+                            connection
+                                .invoke("DeleteOrder", myBid.id)
+                                .catch((err) => console.error(err.toString()));
+                        }
+                        console.log("Cancel Bids");
+                    });
+
+                    cancelAsks = document.createElement("button");
+                    cancelAsks.classList.add("h-[17%]", "w-[50%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelAsks.innerHTML = "Cancel Asks";
+                    cancelAsks.addEventListener("click", function(event){
+                        let name = document.getElementById("playerName").textContent;
+                        let myAsks = exchange.markets[marketKey].orders.filter((o) => o.user == name && o.quantity < 0)
+                        for(let myAsk in myAsks){
+                            connection
+                                .invoke("DeleteOrder", myAsk.id)
+                                .catch((err) => console.error(err.toString()));
+                        }
+                        console.log("Cancel Asks");
+                    });
+
+                    cancelAll = document.createElement("button");
+                    cancelAll.classList.add("h-[17%]", "w-[100%]", "border", "border-black", "text-sm", "bg-gray-300", "hover:bg-gray-600");
+                    cancelAll.innerHTML = "Cancel All";
+                    cancelAll.addEventListener("click", function(event){
+                        let name = document.getElementById("playerName").textContent;
+                        let myOrders = exchange.markets[marketKey].orders.filter((o) => o.user == name)
+                        for(let myOrder in myOrders){
+                            connection
+                                .invoke("DeleteOrder", myOrder.id)
+                                .catch((err) => console.error(err.toString()));
+                        }
+                        console.log("Cancel All");
                     });
 
                     bidDiv.appendChild(bidPriceInput);
@@ -128,9 +201,92 @@
                     askDiv.appendChild(askQuantityInput);
                     askDiv.appendChild(askButtonDiv);
                     askButtonDiv.appendChild(askButton);
-                    d.appendChild(bidDiv);
-                    d.appendChild(askDiv);
+                    inputDiv.appendChild(bidDiv);
+                    inputDiv.appendChild(askDiv)
+                    d.appendChild(quickInput);
+                    d.appendChild(inputDiv);
+                    d.appendChild(cancelBids);
+                    d.appendChild(cancelAsks);
+                    d.appendChild(cancelAll);
 
+                });
+            }
+
+            function initProductView(){
+                Object.keys(exchange.markets).forEach((marketKey) => {
+
+                    let d = document.getElementById(`productView-${marketToTabID[marketKey]}`);
+                    d.innerHTML='';
+                    d.classList.add("w-1/3", "min-h-[50%]", "gap-[2%]", "border", "border-black");
+                    let positionDiv = document.createElement("div");
+                    positionDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
+                    let position_text = document.createElement("p");
+                    // position_text.classList.add("h-[10%]", "w-[100%]", "text-center", "border", "border-black", "flex", "items-center", "justify-center");
+                    position_text.innerHTML = "POSITION";
+                    let position = document.createElement("p");
+                    // position.classList.add("h-[10%]", "w-[100%]", "text-center");
+                    position.innerHTML = 0;
+                    position.id = `position-${marketToTabID[marketKey]}`;
+
+                    let bnsDiv = document.createElement("div");
+                    bnsDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "items-center", "justify-center");
+
+                    let buysDiv = document.createElement("div");
+                    buysDiv.classList.add("h-[100%]", "w-[50%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
+                    let buys_text = document.createElement("p");
+                    buys_text.classList.add("w-[100%]", "text-center");
+                    buys_text.innerHTML = "BUYS";
+                    let buys = document.createElement("p");
+                    buys.classList.add("w-[100%]", "text-center");
+                    buys.innerHTML = 0;
+                    buys.id = `buys-${marketToTabID[marketKey]}`;
+
+                    let sellsDiv = document.createElement("div");
+                    sellsDiv.classList.add("h-[100%]", "w-[50%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
+                    let sells_text = document.createElement("p");
+                    sells_text.classList.add("w-[100%]", "text-center");
+                    sells_text.innerHTML = "SELLS";
+                    let sells = document.createElement("p");
+                    sells.classList.add("w-[100%]", "text-center");
+                    sells.innerHTML = 0;
+                    sells.id = `sells-${marketToTabID[marketKey]}`;
+
+                    let cashDiv = document.createElement("div");
+                    cashDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
+                    let cash_text = document.createElement("p");
+                    cash_text.classList.add("w-[100%]", "text-center");
+                    cash_text.innerHTML = "CASH";
+                    let cash = document.createElement("p");
+                    cash.classList.add("w-[100%]", "text-center");
+                    cash.innerHTML = 0;
+                    cash.id = `cash-${marketToTabID[marketKey]}`;
+
+                    let settlementDiv = document.createElement("div");
+                    settlementDiv.classList.add("h-[25%]", "w-[100%]", "text-center", "border", "border-black", "flex", "flex-col", "items-center", "justify-center");
+                    let settlement_text = document.createElement("p");
+                    settlement_text.classList.add("w-[100%]", "text-center");
+                    settlement_text.innerHTML = "SETTLEMENT";
+                    let settlement = document.createElement("p");
+                    settlement.classList.add("w-[100%]", "text-center");
+                    settlement.innerHTML = "????";
+                    settlement.id = `settlement-${marketToTabID[marketKey]}`;
+                    
+                    positionDiv.appendChild(position_text);
+                    positionDiv.appendChild(position);
+                    d.appendChild(positionDiv);
+                    buysDiv.appendChild(buys_text);
+                    buysDiv.appendChild(buys);
+                    sellsDiv.appendChild(sells_text);
+                    sellsDiv.appendChild(sells);
+                    bnsDiv.appendChild(buysDiv);
+                    bnsDiv.appendChild(sellsDiv);
+                    d.appendChild(bnsDiv);
+                    cashDiv.appendChild(cash_text);
+                    cashDiv.appendChild(cash);
+                    d.appendChild(cashDiv);
+                    settlementDiv.appendChild(settlement_text);
+                    settlementDiv.appendChild(settlement);
+                    d.appendChild(settlementDiv);
                 });
             }
             
@@ -237,10 +393,30 @@
                             tbody.deleteRow(i);
                         }
                     }
-                    
+
+                    let buy_count = 0;
+                    let sell_count = 0;
+                    let cash_count = 0;
+                    let name = document.getElementById("playerName").textContent;
+
                     Object.keys(exchange.markets[marketKey].transactions).forEach((transactionKey) => {
                         // console.log(transactionKey);
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
+
+                        if(transaction.buyerUser == name){
+                            buy_count += 1;
+                            cash_count -= transaction.price;
+                        }
+                        if(transaction.sellerUser == name){
+                            sell_count += 1;
+                            cash_count += transaction.price;
+                        }
+
+                        document.getElementById(`position-${marketToTabID[marketKey]}`).innerHTML = buy_count - sell_count;
+                        document.getElementById(`buys-${marketToTabID[marketKey]}`).innerHTML = buy_count;
+                        document.getElementById(`sells-${marketToTabID[marketKey]}`).innerHTML = sell_count;
+                        document.getElementById(`cash-${marketToTabID[marketKey]}`).innerHTML = cash_count;
+
                         let passive = transaction.sellerUser;
                         let aggressive = transaction.buyerUser;
                         if(transaction.passiveOrder == transaction.buyerOrderId){
@@ -349,7 +525,26 @@
                             cell.textContent = order.quantity < 0 ? - order.quantity  : "";
                             cell = row.insertCell();
                             cell.textContent = order.quantity < 0 ? order.user : "";
-                            row.classList.add("border-b-2", "border-gray-300", "[&>*]:px-2");
+                            row.classList.add("border-b", "border-gray-400", "[&>*]:px-2", "hover:bg-gray-300");
+                            // on double click instantly trade with this order
+                            row.addEventListener("dblclick", function(event){
+                                // check if I am the person who made order
+                                if (document.getElementById("playerName").textContent != order.user){
+                                    let price = order.price;
+                                    let quantity = -order.quantity;
+                                    let market = marketKey;
+                                    console.log(`Send trade of ${price} @ ${quantity}`);
+                                    connection
+                                        .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
+                                        .catch((err) => console.error(err.toString()));
+                                        connection
+                                } else {
+                                    // cancel order
+                                    connection
+                                        .invoke("DeleteOrder", order.id)
+                                        .catch((err) => console.error(err.toString()));
+                                }
+                            });
                         }
                     }
 
@@ -414,7 +609,7 @@
                     rightSide.classList.add('w-1/2', 'h-full', "pr-2", "pl-4");
 
                     const topRightSide = document.createElement('div');
-                    topRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
+                    topRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto", "flex");
 
                     const bottomRightSide = document.createElement('div');
                     bottomRightSide.classList.add('w-full', 'h-1/2', "overflow-y-auto");
@@ -422,10 +617,14 @@
                     const orderInput = document.createElement('div');
                     orderInput.id = `orderInput-${index}`;
 
+                    const productView = document.createElement('div');
+                    productView.id = `productView-${index}`;
+
                     const transactionTable = document.createElement('table');
                     transactionTable.id = `transactions-${index}`;
 
                     topRightSide.appendChild(orderInput);
+                    topRightSide.appendChild(productView);
                     bottomRightSide.appendChild(transactionTable);
 
                     rightSide.appendChild(topRightSide);
@@ -453,6 +652,7 @@
                 // Show the first tab initially
                 tabNavigation.firstChild.click();
                 initOrderInput();
+                initProductView();
                 initTransactionTable();
             }
 
@@ -495,6 +695,7 @@
                         exchange.markets[transaction.market].transactions.push(transaction);
                     });
                     console.log("ExchangeState", exchangeResponse, exchange);
+                    initProductView();
                     initTransactionTable();
                 });
 
@@ -542,9 +743,13 @@
                 });
 
                 connection.on("DeletedOrder", (orderID) => {
-                    console.log("DeletedOrder", orderID);
                     //delete orders[orderID];
-                    //refreshExchange();
+                    exchange.markets = exchange.markets.map((market) => {
+                        market.orders = market.orders.filter((o) => o.id != orderID);
+                        return market;
+                    });
+                    console.log("DeletedOrder", orderID, exchange);
+                    updateContent();
                 });
 
                 connection.on("NewParticipant", (user) => {
