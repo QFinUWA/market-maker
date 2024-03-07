@@ -27,6 +27,8 @@
              </select>
          </div>
          
+         <!-- Exchange Code -->
+         <h1 class="text-2xl font-bold text-gray-700 mb-4">Exchange Code: <span id="exchangeCodeSpan"></span></h1>
          <section id="lobby-page">
             <!-- Table to display markets -->
             <div class="mb-4">
@@ -135,6 +137,8 @@
         }
 
         function updateUI(exchange) {
+            const exchangeCodeSpan = document.getElementById('exchangeCodeSpan');
+            exchangeCodeSpan.textContent = exchange.exchangeCode;
             
             const lobbyPage = document.getElementById('lobby-page');
             updateStateOptions(exchange.state);
