@@ -159,7 +159,7 @@
                         let myBids = exchange.markets[marketKey].orders.filter((o) => o.user == name && o.quantity > 0)
                         for(let myBid in myBids){
                             connection
-                                .invoke("DeleteOrder", myBid.id)
+                                .invoke("DeleteOrder", myBids[myBid].id)
                                 .catch((err) => console.error(err.toString()));
                         }
                         console.log("Cancel Bids");
@@ -173,7 +173,7 @@
                         let myAsks = exchange.markets[marketKey].orders.filter((o) => o.user == name && o.quantity < 0)
                         for(let myAsk in myAsks){
                             connection
-                                .invoke("DeleteOrder", myAsk.id)
+                                .invoke("DeleteOrder", myAsks[myAsk].id)
                                 .catch((err) => console.error(err.toString()));
                         }
                         console.log("Cancel Asks");
