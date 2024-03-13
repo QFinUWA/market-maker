@@ -7,7 +7,9 @@ public class Market
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Ask = new();
     public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Bid = new();
     private int? _bestAsk;
+    private int _nAsks = 0;
     private int? _bestBid;
+    private int _nBids = 0;
     
     // public readonly Dictionary<string, float> UserProfits = new();
 
@@ -23,6 +25,24 @@ public class Market
     {
         var (user, market, requestedPrice, quantity) = orderRequest;
         var sideIsBid = quantity > 0;
+
+        // Gets the best ask by iterating through orders
+        _bestAsk = _orders.Values
+            .Where(o => o.Quantity < 0)
+            .Select(o => o.Price)
+            .DefaultIfEmpty()
+            .Min();
+            
+        _bestAsk = _bestAsk == 0 ? null : _bestAsk;
+
+        // Gets the best bid by iterating through orders
+        _bestBid = _orders.Values
+            .Where(o => o.Quantity > 0)
+            .Select(o => o.Price)
+            .DefaultIfEmpty()
+            .Max();
+    
+        _bestBid = _bestBid == 0 ? null : _bestBid;
 
         var side = sideIsBid ? Bid : Ask;
         var otherSide = !sideIsBid ? Bid : Ask;
@@ -88,6 +108,12 @@ public class Market
                         {
                             otherQueue.Dequeue();
                             _orders.Remove(otherId);
+                            if (sideIsBid) {
+                                _nAsks--;
+                            }
+                            else {
+                                _nBids--;
+                            }
                         }
 
                         var transaction = CreateTransaction(order, otherOrder, sideIsBid, quantityTraded);
@@ -105,24 +131,23 @@ public class Market
             break;
         }
         
-        
-        // NOTE: the opposite side's best price will be outdated but 
-        //       can never be less competitive so we don't need to update it
-        if (sideIsBid)
-        {
-            _bestBid = Math.Max(_bestBid ?? int.MinValue, order.Price);
-        }
-        else
-        {
-            _bestAsk = Math.Min(_bestAsk ?? int.MaxValue, order.Price);
-        }
-        
         if (order.Quantity != 0)
         {
             _orders.Add(order.Id, order);
+            if (sideIsBid)
+            {
+                _nAsks++;
+            }
+            else
+            {
+                _nBids++;
+            }
             if (!side.ContainsKey(order.Price)) side.TryAdd(order.Price, new PriorityQueue<Guid, DateTime>());
             side[order.Price].Enqueue(order.Id, order.TimeStamp);
         }
+        
+        // NOTE: the opposite side's best price will be outdated but 
+        //       can never be less competitive so we don't need to update it
 
         return (order, transactions);
     }
@@ -130,7 +155,14 @@ public class Market
     public bool DeleteOrder(Order deleteOrder)
     {
         _orders.Remove(deleteOrder.Id);
-
+        if (deleteOrder.Quantity > 0)
+        {
+            _nBids--;
+        }
+        else
+        {
+            _nAsks--;
+        }
         return true;
     }
 
@@ -159,6 +191,14 @@ public class Market
     public void InsertOrder(Order order)
     {
         _orders.Add(order.Id, order);
+        if (order.Quantity > 0)
+        {
+            _nBids++;
+        }
+        else
+        {
+            _nAsks++;
+        }
     }
 
     private Transaction CreateTransaction(Order aggressive, Order passive, bool buy, int quantity)

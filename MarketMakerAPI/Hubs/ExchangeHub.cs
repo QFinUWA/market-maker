@@ -293,7 +293,7 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         
         Order? deleteOrder = exchangeService.GetOrder(orderId);
         if (deleteOrder is null) throw new Exception($"orderId {orderId} does not exist");
-        if (deleteOrder.User != userId) throw new Exception("Unauthorized");
+        if (deleteOrder.User != username) throw new Exception("Unauthorized");
         
         await exchangeService.DeleteOrder(deleteOrder);
 

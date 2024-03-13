@@ -28,6 +28,9 @@
                 </div>
             </div>
 
+            <div id="overlay" class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-50 flex justify-center items-center">
+                <p id="overlayMessage" class="text-6xl font-semibold text-white">Lobby</p>
+            </div>
 
         <script>
 
@@ -536,18 +539,34 @@
                                     connection
                                         .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
                                         .catch((err) => console.error(err.toString()));
-                                        connection
                                 } else {
+                                    console.log("DeleteOrder", order);
                                     // cancel order
                                     connection
                                         .invoke("DeleteOrder", order.id)
                                         .catch((err) => console.error(err.toString()));
+                                    // delete it from the list
+                                    exchange.markets[marketKey].orders = exchange.markets[marketKey].orders.filter((o) => o.id != order.id);
+                                    updateContent();
                                 }
                             });
                         }
                     }
 
                 });
+            }
+
+            function updateModal() {
+                const overlayMessage = document.getElementById("overlayMessage");
+                if (exchange.state == "Lobby") {
+                    document.getElementById("overlay").classList.remove("hidden");
+                    overlayMessage.textContent = "Waiting for other players to join...";
+                } else if (exchange.state == "Paused") {
+                    document.getElementById("overlay").classList.remove("hidden");
+                    overlayMessage.textContent = "Exchange Paused";
+                } else {
+                    document.getElementById("overlay").classList.add("hidden");
+                }
             }
             
 
@@ -643,7 +662,6 @@
             }
 
 
-
             function bindConnection(jwt) {
                 // Thank you Isaac
                 // Called when creating a exchange or joining an exchange
@@ -689,6 +707,7 @@
                 connection.on("StateUpdated", (newState) => {
                     exchange.state = newState;
                     console.log("StateUpdated", exchange);
+                    updateModal()
                 });
 
                 connection.on("LobbyState", (message) => {
@@ -705,6 +724,7 @@
                     exchange.state = message.state;
 
                     generateTabs(Object.keys(exchange.markets));
+
                     console.log("LobbyState", message, exchange);
                 });
 
