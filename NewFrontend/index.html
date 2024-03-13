@@ -537,12 +537,15 @@
                                     connection
                                         .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
                                         .catch((err) => console.error(err.toString()));
-                                        connection
                                 } else {
+                                    console.log("DeleteOrder", order);
                                     // cancel order
                                     connection
                                         .invoke("DeleteOrder", order.id)
                                         .catch((err) => console.error(err.toString()));
+                                    // delete it from the list
+                                    exchange.markets[marketKey].orders = exchange.markets[marketKey].orders.filter((o) => o.id != order.id);
+                                    updateContent();
                                 }
                             });
                         }
