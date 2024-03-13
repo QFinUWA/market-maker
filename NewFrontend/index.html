@@ -187,7 +187,7 @@
                         let myOrders = exchange.markets[marketKey].orders.filter((o) => o.user == name)
                         for(let myOrder in myOrders){
                             connection
-                                .invoke("DeleteOrder", myOrder.id)
+                                .invoke("DeleteOrder", myOrders[myOrder].id)
                                 .catch((err) => console.error(err.toString()));
                         }
                         console.log("Cancel All");
