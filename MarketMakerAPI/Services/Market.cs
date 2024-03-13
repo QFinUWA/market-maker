@@ -135,12 +135,13 @@ public class Market
         //       can never be less competitive so we don't need to update it
         if (sideIsBid)
         {
-            _bestBid = Math.Max(_bestBid ?? int.MinValue, order.Price);
+            // calculate from global list
+            _bestBid = _orders.Values.Where(o => o.Quantity > 0).Max(o => o.Price);
             if (_nAsks == 0) _bestAsk = null;
         }
         else
         {
-            _bestAsk = Math.Min(_bestAsk ?? int.MaxValue, order.Price);
+            _bestAsk = _orders.Values.Where(o => o.Quantity < 0).Min(o => o.Price);
             if (_nBids == 0) _bestBid = null;
         }
 
