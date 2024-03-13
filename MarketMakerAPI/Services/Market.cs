@@ -32,6 +32,8 @@ public class Market
             .Select(o => o.Price)
             .DefaultIfEmpty()
             .Min();
+            
+        _bestAsk = _bestAsk == 0 ? null : _bestAsk;
 
         // Gets the best bid by iterating through orders
         _bestBid = _orders.Values
@@ -39,6 +41,8 @@ public class Market
             .Select(o => o.Price)
             .DefaultIfEmpty()
             .Max();
+    
+        _bestBid = _bestBid == 0 ? null : _bestBid;
 
         var side = sideIsBid ? Bid : Ask;
         var otherSide = !sideIsBid ? Bid : Ask;
