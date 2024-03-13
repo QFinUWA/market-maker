@@ -26,8 +26,19 @@ public class Market
         var (user, market, requestedPrice, quantity) = orderRequest;
         var sideIsBid = quantity > 0;
 
-        if (_nAsks == 0) _bestAsk = null;
-        if (_nBids == 0) _bestBid = null;
+        // Gets the best ask by iterating through orders
+        _bestAsk = _orders.Values
+            .Where(o => o.Quantity < 0)
+            .Select(o => o.Price)
+            .DefaultIfEmpty()
+            .Min();
+
+        // Gets the best bid by iterating through orders
+        _bestBid = _orders.Values
+            .Where(o => o.Quantity > 0)
+            .Select(o => o.Price)
+            .DefaultIfEmpty()
+            .Max();
 
         var side = sideIsBid ? Bid : Ask;
         var otherSide = !sideIsBid ? Bid : Ask;
@@ -133,17 +144,6 @@ public class Market
         
         // NOTE: the opposite side's best price will be outdated but 
         //       can never be less competitive so we don't need to update it
-        if (sideIsBid)
-        {
-            // calculate from global list
-            _bestBid = _orders.Values.Where(o => o.Quantity > 0).Max(o => o.Price);
-            if (_nAsks == 0) _bestAsk = null;
-        }
-        else
-        {
-            _bestAsk = _orders.Values.Where(o => o.Quantity < 0).Min(o => o.Price);
-            if (_nBids == 0) _bestBid = null;
-        }
 
         return (order, transactions);
     }
