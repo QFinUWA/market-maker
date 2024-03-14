@@ -298,6 +298,7 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         await exchangeService.DeleteOrder(deleteOrder);
 
         _logger.LogInformation($"Lobby {exchangeCode} - order deleted");
+        await Clients.Group(exchangeCode).ExchangeState(_responseConstructor.ExchangeState(exchangeCode));
         await Clients.Group(exchangeCode).DeletedOrder(orderId);
     }
 }
