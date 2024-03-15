@@ -163,6 +163,7 @@
                                 .invoke("DeleteOrder", myBids[myBid].id)
                                 .catch((err) => console.error(err.toString()));
                         }
+                        window.location.reload();
                         console.log("Cancel Bids");
                     });
 
@@ -177,6 +178,7 @@
                                 .invoke("DeleteOrder", myAsks[myAsk].id)
                                 .catch((err) => console.error(err.toString()));
                         }
+                        window.location.reload();
                         console.log("Cancel Asks");
                     });
 
@@ -191,6 +193,7 @@
                                 .invoke("DeleteOrder", myOrders[myOrder].id)
                                 .catch((err) => console.error(err.toString()));
                         }
+                        window.location.reload();
                         console.log("Cancel All");
                     });
 
@@ -544,9 +547,7 @@
                                     connection
                                         .invoke("DeleteOrder", order.id)
                                         .catch((err) => console.error(err.toString()));
-                                    // delete it from the list
-                                    exchange.markets[marketKey].orders = exchange.markets[marketKey].orders.filter((o) => o.id != order.id);
-                                    updateContent();
+                                    window.location.reload();
                                 }
                             });
                         }
