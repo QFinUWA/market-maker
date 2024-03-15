@@ -804,6 +804,20 @@
                 });
 
                 connection.on("ClosingPrices", (closingPrices) => {
+                    // for each market in closing prices, update the settlement for that
+                    Object.keys(closingPrices).forEach((market) => {
+                        let settlement = 0;
+                        // calculate players current profit from transactions and subtracting the price they paid for minus the actual closing price
+                        exchange.markets[market].transactions.forEach((transaction) => {
+                            if (transaction.buyerUser == document.getElementById("playerName").textContent){
+                                settlement -= (transaction.price - closingPrices[market]) * transaction.quantity;
+                            } else if (transaction.sellerUser == document.getElementById("playerName").textContent){
+                                settlement += (transaction.price - closingPrices[market]) * transaction.quantity;
+                            }
+                        });
+                        document.getElementById(`settlement-${marketToTabID[market]}`).textContent = settlement;
+                        
+                    });
                     console.log("ClosingPrices", closingPrices);
                 });
 
