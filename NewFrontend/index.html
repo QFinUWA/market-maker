@@ -33,7 +33,7 @@
             </div>
 
         <script>
-
+            let maxPrice = 10000;
             let exchange = {
                 markets: {}, // dictionary of market codes to dictionary of orders and transactions
                 participants: [],
@@ -68,12 +68,13 @@
                                 let price = this.value.substring(1);
                                 if(!isNaN(parseInt(price))){
                                     if(action == "b"){
+                                        // max of maxPrice and price
                                         connection
-                                            .invoke("PlaceOrder", marketKey, parseInt(price), 1, "ref")
+                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), 1, "ref")
                                             .catch((err) => console.error(err.toString()));
                                     }else if(action == "a"){
                                         connection
-                                            .invoke("PlaceOrder", marketKey, parseInt(price), -1, "ref")
+                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), -1, "ref")
                                             .catch((err) => console.error(err.toString()));
                                     }
                                 }
@@ -113,7 +114,7 @@
                         if (parseInt(quantity) > 0){
                             console.log(`Send bid of ${price} @ ${quantity}`);
                             connection
-                                .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
+                                .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), parseInt(quantity), "ref")
                                 .catch((err) => console.error(err.toString()));
                         }
                     });
@@ -146,7 +147,7 @@
                         if(parseInt(quantity) > 0){
                         console.log(`Send ask of ${price} @ ${quantity}`);
                             connection
-                            .invoke("PlaceOrder", marketKey, parseInt(price), -parseInt(quantity), "ref")
+                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), -parseInt(quantity), "ref")
                             .catch((err) => console.error(err.toString()));
                         }
                     });
@@ -535,7 +536,7 @@
                                     let market = marketKey;
                                     console.log(`Send trade of ${price} @ ${quantity}`);
                                     connection
-                                        .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
+                                        .invoke("PlaceOrder", market, Math.min(maxPrice, parseInt(price)), parseInt(quantity), "ref")
                                         .catch((err) => console.error(err.toString()));
                                 } else {
                                     console.log("DeleteOrder", order);
