@@ -691,6 +691,11 @@
                 });
 
                 connection.on("ExchangeState", (exchangeResponse) => {
+                    // for every market reset to empty
+                    Object.keys(exchange.markets).forEach((market) => {
+                        exchange.markets[market].orders = [];
+                        exchange.markets[market].transactions = [];
+                    });
                     exchangeResponse.orders.forEach((order) => {
                         exchange.markets[order.market].orders.push(order);
                     });
