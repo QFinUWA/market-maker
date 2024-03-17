@@ -6,7 +6,7 @@ public record Transaction(
     string SellerUser,
     Guid SellerOrderId,
     string Market,
-    int Price,
+    long Price,
     int Quantity,
     Guid PassiveOrder,
     DateTime TimeStamp 

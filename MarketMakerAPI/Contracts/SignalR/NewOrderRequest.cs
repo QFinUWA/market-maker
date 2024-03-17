@@ -2,7 +2,7 @@
 
 public record NewOrderRequest(
     string Market,
-    int Price,
+    long Price,
     int Quantity,
     string RequestReference 
 );

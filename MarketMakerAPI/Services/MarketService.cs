@@ -9,7 +9,7 @@ namespace MarketMaker.Services;
 
 public interface IRequest;
 
-public record NewOrderRequest(string User, string Market, int Price, int Quantity) : IRequest;
+public record NewOrderRequest(string User, string Market, long Price, int Quantity) : IRequest;
 
 public record DeleteOrderRequest(Order Order) : IRequest;
 
@@ -89,7 +89,7 @@ public abstract class ExchangeService
         return true;
     }
 
-    public async Task NewOrder(string username, string market, int price, int quantity)
+    public async Task NewOrder(string username, string market, long price, int quantity)
     {
         await _orderQueue.Writer.WriteAsync(new NewOrderRequest(username.ToLower(), market, price, quantity));
     }

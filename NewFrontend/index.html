@@ -594,54 +594,54 @@
                     let minPrice = Math.min(...exchange.markets[marketKey].orders.map((o) => o.price));
                     let maxPrice = Math.max(...exchange.markets[marketKey].orders.map((o) => o.price));
 
-                    for (let price = maxPrice; price >= minPrice; price--) {
-                        let ordersAtPrice = exchange.markets[marketKey].orders.filter((o) => o.price == price);
-                        for (let order of ordersAtPrice) {
-                            let row = tbody.insertRow();
-                            let cell = row.insertCell();
-                            cell.textContent = order.quantity > 0 ? order.user : "";
-                            cell = row.insertCell();
-                            cell.textContent = order.quantity > 0 ? order.quantity : "";
-                            cell = row.insertCell();
-                            cell.textContent = order.price;
-                            cell = row.insertCell();
-                            cell.textContent = order.quantity < 0 ? - order.quantity  : "";
-                            cell = row.insertCell();
-                            cell.textContent = order.quantity < 0 ? order.user : "";
-                            row.classList.add("border-b", "border-gray-400", "[&>*]:px-2", "hover:bg-gray-300");
-                            // on double click instantly trade with this order
-                            row.addEventListener("dblclick", function(event){
-                                // check if I am the person who made order
-                                if (document.getElementById("playerName").textContent != order.user){
-                                    let price = order.price;
-                                    let quantity = -order.quantity;
-                                    let market = marketKey;
-                                    if (positionExceeded(parseInt(quantity), marketKey)) {
-                                        // flash the position div red
-                                        document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
-                                        setTimeout(() => {
-                                            document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
-                                        }, 500);
-                                    } else {
-                                        console.log(`Send trade of ${price} @ ${quantity}`);
-                                        connection
-                                            .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
-                                            .catch((err) => console.error(err.toString()));
-                                    }
-                                } else {
-                                    console.log("DeleteOrder", order);
-                                    // cancel order
-                                    connection
-                                        .invoke("DeleteOrder", order.id)
-                                        .catch((err) => console.error(err.toString()));
-                                    // delete it from the list
+                    // sort the orders by price descending
+                    exchange.markets[marketKey].orders.sort((a, b) => b.price - a.price);
+                    
+                    for (let order of exchange.markets[marketKey].orders) {
+                        let row = tbody.insertRow();
+                        let cell = row.insertCell();
+                        cell.textContent = order.quantity > 0 ? order.user : "";
+                        cell = row.insertCell();
+                        cell.textContent = order.quantity > 0 ? order.quantity : "";
+                        cell = row.insertCell();
+                        cell.textContent = order.price;
+                        cell = row.insertCell();
+                        cell.textContent = order.quantity < 0 ? - order.quantity  : "";
+                        cell = row.insertCell();
+                        cell.textContent = order.quantity < 0 ? order.user : "";
+                        row.classList.add("border-b", "border-gray-400", "[&>*]:px-2", "hover:bg-gray-300");
+                        // on double click instantly trade with this order
+                        row.addEventListener("dblclick", function(event){
+                            // check if I am the person who made order
+                            if (document.getElementById("playerName").textContent != order.user){
+                                let price = order.price;
+                                let quantity = -order.quantity;
+                                let market = marketKey;
+                                if (positionExceeded(parseInt(quantity), marketKey)) {
+                                    // flash the position div red
+                                    document.getElementById(`pb080osition-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
                                     setTimeout(() => {
-                                        exchange.markets[marketKey].orders = exchange.markets[marketKey].orders.filter((o) => o.id != order.id);
-                                        updateContent();
-                                    }, updateDelay);
+                                        document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
+                                    }, 500);
+                                } else {
+                                    console.log(`Send trade of ${price} @ ${quantity}`);
+                                    connection
+                                        .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
+                                        .catch((err) => console.error(err.toString()));
                                 }
-                            });
-                        }
+                            } else {
+                                console.log("DeleteOrder", order);
+                                // cancel order
+                                connection
+                                    .invoke("DeleteOrder", order.id)
+                                    .catch((err) => console.error(err.toString()));
+                                // delete it from the list
+                                setTimeout(() => {
+                                    exchange.markets[marketKey].orders = exchange.markets[marketKey].orders.filter((o) => o.id != order.id);
+                                    updateContent();
+                                }, updateDelay);
+                            }
+                        });
                     }
 
                 });

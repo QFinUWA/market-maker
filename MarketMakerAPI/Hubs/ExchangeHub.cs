@@ -257,7 +257,7 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
         await Clients.Group(exchangeCode).NewParticipant(username);
     }
 
-    public async Task PlaceOrder(string market, int price, int quantity, string userReference)
+    public async Task PlaceOrder(string market, long price, int quantity, string userReference)
     {
         if (price <= 0) throw new Exception("Price must be > 0");
         var (userId, exchangeCode) = CookieFactory.GetUserAndGroup(Context.User!);

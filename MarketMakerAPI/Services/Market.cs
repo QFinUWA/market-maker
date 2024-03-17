@@ -171,7 +171,7 @@ public class Market
         return true;
     }
 
-    public void Close(int price)
+    public void Close(long price)
     {
         // foreach (var order in _orders.Values) UserProfits[order.User] += (price - order.Price) * order.Quantity;
 

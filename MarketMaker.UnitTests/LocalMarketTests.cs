@@ -6,9 +6,9 @@ namespace MarketMaker.UnitTests
 {
     public class LocalExchangeTests : LocalExchangeService, IDisposable 
     {
-        private int _newPrice;
+        private long _newPrice;
 
-        private int NewPrice
+        private long NewPrice
         {
             get => ++_newPrice;
         }
