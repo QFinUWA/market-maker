@@ -128,7 +128,7 @@ public class Market
             } else {
                 price = otherSide.Keys.Where(p => p < price).DefaultIfEmpty().Max();
             }
-            if (price == 0 || (price + sign) * sign > sign * requestedPrice) {
+            if (price == 0 || price * sign > sign * requestedPrice) {
                 break;
             } else {
                 continue;
