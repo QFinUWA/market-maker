@@ -34,6 +34,7 @@
 
         <script>
             let maxPrice = 10000;
+            let positionLimit = 20;
             let updateDelay = 500; // number of miliseconds after deleting that the frontend updates
             let exchange = {
                 markets: {}, // dictionary of market codes to dictionary of orders and transactions
@@ -64,25 +65,46 @@
                     quickInput.placeholder = "Quick Input";
                     quickInput.addEventListener("keydown", function(event){
                         if(event.key === "Enter"){
-                            if(this.value.length >= 2){
-                                let action = this.value[0];
-                                let price = this.value.substring(1);
-                                if(!isNaN(parseInt(price))){
-                                    if(action == "b"){
-                                        // max of maxPrice and price
+                            if(this.value.match(/^[0-9]*[ba][0-9]+$/)){
+                                // if quantity number exists use it otherwise set to 1
+                                let action = this.value.match(/[ba]/)[0];
+                                let price = this.value.match(/[0-9]+$/)[0];
+                                let quantity = this.value.match(/^[0-9]+/) ? parseInt(this.value.match(/^[0-9]+/)[0]) : 1;
+                                quantity = action == "b" ? quantity : -quantity;
+                                if(!isNaN(parseInt(price))){    
+                                    if (positionExceeded(quantity, marketKey)) {
+                                        // flash the position div red
+                                        document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
+                                        setTimeout(() => {
+                                            document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
+                                        }, 500);
+                                    }
+                                    else if(action == "b"){
                                         connection
-                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), 1, "ref")
+                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
                                             .catch((err) => console.error(err.toString()));
                                         console.log(`bid ${parseInt(price)}`);
-                                    }else if(action == "a"){
+
+                                    } else if(action == "a"){
                                         connection
-                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), -1, "ref")
+                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
                                             .catch((err) => console.error(err.toString()));
-                                        console.log(`ask ${parseInt(prince)}`);
+                                        console.log(`ask ${parseInt(price)}`);
                                     }
                                 }
                             }   
                             this.value = "";
+                        }
+                    });
+                    quickInput.addEventListener("input", function(event){
+                        // remove invalid characters
+                        this.value = this.value.replace(/[^0-9ba]/g, "");
+                        // if it matches regex set font medium
+                        if(this.value.match(/^[0-9]*[ba][0-9]+$/)){
+                            this.classList.add("!font-medium");
+                        } else {
+                            this.classList.remove("!font-medium");
+    
                         }
                     });
 
@@ -97,12 +119,18 @@
                     bidPriceInput.type = "number";
                     bidPriceInput.placeholder = "Price";
                     bidPriceInput.id = `bidPriceInput-${marketToTabID[marketKey]}`;
+                    bidPriceInput.addEventListener("input", function(event){
+                        this.value = Math.abs(parseInt(this.value));
+                    });
 
                     bidQuantityInput = document.createElement("input");
                     bidQuantityInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
                     bidQuantityInput.type = "number";
                     bidQuantityInput.placeholder = "Quantity";
                     bidQuantityInput.id = `bidQuantityInput-${marketToTabID[marketKey]}`;
+                    bidQuantityInput.addEventListener("input", function(event){
+                        this.value = Math.abs(parseInt(this.value));
+                    });
                     
                     bidButtonDiv = document.createElement("div");
                     bidButtonDiv.classList.add("h-[50%]", "w-[100%]", "flex", "justify-center", "items-center");
@@ -114,7 +142,14 @@
                     bidButton.addEventListener("click", function(event){
                         let price = document.getElementById(`bidPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`bidQuantityInput-${marketToTabID[marketKey]}`).value;
-                        if (parseInt(quantity) > 0){
+                        if (positionExceeded(parseInt(quantity), marketKey)) {
+                            // flash the position div red
+                            document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
+                            setTimeout(() => {
+                                document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
+                            }, 500);
+                        }
+                        else {
                             console.log(`Send bid of ${price} @ ${quantity}`);
                             connection
                                 .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), parseInt(quantity), "ref")
@@ -130,12 +165,18 @@
                     askPriceInput.type = "number";
                     askPriceInput.placeholder = "Price";
                     askPriceInput.id = `askPriceInput-${marketToTabID[marketKey]}`;
+                    askPriceInput.addEventListener("input", function(event){
+                        this.value = Math.abs(parseInt(this.value));
+                    });
 
                     askQuantityInput = document.createElement("input");
                     askQuantityInput.classList.add("h-[50%]", "w-[50%]", "text-center", "text-md");
                     askQuantityInput.type = "number";
                     askQuantityInput.placeholder = "Quantity";
                     askQuantityInput.id = `askQuantityInput-${marketToTabID[marketKey]}`;
+                    askQuantityInput.addEventListener("input", function(event){
+                        this.value = Math.abs(parseInt(this.value));
+                    });
 
                     askButtonDiv = document.createElement("div");
                     askButtonDiv.classList.add("h-[50%]", "w-[100%]", "flex", "justify-center", "items-center");
@@ -147,8 +188,15 @@
                     askButton.addEventListener("click", function(event){
                         let price = document.getElementById(`askPriceInput-${marketToTabID[marketKey]}`).value;
                         let quantity = document.getElementById(`askQuantityInput-${marketToTabID[marketKey]}`).value;
-                        if(parseInt(quantity) > 0){
-                        console.log(`Send ask of ${price} @ ${quantity}`);
+                        if (positionExceeded(-parseInt(quantity), marketKey)) {
+                            // flash the position div red
+                            document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
+                            setTimeout(() => {
+                                document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
+                            }, 500);
+                        }
+                        else {
+                            console.log(`Send ask of ${price} @ ${quantity}`);
                             connection
                             .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), -parseInt(quantity), "ref")
                             .catch((err) => console.error(err.toString()));
@@ -549,10 +597,18 @@
                                     let price = order.price;
                                     let quantity = -order.quantity;
                                     let market = marketKey;
-                                    console.log(`Send trade of ${price} @ ${quantity}`);
-                                    connection
-                                        .invoke("PlaceOrder", market, Math.min(maxPrice, parseInt(price)), parseInt(quantity), "ref")
-                                        .catch((err) => console.error(err.toString()));
+                                    if (positionExceeded(parseInt(quantity), marketKey)) {
+                                        // flash the position div red
+                                        document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
+                                        setTimeout(() => {
+                                            document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
+                                        }, 500);
+                                    } else {
+                                        console.log(`Send trade of ${price} @ ${quantity}`);
+                                        connection
+                                            .invoke("PlaceOrder", market, Math.min(maxPrice, parseInt(price)), parseInt(quantity), "ref")
+                                            .catch((err) => console.error(err.toString()));
+                                    }
                                 } else {
                                     console.log("DeleteOrder", order);
                                     // cancel order
@@ -824,6 +880,30 @@
                 });
 
                 return [connection, start];
+            }
+
+            // check if position exceeds position limit
+            function positionExceeded(quantity, market) {
+                let position = 0;
+                exchange.markets[market].transactions.forEach((transaction) => {
+                    if (transaction.buyerUser == document.getElementById("playerName").textContent){
+                        position += transaction.quantity;
+                    } if (transaction.sellerUser == document.getElementById("playerName").textContent){
+                        position -= transaction.quantity;
+                    }
+                });
+                let bidPosition = 0;
+                let askPosition = 0;
+                exchange.markets[market].orders.forEach((order) => {
+                    if (order.user == document.getElementById("playerName").textContent){
+                        if (order.quantity > 0){
+                            bidPosition += order.quantity;
+                        } else {
+                            askPosition += order.quantity;
+                        }
+                    }
+                });
+                return (position + bidPosition + quantity) > positionLimit || (position + askPosition + quantity) < -positionLimit;
             }
 
             // joinExchange needs to be run once on load to set your name and join
