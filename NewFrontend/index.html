@@ -65,31 +65,47 @@
                     quickInput.placeholder = "Quick Input";
                     quickInput.addEventListener("keydown", function(event){
                         if(event.key === "Enter"){
-                            if(this.value.match(/^[0-9]*[ba][0-9]+$/)){
+                            if(this.value.match(/^[0-9]*[ba][0-9]+$/) || this.value.match(/^[c][0-9]+$/)){
                                 // if quantity number exists use it otherwise set to 1
-                                let action = this.value.match(/[ba]/)[0];
+                                let action = this.value.match(/[abc]/)[0];
                                 let price = this.value.match(/[0-9]+$/)[0];
-                                let quantity = this.value.match(/^[0-9]+/) ? parseInt(this.value.match(/^[0-9]+/)[0]) : 1;
-                                quantity = action == "b" ? quantity : -quantity;
-                                if(!isNaN(parseInt(price))){    
-                                    if (positionExceeded(quantity, marketKey)) {
-                                        // flash the position div red
-                                        document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
-                                        setTimeout(() => {
-                                            document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
-                                        }, 500);
+                                if (action == "c") {
+                                    // cancel all orders at that price
+                                    let name = document.getElementById("playerName").textContent;
+                                    let myOrders = exchange.markets[marketKey].orders.filter((o) => o.user == name && o.price == price)
+                                    for(let myOrder in myOrders){
+                                        connection
+                                            .invoke("DeleteOrder", myOrders[myOrder].id)
+                                            .catch((err) => console.error(err.toString()));
                                     }
-                                    else if(action == "b"){
-                                        connection
-                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
-                                            .catch((err) => console.error(err.toString()));
-                                        console.log(`bid ${parseInt(price)}`);
+                                    setTimeout(() => {
+                                        exchange.markets[marketKey].orders = exchange.markets[marketKey].orders.filter((o) => o.user != name || o.price != price);
+                                        updateContent();
+                                    }, updateDelay);
+                                }
+                                else {
+                                    let quantity = this.value.match(/^[0-9]+/) ? parseInt(this.value.match(/^[0-9]+/)[0]) : 1;
+                                    quantity = action == "b" ? quantity : -quantity;
+                                    if(!isNaN(parseInt(price))){    
+                                        if (positionExceeded(quantity, marketKey)) {
+                                            // flash the position div red
+                                            document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.add("!bg-red-500");
+                                            setTimeout(() => {
+                                                document.getElementById(`position-${marketToTabID[marketKey]}`).parentElement.classList.remove("!bg-red-500");
+                                            }, 500);
+                                        }
+                                        else if(action == "b"){
+                                            connection
+                                                .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
+                                                .catch((err) => console.error(err.toString()));
+                                            console.log(`bid ${parseInt(price)}`);
 
-                                    } else if(action == "a"){
-                                        connection
-                                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
-                                            .catch((err) => console.error(err.toString()));
-                                        console.log(`ask ${parseInt(price)}`);
+                                        } else if(action == "a"){
+                                            connection
+                                                .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
+                                                .catch((err) => console.error(err.toString()));
+                                            console.log(`ask ${parseInt(price)}`);
+                                        }
                                     }
                                 }
                             }   
@@ -98,9 +114,13 @@
                     });
                     quickInput.addEventListener("input", function(event){
                         // remove invalid characters
-                        this.value = this.value.replace(/[^0-9ba]/g, "");
+                        this.value = this.value.replace(/[^0-9abc]/g, "");
+                        // can only have one a, b, or c at a time
+                        if(this.value.match(/[abc]/g) && this.value.match(/[abc]/g).length > 1){
+                            this.value = this.value.slice(0, -1);
+                        }
                         // if it matches regex set font medium
-                        if(this.value.match(/^[0-9]*[ba][0-9]+$/)){
+                        if(this.value.match(/^[0-9]*[ba][0-9]+$/) || this.value.match(/^[c][0-9]+$/)) {
                             this.classList.add("!font-medium");
                         } else {
                             this.classList.remove("!font-medium");
