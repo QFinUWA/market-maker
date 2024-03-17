@@ -122,6 +122,7 @@ public class Market
                     }
                 }
             }
+            break;
             // move up to next best price in otherSide
             if (sign == 1) {
                 price = otherSide.Keys.Where(p => p > price).DefaultIfEmpty().Min();

@@ -33,7 +33,6 @@
             </div>
 
         <script>
-            let maxPrice = 10000;
             let positionLimit = 20;
             let updateDelay = 500; // number of miliseconds after deleting that the frontend updates
             let exchange = {
@@ -96,13 +95,13 @@
                                         }
                                         else if(action == "b"){
                                             connection
-                                                .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
+                                                .invoke("PlaceOrder", marketKey, parseInt(price), quantity, "ref")
                                                 .catch((err) => console.error(err.toString()));
                                             console.log(`bid ${parseInt(price)}`);
 
                                         } else if(action == "a"){
                                             connection
-                                                .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), quantity, "ref")
+                                                .invoke("PlaceOrder", marketKey, parseInt(price), quantity, "ref")
                                                 .catch((err) => console.error(err.toString()));
                                             console.log(`ask ${parseInt(price)}`);
                                         }
@@ -172,7 +171,7 @@
                         else {
                             console.log(`Send bid of ${price} @ ${quantity}`);
                             connection
-                                .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), parseInt(quantity), "ref")
+                                .invoke("PlaceOrder", marketKey, parseInt(price), parseInt(quantity), "ref")
                                 .catch((err) => console.error(err.toString()));
                         }
                     });
@@ -218,7 +217,7 @@
                         else {
                             console.log(`Send ask of ${price} @ ${quantity}`);
                             connection
-                            .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), -parseInt(quantity), "ref")
+                            .invoke("PlaceOrder", marketKey, parseInt(price), -parseInt(quantity), "ref")
                             .catch((err) => console.error(err.toString()));
                         }
                     });
@@ -626,7 +625,7 @@
                                     } else {
                                         console.log(`Send trade of ${price} @ ${quantity}`);
                                         connection
-                                            .invoke("PlaceOrder", market, Math.min(maxPrice, parseInt(price)), parseInt(quantity), "ref")
+                                            .invoke("PlaceOrder", market, parseInt(price), parseInt(quantity), "ref")
                                             .catch((err) => console.error(err.toString()));
                                     }
                                 } else {
