@@ -73,10 +73,12 @@
                                         connection
                                             .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), 1, "ref")
                                             .catch((err) => console.error(err.toString()));
+                                        console.log(`bid ${parseInt(price)}`);
                                     }else if(action == "a"){
                                         connection
                                             .invoke("PlaceOrder", marketKey, Math.min(maxPrice, parseInt(price)), -1, "ref")
                                             .catch((err) => console.error(err.toString()));
+                                        console.log(`ask ${parseInt(prince)}`);
                                     }
                                 }
                             }   
@@ -418,12 +420,12 @@
                         let transaction = exchange.markets[marketKey].transactions[transactionKey];
 
                         if(transaction.buyerUser == name){
-                            buy_count += 1;
-                            cash_count -= transaction.price;
+                            buy_count += transaction.quantity;
+                            cash_count -= transaction.price * transaction.quantity;
                         }
                         if(transaction.sellerUser == name){
-                            sell_count += 1;
-                            cash_count += transaction.price;
+                            sell_count += transaction.quantity;
+                            cash_count += transaction.price * transaction.quantity;
                         }
 
                         document.getElementById(`position-${marketToTabID[marketKey]}`).innerHTML = buy_count - sell_count;
