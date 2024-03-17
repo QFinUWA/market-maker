@@ -59,7 +59,7 @@ public class Market
         
         var transactions = new List<Transaction>();
         
-        var order = new Order(Guid.NewGuid(), user, price, market, quantity, DateTime.Now);
+        var order = new Order(Guid.NewGuid(), user, requestedPrice, market, quantity, DateTime.Now);
         while ( order.Quantity != 0)
         {
             // if we can make trades at this price
