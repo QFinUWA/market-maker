@@ -122,13 +122,18 @@ public class Market
                     }
                 }
             }
-            if ((price + sign) * sign <= sign * requestedPrice)
-            {
-                price += sign;
+            // move up to next best price in otherSide
+            if (sign == 1) {
+                price = otherSide.Keys.Where(p => p > price).DefaultIfEmpty().Min();
+            } else {
+                price = otherSide.Keys.Where(p => p < price).DefaultIfEmpty().Max();
+            }
+            if (price == 0) {
+                break;
+            } else {
                 continue;
             }
-            
-            break;
+
         }
         
         if (order.Quantity != 0)
