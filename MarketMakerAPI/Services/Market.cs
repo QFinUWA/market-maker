@@ -4,11 +4,11 @@ namespace MarketMaker.Services;
 public class Market
 {
     private readonly Dictionary<Guid, Order> _orders = new();
-    public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Ask = new();
-    public readonly Dictionary<int, PriorityQueue<Guid, DateTime>> Bid = new();
-    private int? _bestAsk;
+    public readonly Dictionary<long, PriorityQueue<Guid, DateTime>> Ask = new();
+    public readonly Dictionary<long, PriorityQueue<Guid, DateTime>> Bid = new();
+    private long? _bestAsk;
     private int _nAsks = 0;
-    private int? _bestBid;
+    private long? _bestBid;
     private int _nBids = 0;
     
     // public readonly Dictionary<string, float> UserProfits = new();
@@ -47,7 +47,7 @@ public class Market
         var side = sideIsBid ? Bid : Ask;
         var otherSide = !sideIsBid ? Bid : Ask;
         var sign = sideIsBid ? 1 : -1;
-        int? otherBestPrice = sideIsBid ? _bestAsk : _bestBid;
+        long? otherBestPrice = sideIsBid ? _bestAsk : _bestBid;
 
         // keep removing from queue until first order exists
         var price = otherBestPrice is not null
