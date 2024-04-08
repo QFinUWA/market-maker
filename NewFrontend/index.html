@@ -845,10 +845,13 @@
 
                 connection.on("DeletedOrder", (orderID) => {
                     //delete orders[orderID];
-                    exchange.markets = exchange.markets.map((market) => {
-                        market.orders = market.orders.filter((o) => o.id != orderID);
-                        return market;
-                    });
+                    try {
+                        Object.keys(exchange.markets).forEach((market) => {
+                            exchange.markets[market].orders = exchange.markets[market].orders.filter((o) => o.id != orderID);
+                        });
+                    } catch (e) {
+                        console.log(e);
+                    }
                     console.log("DeletedOrder", orderID, exchange);
                     updateContent();
                 });
