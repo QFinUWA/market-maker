@@ -238,6 +238,7 @@ public sealed class ExchangeHub : Microsoft.AspNetCore.SignalR.Hub<IExchangeClie
 
         await exchangeService.Clear();
         _logger.LogInformation($"Lobby {exchangeCode} - exchange closed with price");
+        await Clients.Group(exchangeCode).ExchangeState(_responseConstructor.ExchangeState(exchangeCode));
         await Clients.Group(exchangeCode).StateUpdated(exchangeService.State.ToString());
         await Clients.Group(exchangeCode).ClosingPrices(closePrices);
     }
