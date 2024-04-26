@@ -685,7 +685,7 @@
                     const tab = document.createElement('div');
                     tab.id = tabId;
                     tab.classList.add('tab', inactiveTabColor, 'hover:'+activeTabColor, 'px-4', 'rounded-t-md', 'cursor-pointer');
-                    tab.textContent = name;
+                    tab.textContent = exchange.market_names[name];
                     tabNavigation.appendChild(tab);
 
                     // Create content element
@@ -808,10 +808,11 @@
 
                 connection.on("LobbyState", (message) => {
                     // for each market, add an empty list to the dictionary
-                    exchange.markets = {}; // reset markets
+                    exchange.market_names = {};
                     message.markets.forEach((market) => {
-                        if (!(market[1] in exchange.markets))  {
-                            exchange.markets[market[1]] = {"orders": [], "transactions": []}; // each market is a list for some reason
+                        if (!(market[0] in exchange.markets))  {
+                            exchange.markets[market[0]] = {"orders": [], "transactions": []}; // each market is a list for some reason
+                            exchange.market_names[market[0]] = market[1];
                         }
                     });
 
