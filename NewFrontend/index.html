@@ -808,6 +808,7 @@
 
                 connection.on("LobbyState", (message) => {
                     // for each market, add an empty list to the dictionary
+                    exchange.markets = {}; // reset markets
                     message.markets.forEach((market) => {
                         if (!(market[1] in exchange.markets))  {
                             exchange.markets[market[1]] = {"orders": [], "transactions": []}; // each market is a list for some reason
