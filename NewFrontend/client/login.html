@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>QFIN Orderbooks</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script type="text/javascript" src="../config.js"></script>
+        <script src="lib/signalr/signalr.js"></script>
+        <script src="login.js"></script>
+    </head>
+    <body
+        class="flex h-screen flex-col items-center justify-center bg-gray-100"
+    >
+        <div class="w-96 rounded-lg bg-white p-8 shadow-md">
+            <form id="exchangeForm" class="flex flex-col space-y-4">
+                <label
+                    for="exchange-code"
+                    class="text-xl font-semibold text-gray-700"
+                    >Enter Exchange Code</label
+                >
+                <input
+                    type="text"
+                    id="exchange-code"
+                    name="exchange-code"
+                    placeholder="Your Code Here"
+                    class="rounded-lg border-2 border-gray-200 p-3 focus:border-blue-500 focus:outline-none"
+                />
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    placeholder="Your Name Here"
+                    class="rounded-lg border-2 border-gray-200 p-3 focus:border-blue-500 focus:outline-none"
+                />
+                <button
+                    type="submit"
+                    class="rounded-lg bg-blue-500 py-2 font-bold text-white transition duration-200 hover:bg-blue-700"
+                >
+                    Submit
+                </button>
+            </form>
+        </div>
+
+        <div
+            id="error-message"
+            class="flex h-24 w-96 flex-row items-center justify-center rounded-lg p-8"
+        >
+            <p id="error-text" class="text-red-500 underline"></p>
+        </div>
+    </body>
+</html>
