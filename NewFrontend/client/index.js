@@ -2,8 +2,7 @@ import { Exchange } from "./exchange";
 import { Player } from "./player";
 import { Navigator } from "./navigation";
 
-let positionLimit = 1000;
-let updateDelay = 500; // number of miliseconds after deleting that the frontend updates
+let positionLimit = 1000; // temp variable, will be provided by server after backend refactoring
 
 // let exchange = {
 //     markets: {}, // dictionary of market codes to dictionary of orders and transactions
@@ -229,12 +228,6 @@ function bindConnection(jwt) {
     });
 
     return [connection, start];
-}
-
-// check if position exceeds position limit
-function positionExceeded(quantity, market) {
-
-    return player.positionExceeded(quantity, market);
 }
 
 // joinExchange needs to be run once on load to set your name and join
