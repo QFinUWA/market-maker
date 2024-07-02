@@ -1,26 +1,10 @@
-import { Exchange } from "./exchange";
+import { Exchange } from "./Exchange/exchange";
 import { Player } from "./player";
 import { Navigator } from "./navigation";
 
 let positionLimit = 1000; // temp variable, will be provided by server after backend refactoring
 
-// let exchange = {
-//     markets: {}, // dictionary of market codes to dictionary of orders and transactions
-//     participants: [],
-//     state: "Lobby",
-//     exchangeName: "",
-//     exchangeCode: "",
-// };
-
 // const serverURL = "https://market-maker.azurewebsites.net/";
-
-marketToTabID = {} // used to identify the content tab ID for a given market (to use for populating the tab content)
-
-let transaction_cols = ["Price", "Quantity", "Buyer", "Seller", "Aggressive", "Passive"];
-let filter_ranges = {"Selector": ""};
-for(let col of transaction_cols){
-    filter_ranges[col] = ["", ""];
-}
 
 // updates all the content on the page
 function updateContent() {
@@ -155,6 +139,7 @@ function bindConnection(jwt) {
         player.init(_player);
 
         console.log("ExchangeState", exchangeResponse, exchange);
+        
         updateContent();
     });
 
