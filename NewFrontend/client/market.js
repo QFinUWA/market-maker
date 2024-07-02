@@ -55,4 +55,25 @@ export class Market{
     isClosed(){
         return this.#settled;
     }
+    
+    getFilteredOrders(filter){
+        return this.#orders.filter(filter);
+    }
+
+    getFilteredTransactions(filter){
+        return this.#transactions.filter(filter);
+    }
+
+    getMinPrice(){
+        return Math.min(...this.#orders.map((o) => o.price));
+    }
+
+    getMaxPrice(){
+        return Math.max(...this.#orders.map((o) => o.price));
+    }
+
+    getSorterOrders(){
+        this.#orders.sort((a, b) => b.price - a.price);
+        return this.#orders;
+    }
 }

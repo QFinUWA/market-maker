@@ -26,6 +26,10 @@ export class Player{
         return this.#markets[market].positionExceeded(quantity);
     }
 
+    productInfo(market){
+        return this.#markets[market].productInfo();
+    }
+
     getName(){
         return this.#name;
     }

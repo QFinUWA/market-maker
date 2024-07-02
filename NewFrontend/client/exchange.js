@@ -43,9 +43,20 @@ export class Exchange {
         }
     }
 
-    // This is used to find the market an orderID belongs to when deleting, this will be removed once backend send deleteOrder info with the market as an argument
     getMarkets(){
         return this.#markets;
+    }
+
+    getName(){
+        return this.#exchangeName;
+    }
+
+    getCode(){
+        return this.#exchangeCode;
+    }
+
+    getState(){
+        return this.#state;
     }
 
     // This is used to find the market an orderID belongs to when deleting, this will be removed once backend send deleteOrder info with the market as an argument
@@ -69,5 +80,9 @@ export class Exchange {
 
     isClosed(market){
         return this.#markets[market].isClosed();
+    }
+
+    getMarket(market){
+        return this.#markets[market];
     }
 };
