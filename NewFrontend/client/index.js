@@ -139,7 +139,7 @@ function bindConnection(jwt) {
         player.init(_player);
 
         console.log("ExchangeState", exchangeResponse, exchange);
-        
+
         updateContent();
     });
 
